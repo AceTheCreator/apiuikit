@@ -10,6 +10,8 @@
     "url": "https://smartylighting.example.com/support",
     "email": "support@smartylighting.example.com"
   },
+  "x-x": "AsyncAPISpec",
+  "x-linkedin": "https://www.linkedin.com/company/asyncapi",
   "externalDocs": {
     "description": "Learn more about the AsyncAPI Initiative and the case studies.",
     "url": "https://www.asyncapi.com/"

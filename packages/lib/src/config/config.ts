@@ -19,6 +19,8 @@ export interface ShowConfig {
   messageExamples?: boolean;
   schemas?: boolean;
   errors?: boolean;
+  /** Whether to render known x-* spec extensions (see the `x-tensions` catalog). Defaults to true. */
+  extensions?: boolean;
 }
 
 export interface ExpandConfig {

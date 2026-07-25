@@ -61,10 +61,11 @@ export function AsyncAPIDocumentProvider({
   const depthColors = config.theme?.depthColors?.length
     ? config.theme.depthColors
     : DEFAULT_DEPTH_COLORS;
+  const showExtensions = config.show?.extensions !== false;
 
   const value = useMemo(
-    () => ({ document: asyncapi, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors }),
-    [asyncapi, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors],
+    () => ({ document: asyncapi, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions }),
+    [asyncapi, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions],
   );
 
   const themeVars = config.theme ? buildThemeVars(config.theme) : {};

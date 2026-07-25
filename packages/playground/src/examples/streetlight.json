@@ -7,7 +7,9 @@
     "license": {
       "name": "Apache 2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0"
-    }
+    },
+    "x-x": "AsyncAPISpec",
+    "x-linkedin": "https://www.linkedin.com/company/asyncapi"
   },
   "defaultContentType": "application/json",
   "servers": {
