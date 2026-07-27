@@ -20,6 +20,7 @@ const withPortalHost = (Story: ComponentType) => {
         portalHost: typeof document !== "undefined" ? document.body : null,
         rootElement: null,
         depthColors: DEFAULT_DEPTH_COLORS,
+        showExtensions: true,
       }}
     >
       <div className="mx-auto w-full max-w-2xl p-8">

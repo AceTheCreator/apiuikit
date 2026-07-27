@@ -13,6 +13,8 @@ interface AsyncAPIContextValue {
   defaultSchemaExpanded?: boolean;
   /** Resolved schema tree depth-line colors (config-provided or default), cycled by nesting depth. */
   depthColors: string[];
+  /** Whether to render known x-* spec extensions (see the `x-tensions` catalog). Defaults to true. */
+  showExtensions: boolean;
 }
 
 export const AsyncAPIDocumentContext =

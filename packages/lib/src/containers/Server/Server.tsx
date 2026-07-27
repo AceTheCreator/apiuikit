@@ -82,7 +82,7 @@ export default function Server({
             Authorization
           </h3>
           <p className="prose text-foreground-muted mt-4">
-            This server accepts the following authorization mechanisms:
+            This server accepts the following authorization mechanism{security.length > 1 ? "s" : ""}:
           </p>
           <div className="mt-4 rounded-lg border border-border overflow-hidden">
             <button
