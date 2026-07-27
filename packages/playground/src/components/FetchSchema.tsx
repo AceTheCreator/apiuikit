@@ -157,8 +157,8 @@ export function FetchSchema({ palette, onLoad }: FetchSchemaProps) {
           onFocus={() => setIsOpen(true)}
           onBlur={() => setIsOpen(false)}
           onKeyDown={handleKeyDown}
-          placeholder="https://example.com/asyncapi.json or .yaml"
-          aria-label="AsyncAPI document URL"
+          placeholder="https://example.com/spec.json or .yaml"
+          aria-label="API document URL"
           style={{
             flex: 1,
             minWidth: 0,
@@ -197,7 +197,7 @@ export function FetchSchema({ palette, onLoad }: FetchSchemaProps) {
         <ul
           id={listboxId}
           role="listbox"
-          aria-label="Suggested AsyncAPI documents"
+          aria-label="Suggested API documents"
           style={{
             position: 'absolute',
             top: 'calc(100% - 4px)',

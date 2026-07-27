@@ -1,8 +1,11 @@
 import { AsyncAPIDocumentData } from "../types/schema";
 import { Server } from "../types/asyncapi/Server";
 
-export type SearchTab = "operations" | "messages" | "schemas" | "info" | "servers";
-export type SearchType = "operation" | "message" | "schema" | "info" | "server";
+// "endpoints"/"endpoint" are OpenAPI's equivalent of AsyncAPI's "operations"/"operation" —
+// added here (rather than a parallel SearchEntry type) so SearchPanel/useSpecSearch's
+// consumers stay spec-agnostic; see helpers/openapiSearchIndex.ts.
+export type SearchTab = "operations" | "messages" | "schemas" | "info" | "servers" | "endpoints";
+export type SearchType = "operation" | "message" | "schema" | "info" | "server" | "endpoint";
 
 export interface SearchEntry {
   id: string;
@@ -45,7 +48,7 @@ const flattenText = (value: unknown, visited = new Set<object>()): string => {
   return "";
 };
 
-const normalizeString = (value: unknown): string =>
+export const normalizeString = (value: unknown): string =>
   flattenText(value).trim().replace(/\s+/g, " ");
 
 /** Matches SchemaNode's own id computation — see that component's doc for the token convention. */
@@ -67,7 +70,8 @@ const shallowSchemaNode = (node: unknown): unknown => {
   return shallow;
 };
 
-const addSchemaEntries = (
+/** Walks a single JSON Schema node into flat search entries — spec-agnostic (AsyncAPI and OpenAPI schemas share the same shape), reused by openapiSearchIndex.ts. */
+export const addSchemaEntries = (
   entries: SearchEntry[],
   schema: unknown,
   schemaKey: string,
@@ -106,10 +110,18 @@ const addSchemaEntries = (
     pathSegments: string[] = [],
     locationSegments: string[] = [],
     focusTokens: string[] | null = [],
+    visited = new Set<object>(),
   ) => {
     addEntry(node, pathSegments, locationSegments, focusTokens);
 
     if (!isRecord(node)) return;
+
+    // Pre-resolved (dereferenced) documents can make a schema contain itself
+    // as a plain object reference — e.g. a recursive `TimelineNode` whose
+    // `previous` property points back at the same object. Guard by identity
+    // rather than recursing forever.
+    if (visited.has(node)) return;
+    visited.add(node);
 
     if (isRecord(node.properties)) {
       for (const [propName, propValue] of Object.entries(node.properties)) {
@@ -118,6 +130,7 @@ const addSchemaEntries = (
           [...pathSegments, "properties", propName],
           [...locationSegments, propName],
           focusTokens ? [...focusTokens, "properties", propName] : null,
+          visited,
         );
       }
     }
@@ -129,11 +142,12 @@ const addSchemaEntries = (
         [...pathSegments, "items"],
         [...locationSegments, "items"],
         focusTokens ? [...focusTokens, "items"] : null,
+        visited,
       );
     } else if (Array.isArray(items)) {
       // Tuple-style (positional) items — outside the common-case precise walk.
       items.forEach((item, index) => {
-        walk(item, [...pathSegments, `items[${index}]`], [...locationSegments, `items[${index}]`], null);
+        walk(item, [...pathSegments, `items[${index}]`], [...locationSegments, `items[${index}]`], null, visited);
       });
     }
 
@@ -146,6 +160,7 @@ const addSchemaEntries = (
             [...pathSegments, `${keyword}[${index}]`],
             [...locationSegments, `${keyword}[${index}]`],
             focusTokens && keyword !== "allOf" ? [...focusTokens, `${keyword}[${index}]`] : null,
+            visited,
           );
         });
       }
@@ -157,6 +172,7 @@ const addSchemaEntries = (
         [...pathSegments, "additionalProperties"],
         [...locationSegments, "additionalProperties"],
         null,
+        visited,
       );
     }
   };

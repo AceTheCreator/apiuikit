@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import AsyncAPIDocumentProvider from "./AsyncAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
 import Navigation, { NavSectionId } from "../../components/Navigation";
 import SearchPanel from "../../components/SearchPanel";
 import { useSpecSearch } from "../../hooks/useSpecSearch";
+import { useSearchResultFocus, ActiveHighlight } from "../../hooks/useSearchResultFocus";
 import { SearchEntry } from "../../helpers/searchIndex";
-import { clearSearchHighlight, highlightSearchMatch } from "../../helpers/textHighlight";
+import { clearSearchHighlight } from "../../helpers/textHighlight";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
 import { ConfigInterface } from "../../config";
 import IconMessage from "../../icons/Message";
@@ -65,8 +66,7 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
   const [focusSection, setFocusSection] = useState<string | null>(null);
   const [schemaFocusTarget, setSchemaFocusTarget] = useState<{ tokens: string[]; id: string } | null>(null);
 
-  const [activeHighlight, setActiveHighlight] = useState<{ targetId: string; query: string; highlight: boolean } | null>(null);
-  const lastScrolledIdRef = useRef<string | null>(null);
+  const [activeHighlight, setActiveHighlight] = useState<ActiveHighlight | null>(null);
 
   const handleSearchSelect = (entry: SearchEntry) => {
     if (entry.tab === "operations" || entry.tab === "messages" || entry.tab === "schemas") {
@@ -88,43 +88,15 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
     setActiveHighlight({ targetId: entry.targetId, query: searchQuery, highlight: entry.tab !== "schemas" });
   };
 
-  useEffect(() => {
-    if (!activeHighlight) return;
-    const { targetId, query, highlight } = activeHighlight;
-    let cancelled = false;
-
-    const findWrapper = (attempt: number) => {
-      if (cancelled) return;
-      const target = document.getElementById(targetId);
-      if (!target) {
-        if (attempt < 40) setTimeout(() => findWrapper(attempt + 1), 50);
-        return;
-      }
-      if (lastScrolledIdRef.current !== targetId) {
-        // Guarded: a scrollIntoView failure shouldn't take the highlight
-        // down with it, they're independent concerns.
-        try {
-          target.scrollIntoView({ behavior: "smooth", block: "start" });
-        } catch {
-          // ignore, highlighting still proceeds below
-        }
-        lastScrolledIdRef.current = targetId;
-      }
-      if (highlight) refreshHighlight(0);
-    };
-
-    const refreshHighlight = (attempt: number) => {
-      if (cancelled) return;
-      const target = document.getElementById(targetId);
-      if (target) highlightSearchMatch(target, query);
-      if (attempt < 6) setTimeout(() => refreshHighlight(attempt + 1), 100);
-    };
-
-    setTimeout(() => findWrapper(0), 50);
-    return () => {
-      cancelled = true;
-    };
-  }, [activeHighlight, effectiveTab, selectedOperationKey, selectedMessageKey, selectedSchemaKey, selectedServerKey, focusSection, schemaFocusTarget]);
+  useSearchResultFocus(activeHighlight, [
+    effectiveTab,
+    selectedOperationKey,
+    selectedMessageKey,
+    selectedSchemaKey,
+    selectedServerKey,
+    focusSection,
+    schemaFocusTarget,
+  ]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {

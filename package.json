@@ -19,10 +19,14 @@
     "release": "npm run build --workspace=packages/lib && npm run build --workspace=packages/web-component && changeset publish"
   },
   "peerDependencies": {
-    "@asyncapi/parser": "^3.6.0"
+    "@asyncapi/parser": "^3.6.0",
+    "@scalar/openapi-parser": "^0.28.10"
   },
   "peerDependenciesMeta": {
     "@asyncapi/parser": {
+      "optional": true
+    },
+    "@scalar/openapi-parser": {
       "optional": true
     }
   },

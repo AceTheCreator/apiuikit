@@ -30,20 +30,20 @@ export async function parseDocument(raw: string): Promise<{
   diagnostics: unknown[];
   document: AsyncAPIDocumentData | null;
 }> {
-  const Parser = await loadParser();
-  const parser = new Parser();
-
-  // Built-in Avro and Protobuf plugins: exact MIME lists plus any-version
-  // registry fallbacks. Protobuf's registration is dynamically imported —
-  // unlike Avro (pure TypeScript, no runtime dependency), it pulls in
-  // protobufjs (~313 KB / ~80 KB gzip), so it's deferred behind the same
-  // parse-time boundary as @asyncapi/parser itself instead of always
-  // shipping in the eager bundle.
-  registerAvroSchemaParser(parser);
-  const { registerProtobufSchemaParser } = await import("./protobuf/protobufSchemaParser");
-  registerProtobufSchemaParser(parser);
-
   try {
+    const Parser = await loadParser();
+    const parser = new Parser();
+
+    // Built-in Avro and Protobuf plugins: exact MIME lists plus any-version
+    // registry fallbacks. Protobuf's registration is dynamically imported —
+    // unlike Avro (pure TypeScript, no runtime dependency), it pulls in
+    // protobufjs (~313 KB / ~80 KB gzip), so it's deferred behind the same
+    // parse-time boundary as @asyncapi/parser itself instead of always
+    // shipping in the eager bundle.
+    registerAvroSchemaParser(parser);
+    const { registerProtobufSchemaParser } = await import("./protobuf/protobufSchemaParser");
+    registerProtobufSchemaParser(parser);
+
     const { document, diagnostics } = await parser.parse(raw);
 
     return {

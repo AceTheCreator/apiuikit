@@ -12,33 +12,30 @@ import {
   EMAIL_TEXT,
   EXTERNAL_DOCUMENTATION_TEXT,
 } from "../contants";
-import { Info } from "../types/asyncapi/Info";
 import { Tag as TagType } from "../types/asyncapi/Tag";
 import { ExternalDocs } from "../types/asyncapi/ExternalDocs";
 
-export default function InfoMetadata({
-  license,
-  externalDocs,
-  contact,
-  tags,
-}: Pick<Info, "license" | "externalDocs" | "contact" | "tags">) {
-  const resolvedExternalDocs = externalDocs as ExternalDocs | undefined;
+// Structurally compatible with both AsyncAPI's and OpenAPI's info/tag shapes
+// (each spec's actual type is a superset of what's read here), so this
+// component works for either without callers casting to AsyncAPI's types.
+interface InfoMetadataProps {
+  license?: { name?: string; url?: string };
+  externalDocs?: { description?: string; url?: string };
+  contact?: { name?: string; url?: string; email?: string };
+  tags?: unknown[];
+}
+
+export default function InfoMetadata({ license, externalDocs, contact, tags }: InfoMetadataProps) {
   const details = {
-    licenseName: license && license.name ? license.name : null,
-    licenseUrl: license && license.url ? license.url : null,
-    externalDocsTitle:
-      resolvedExternalDocs && resolvedExternalDocs.description
-        ? resolvedExternalDocs.description
-        : "External documentation",
-    externalDocsUrl: resolvedExternalDocs && resolvedExternalDocs.url ? resolvedExternalDocs.url : null,
-    externalDocsDescription:
-      resolvedExternalDocs && resolvedExternalDocs.description
-        ? resolvedExternalDocs.description
-        : null,
-    contactName: contact && contact.name ? contact.name : null,
-    contactUrl: contact && contact.url ? contact.url : null,
-    contactEmail: contact && contact.email ? contact.email : null,
-    tags: tags,
+    licenseName: license?.name ?? null,
+    licenseUrl: license?.url ?? null,
+    externalDocsTitle: externalDocs?.description ?? "External documentation",
+    externalDocsUrl: externalDocs?.url ?? null,
+    externalDocsDescription: externalDocs?.description ?? null,
+    contactName: contact?.name ?? null,
+    contactUrl: contact?.url ?? null,
+    contactEmail: contact?.email ?? null,
+    tags,
   };
   return (
     <>
