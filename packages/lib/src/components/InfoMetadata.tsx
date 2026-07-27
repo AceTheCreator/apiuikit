@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import IconAtSymbol from "../icons/AtSymbol";
 import IconExternalLink from "../icons/ExternalLink";
 import IconGlobe from "../icons/Globe";
@@ -23,9 +24,17 @@ interface InfoMetadataProps {
   externalDocs?: { description?: string; url?: string };
   contact?: { name?: string; url?: string; email?: string };
   tags?: unknown[];
+  /** `info.x-logo`, rendered above the metadata list. */
+  logo?: ReactNode;
 }
 
-export default function InfoMetadata({ license, externalDocs, contact, tags }: InfoMetadataProps) {
+export default function InfoMetadata({
+  license,
+  externalDocs,
+  contact,
+  tags,
+  logo,
+}: InfoMetadataProps) {
   const details = {
     licenseName: license?.name ?? null,
     licenseUrl: license?.url ?? null,
@@ -39,6 +48,7 @@ export default function InfoMetadata({ license, externalDocs, contact, tags }: I
   };
   return (
     <>
+      {logo && <div className="mb-3">{logo}</div>}
       <dl className="flex flex-wrap @lg:flex-unwrap gap-2 ">
         {details.licenseName && (
           <DefinitionListItem

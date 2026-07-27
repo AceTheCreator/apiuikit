@@ -108,6 +108,7 @@ packages/
   lib/            : the component library (published as "apiuikit")
   web-component/  : framework-agnostic custom elements (published as "@apiuikit/web-component")
   playground/     : local dev app that consumes the library as a real package would
+  x-tensions/     : catalog of x-* spec-extension renderers, bundled into lib (see its own README)
 ```
 
 ### Commands

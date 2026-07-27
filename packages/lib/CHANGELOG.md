@@ -1,5 +1,11 @@
 # apiuikit
 
+## 0.5.0
+
+### Minor Changes
+
+- aaa04ed: add support for extension catalog
+
 ## 0.4.1
 
 ### Patch Changes

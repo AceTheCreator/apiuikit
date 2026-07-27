@@ -58,6 +58,7 @@ export function buildDocumentContext(rawDoc: unknown) {
           portalHost,
           rootElement,
           depthColors: DEFAULT_DEPTH_COLORS,
+          showExtensions: true,
         }}
       >
         <div ref={setRootElement} className="relative">
