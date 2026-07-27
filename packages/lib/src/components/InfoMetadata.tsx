@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import IconAtSymbol from "../icons/AtSymbol";
 import IconExternalLink from "../icons/ExternalLink";
 import IconGlobe from "../icons/Globe";
@@ -16,12 +17,19 @@ import { Info } from "../types/asyncapi/Info";
 import { Tag as TagType } from "../types/asyncapi/Tag";
 import { ExternalDocs } from "../types/asyncapi/ExternalDocs";
 
+interface InfoMetadataProps
+  extends Pick<Info, "license" | "externalDocs" | "contact" | "tags"> {
+  /** `info.x-logo`, rendered above the metadata list. */
+  logo?: ReactNode;
+}
+
 export default function InfoMetadata({
   license,
   externalDocs,
   contact,
   tags,
-}: Pick<Info, "license" | "externalDocs" | "contact" | "tags">) {
+  logo,
+}: InfoMetadataProps) {
   const resolvedExternalDocs = externalDocs as ExternalDocs | undefined;
   const details = {
     licenseName: license && license.name ? license.name : null,
@@ -42,6 +50,7 @@ export default function InfoMetadata({
   };
   return (
     <>
+      {logo && <div className="mb-3">{logo}</div>}
       <dl className="flex flex-wrap @lg:flex-unwrap gap-2 ">
         {details.licenseName && (
           <DefinitionListItem

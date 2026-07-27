@@ -33,6 +33,16 @@ describe("RenderExtensions", () => {
     expect(link).toHaveAttribute("href", "https://x.com/AsyncAPISpec");
   });
 
+  it("does not render x-logo, since it's handled separately as a masthead image, not the generic icon row", () => {
+    render(
+      withContext(
+        true,
+        <RenderExtensions source={{ "x-logo": "https://example.com/logo.svg" }} pathPrefix="info" />,
+      ),
+    );
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
   it("renders nothing when showExtensions is false, even for a known key", () => {
     render(
       withContext(

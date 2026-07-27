@@ -1,12 +1,16 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
+import { logoLoader } from "x-tensions";
 import Section from "../../components/Section";
 import Markdown from "../../components/Markdown";
 import InfoMetadata from "../../components/InfoMetadata";
 import { RenderExtensions } from "../../components/RenderExtensions";
 import { Info as AsyncAPIMetadata } from "../../types/asyncapi/Info";
 
+const LazyLogo = lazy(logoLoader);
+
 const Information: React.FunctionComponent<AsyncAPIMetadata> = (info) => {
   const { title, description, license, externalDocs, contact, tags } = info;
+  const logoValue = (info as unknown as Record<string, unknown>)["x-logo"];
 
   const content = (
       <div className="mt-4 w-full">
@@ -14,9 +18,16 @@ const Information: React.FunctionComponent<AsyncAPIMetadata> = (info) => {
       </div>
   );
 
+  const logo = logoValue !== undefined && (
+    <Suspense fallback={null}>
+      <LazyLogo value={logoValue} path="info.x-logo" />
+    </Suspense>
+  );
+
   const sideContent = (
     <>
       <InfoMetadata
+        logo={logo}
         license={license}
         externalDocs={externalDocs}
         contact={contact}
