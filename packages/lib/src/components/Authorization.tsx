@@ -86,7 +86,9 @@ export default function Authorization({ securities }: Props) {
 
   return (
     <div>
-      <Tabs tabs={filteredTabs} current={authTab} onChange={setAuthTab} />
+      {filteredTabs.length > 1 && (
+        <Tabs tabs={filteredTabs} current={authTab} onChange={setAuthTab} />
+      )}
       <div className="py-4 prose text-foreground-muted">
         {authTab === "userPassword" && (
           <AuthDescription>
