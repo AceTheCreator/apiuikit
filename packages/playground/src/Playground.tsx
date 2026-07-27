@@ -85,7 +85,7 @@ export function Playground({
   const { containerRef, splitPercent, handlePointerDown, nudge } = useResizableSplit()
 
   return (
-    <div ref={containerRef} style={{ display: 'flex', height, position: 'relative' }}>
+    <div ref={containerRef} style={{ display: 'flex', height, position: 'relative', background: palette.chromeBg }}>
       <div
         className="playground-preview-scroll"
         style={{ width: editorExpanded ? `${splitPercent}%` : '100%', overflow: 'auto' }}
