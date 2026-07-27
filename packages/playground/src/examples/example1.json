@@ -41,8 +41,7 @@
       "name": "kafka",
       "description": "Kafka implementation details and bindings."
     }
-  ],
-  "x-logo": "https://cdn.prod.website-files.com/60e49b51af3305d435c286ab/60e78065113f2f12904a43b1_aklivity-logo.svg"
+  ]
 },
   "defaultContentType": "application/json",
   "servers": {
