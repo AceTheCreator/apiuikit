@@ -1,8 +1,8 @@
 # apiuikit
 
-React component library for rendering API specifications. Point it at an AsyncAPI document and get a full interactive UI, which includes: servers, channels, operations, messages, schemas, with no manual mapping required.
+React component library for rendering API specifications. Point it at an AsyncAPI or OpenAPI document and get a full interactive UI, which includes: servers, channels/endpoints, operations, messages, schemas, with no manual mapping required.
 
-> **Status:** AsyncAPI 3.x is fully supported today. OpenAPI support is coming soon, the same components will render OpenAPI documents once that lands.
+> **Status:** AsyncAPI 3.x and OpenAPI 3.0/3.1 are both fully supported.
 
 ## Install
 
@@ -10,10 +10,11 @@ React component library for rendering API specifications. Point it at an AsyncAP
 npm install apiuikit
 ```
 
-If you want to hand it a raw YAML/JSON string instead of a pre-parsed object, also install the peer dependency:
+If you want to hand it a raw YAML/JSON string instead of a pre-parsed object, also install the peer dependency for whichever spec you're rendering:
 
 ```bash
-npm install @asyncapi/parser
+npm install @asyncapi/parser      # for AsyncAPI documents
+npm install @scalar/openapi-parser # for OpenAPI documents
 ```
 
 [![Edit Apiuikit React Component](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/sandbox/6jw4pf)
@@ -45,6 +46,18 @@ export default function App() {
 
 Avro and Protobuf message payloads are supported out of the box in both entry points, no extra install required.
 
+The same two entry points exist for OpenAPI, as `OpenAPI` / `OpenAPIRenderer`:
+
+```tsx
+import { OpenAPI } from "apiuikit";
+import "apiuikit/style.css";
+import doc from "./openapi.json";
+
+export default function App() {
+  return <OpenAPI openapi={doc} />;
+}
+```
+
 ### Rendering sections individually
 
 Prefer your own layout over the full widget? Render one section on its own by passing it a `document`:
@@ -58,7 +71,7 @@ export default function OperationsPage() {
 }
 ```
 
-`Servers`, `Operations`, `Messages`, `Schemas`, and `Info` all work this way. To arrange several of them together, wrap them in `AsyncAPIProvider` instead so the document is resolved once and shared:
+`Servers`, `Operations`, `Messages`, `Schemas`, and `Info` all work this way (OpenAPI equivalents: `OpenAPIServers`, `OpenAPIEndpoints`, `OpenAPISchemas`, `OpenAPIInfo`). To arrange several of them together, wrap them in `AsyncAPIProvider` (or `OpenAPIProvider`) instead so the document is resolved once and shared:
 
 ```tsx
 import { AsyncAPIProvider, Servers, Operations, Schemas } from "apiuikit";
@@ -82,6 +95,7 @@ See the full usage docs for props, configuration options, and more:
 - [Web Components](./docs/usage/with-webcomponents.md) (`<aui-asyncapi>`, `<aui-asyncapi-renderer>`, use apiuikit from any framework)
 - [Avro schemas](./docs/usage/avro.md)
 - [Protobuf schemas](./docs/usage/protobuf.md)
+- [OpenAPI](./docs/usage/openapi.md) (`OpenAPI`, `OpenAPIRenderer`, composable sections, web components)
 
 ## Development
 

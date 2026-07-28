@@ -2,12 +2,14 @@
 
 ## Overview
 
-Use apiuikit from Vue, Angular, Svelte, plain HTML, or any other environment that supports custom elements. Two tags are available:
+Use apiuikit from Vue, Angular, Svelte, plain HTML, or any other environment that supports custom elements. Four tags are available:
 
 | Element | When to use |
 |---|---|
 | `<aui-asyncapi-renderer>` | You have a raw AsyncAPI YAML or JSON string |
 | `<aui-asyncapi>` | You already have a parsed AsyncAPI document object |
+| `<aui-openapi-renderer>` | You have a raw OpenAPI YAML or JSON string |
+| `<aui-openapi>` | You already have a parsed OpenAPI document object |
 
 If you're building a React app, prefer the [React entry without parser](./no-parser.md) or [React entry with parser](./with-parser.md) according to your usecase instead.
 
@@ -84,6 +86,19 @@ el.config = { show: { sidebar: true } };
 ```
 
 Because `spec` is an object, set it from JavaScript (`el.spec = ...`), not as an HTML attribute.
+
+## `<aui-openapi-renderer>` and `<aui-openapi>`
+
+Mirror `<aui-asyncapi-renderer>` and `<aui-asyncapi>` exactly (same prop names and types — `spec`, `config`, `onDiagnostics` on the renderer; `spec`, `resolved`, `config` on the no-parser element), just for OpenAPI documents:
+
+```js
+import "@apiuikit/web-component";
+import "@apiuikit/web-component/style.css";
+
+const el = document.querySelector("aui-openapi-renderer");
+el.spec = rawOpenApiYaml;
+el.onDiagnostics = (diagnostics) => console.log(diagnostics);
+```
 
 ## Setting props from HTML vs JavaScript
 

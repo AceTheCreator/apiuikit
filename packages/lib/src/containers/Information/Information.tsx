@@ -29,7 +29,10 @@ const Information: React.FunctionComponent<AsyncAPIMetadata> = (info) => {
       <InfoMetadata
         logo={logo}
         license={license}
-        externalDocs={externalDocs}
+        // externalDocs is typed as `Reference | ExternalDocs` (a $ref union) —
+        // by the time this component renders, resolveDocument/@asyncapi/parser
+        // have already inlined any $ref, so this is always a real ExternalDocs.
+        externalDocs={externalDocs as { description?: string; url?: string } | undefined}
         contact={contact}
         tags={tags}
       />

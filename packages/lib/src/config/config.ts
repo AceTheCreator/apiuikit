@@ -19,6 +19,8 @@ export interface ShowConfig {
   messageExamples?: boolean;
   schemas?: boolean;
   errors?: boolean;
+  /** OpenAPI only: the Endpoints tab (paths/operations). */
+  endpoints?: boolean;
   /** Whether to render known x-* spec extensions (see the `x-tensions` catalog). Defaults to true. */
   extensions?: boolean;
 }

@@ -1,8 +1,10 @@
-import { AsyncAPIRenderer, defaultConfig } from 'apiuikit'
+import { AsyncAPIRenderer, OpenAPIRenderer, defaultConfig } from 'apiuikit'
 import type { ConfigInterface } from 'apiuikit'
 import 'apiuikit/style.css'
 import { useMemo, useState } from 'react'
-import exampleDoc from './examples/example1.json'
+// TEMP: default to OpenAPI torture while developing OpenAPI support.
+// Revert to `./examples/example1.json` when done.
+import openapiTortureExample from './examples/openapi-torture.yaml?raw'
 import { DiagnosticsPanel } from './components/DiagnosticsPanel'
 import type { ParserDiagnostic } from './components/DiagnosticsPanel'
 import { EditorPane } from './components/EditorPane'
@@ -19,7 +21,7 @@ import { useResizableSplit } from './hooks/useResizableSplit'
 import { scrollbarStyle, UI_PALETTES } from './theme'
 import type { UiMode } from './theme'
 
-const DEFAULT_DOC_TEXT = JSON.stringify(exampleDoc, null, 2)
+const DEFAULT_DOC_TEXT = openapiTortureExample
 
 export interface PlaygroundProps {
   /** Initial AsyncAPI document text (JSON or YAML). Uncontrolled — only read on mount. */
@@ -59,6 +61,16 @@ export function Playground({
     return head.startsWith('{') ? 'json' : 'yaml'
   }, [docText])
 
+  // Sniffs the document's own top-level key (JSON or YAML — either way it's a
+  // line matching `asyncapi:`/`openapi:`/`swagger:` near the top) to pick which
+  // renderer/parser to hand it to, rather than asking the user to choose.
+  // Defaults to AsyncAPI when neither key is found (e.g. mid-edit/empty doc).
+  const specType = useMemo<'asyncapi' | 'openapi'>(() => {
+    const match = docText.match(/^\s*["']?(asyncapi|openapi|swagger)["']?\s*:/m)
+    if (!match) return 'asyncapi'
+    return match[1] === 'asyncapi' ? 'asyncapi' : 'openapi'
+  }, [docText])
+
   // Uncontrolled prop: capture the mount-time value so a re-rendering parent
   // passing a fresh object literal doesn't reset the editor.
   const [configSeed] = useState(() => initialConfig ?? defaultConfig)
@@ -91,11 +103,19 @@ export function Playground({
         style={{ width: editorExpanded ? `${splitPercent}%` : '100%', overflow: 'auto' }}
       >
         <style>{scrollbarStyle('.playground-preview-scroll', palette)}</style>
-        <AsyncAPIRenderer
-          raw={debouncedDocText}
-          config={previewConfig}
-          onDiagnostics={(d) => setDiagnostics(d as ParserDiagnostic[])}
-        />
+        {specType === 'openapi' ? (
+          <OpenAPIRenderer
+            raw={debouncedDocText}
+            config={previewConfig}
+            onDiagnostics={(d) => setDiagnostics(d as ParserDiagnostic[])}
+          />
+        ) : (
+          <AsyncAPIRenderer
+            raw={debouncedDocText}
+            config={previewConfig}
+            onDiagnostics={(d) => setDiagnostics(d as ParserDiagnostic[])}
+          />
+        )}
       </div>
 
       {editorExpanded && (
@@ -115,7 +135,11 @@ export function Playground({
                 </div>
               }
               tabs={[
-                { id: 'doc', label: 'AsyncAPI Document', hasError: hasDocErrors },
+                {
+                  id: 'doc',
+                  label: specType === 'openapi' ? 'OpenAPI Document' : 'AsyncAPI Document',
+                  hasError: hasDocErrors,
+                },
                 { id: 'config', label: 'Config', hasError: config.error != null },
               ]}
             />
@@ -129,7 +153,7 @@ export function Playground({
                 <>
                   <FetchSchema palette={palette} onLoad={setDocText} />
                   <EditorPane
-                    ariaLabel="AsyncAPI document"
+                    ariaLabel={specType === 'openapi' ? 'OpenAPI document' : 'AsyncAPI document'}
                     value={docText}
                     onChange={setDocText}
                     error={null}

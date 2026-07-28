@@ -1,6 +1,8 @@
 import avroStreetlightExample from '../examples/avro-streetlight.json'
 import protobufStreetlightExample from '../examples/protobuf-streetlight.json'
 import tortureExample from '../examples/torture.json'
+import openapiPetstoreExample from '../examples/openapi-petstore.json'
+import openapiTortureExample from '../examples/openapi-torture.yaml?raw'
 
 const RAW_URLS = [
   'https://github.com/asyncapi/spec/blob/master/examples/streetlights-operation-security-asyncapi.yml',
@@ -24,9 +26,14 @@ const RAW_URLS = [
   'https://github.com/asyncapi/spec/blob/master/examples/websocket-gemini-asyncapi.yml',
 ]
 
+const OPENAPI_RAW_URLS = [
+  'https://github.com/OAI/OpenAPI-Specification/blob/main/_archive_/schemas/v3.0/pass/petstore.yaml',
+  'https://github.com/OAI/OpenAPI-Specification/blob/main/_archive_/schemas/v3.0/pass/petstore-expanded.yaml',
+]
+
 function labelFromUrl(url: string): string {
   const filename = url.split('/').pop() ?? url
-  const name = filename.replace(/-asyncapi\.ya?ml$/i, '')
+  const name = filename.replace(/-asyncapi\.ya?ml$/i, '').replace(/\.ya?ml$/i, '')
   return name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
@@ -57,4 +64,18 @@ export const SUGGESTED_SCHEMAS: SuggestedSchema[] = [
     url: 'local://torture.json',
     content: JSON.stringify(tortureExample, null, 2),
   },
+  {
+    label: 'Petstore (OpenAPI)',
+    url: 'local://openapi-petstore.json',
+    content: JSON.stringify(openapiPetstoreExample, null, 2),
+  },
+  {
+    label: 'Unrealistic Torture Test (OpenAPI)',
+    url: 'local://openapi-torture.yaml',
+    content: openapiTortureExample,
+  },
+  ...[...new Set(OPENAPI_RAW_URLS)].map((url) => ({
+    url,
+    label: `${labelFromUrl(url)} (OpenAPI)`,
+  })),
 ]

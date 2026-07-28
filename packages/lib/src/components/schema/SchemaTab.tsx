@@ -12,6 +12,7 @@ import {
 function SchemaTabs({
   schema,
   label,
+  rootName,
   description,
   schemaFormat,
   originalSchema,
@@ -22,6 +23,11 @@ function SchemaTabs({
   schema: unknown;
   /** Heading shown above the tab toggle, e.g. "Payload" or "Headers". */
   label: string;
+  /**
+   * Path prefix for schema tree rows. Defaults to `label`. Use when the heading
+   * should include extra context (e.g. media type) that must not appear in paths.
+   */
+  rootName?: string;
   description?: string;
   /** Declared multi-format wrapper (e.g. Avro, Protobuf) this schema was converted from, if any. */
   schemaFormat?: string;
@@ -88,7 +94,7 @@ function SchemaTabs({
         <p className="text-xs text-foreground-muted">Loading Protobuf definition…</p>
       ) : (
         <>
-          {tab === "schema" && <SchemaTree schema={schema} rootName={label} />}
+          {tab === "schema" && <SchemaTree schema={schema} rootName={rootName ?? label} />}
           {tab === "json" && (
             <SchemaViewer schema={originalSchema ?? schema} />
           )}
