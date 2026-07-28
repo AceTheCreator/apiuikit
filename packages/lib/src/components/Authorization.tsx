@@ -68,14 +68,25 @@ export default function Authorization({ securities }: Props) {
       );
     });
   }, [securities]);
-  const [authTab, setAuthTab] = useState(
-    filteredTabs.length > 0 ? filteredTabs[0].id : null
+  const isMultiMethod = filteredTabs.length > 1;
+  // Single method: show content immediately. Multiple: nothing selected until
+  // the user picks a tab — then they can close the panel back up.
+  const [authTab, setAuthTab] = useState<string | null>(
+    isMultiMethod ? null : filteredTabs[0]?.id ?? null
   );
 
   useEffect(() => {
-    if (filteredTabs.length > 0) {
-      setAuthTab(filteredTabs[0].id);
+    if (filteredTabs.length === 0) {
+      setAuthTab(null);
+      return;
     }
+    if (filteredTabs.length === 1) {
+      setAuthTab(filteredTabs[0].id);
+      return;
+    }
+    setAuthTab((current) =>
+      current && filteredTabs.some((tab) => tab.id === current) ? current : null
+    );
   }, [filteredTabs]);
 
   function filteredType<T extends SecurityScheme>(type: string): T {
@@ -83,58 +94,74 @@ export default function Authorization({ securities }: Props) {
   }
 
   const activeDescription = authTab ? filteredType<SecurityScheme>(authTab)?.description : undefined;
+  const showDetails = Boolean(authTab);
 
   return (
     <div>
-      {filteredTabs.length > 1 && (
-        <Tabs tabs={filteredTabs} current={authTab} onChange={setAuthTab} />
+      {isMultiMethod && (
+        <Tabs
+          tabs={filteredTabs}
+          current={authTab}
+          onChange={(id) =>
+            setAuthTab((current) => (id && current === id ? null : id || null))
+          }
+          placeholder="Select an authorization method"
+        />
       )}
-      <div className="py-4 prose text-foreground-muted">
-        {authTab === "userPassword" && (
-          <AuthDescription>
-            You have to{" "}
-            <strong className="text-foreground-secondary">
-              provide user and password
-            </strong>{" "}
-            to connect to this server.
-          </AuthDescription>
-        )}
-        {authTab && ["scramSha256", "scramSha512", "plain"].includes(authTab) && (
-          <AuthDescription description={activeDescription}>
-            You have to{" "}
-            <strong className="text-foreground-secondary">
-              provide username and password
-            </strong>{" "}
-            to connect to this server.
-          </AuthDescription>
-        )}
-        {authTab === "gssapi" && (
-          <AuthDescription>
-            You have to{" "}
-            <strong className="text-foreground-secondary">
-              authenticate using Kerberos (GSSAPI)
-            </strong>{" "}
-            to connect to this server.
-          </AuthDescription>
-        )}
-        {authTab === "X509" && (
-          <AuthDescription>
-            You have to{" "}
-            <strong className="text-foreground-secondary">
-              download the certificate file
-            </strong>{" "}
-            from the service provider to connect to this server.
-          </AuthDescription>
-        )}
-        {authTab === "apiKey" && (
-          <ApiKey security={filteredType<ApiKeyType>("apiKey")} />
-        )}
-        {authTab === "openIdConnect" && (
-          <OpenID security={filteredType<OpenIdConnect>("openIdConnect")} />
-        )}
-        {authTab === "oauth2" && (
-          <OAuth2 security={filteredType<Oauth2Flows>("oauth2")} />
-        )}
+      <div
+        className={`grid transition-all duration-200 ease-in-out ${showDetails ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+      >
+        <div className="overflow-hidden">
+          {authTab && (
+            <div className="py-4 prose text-foreground-muted">
+              {authTab === "userPassword" && (
+                <AuthDescription>
+                  You have to{" "}
+                  <strong className="text-foreground-secondary">
+                    provide user and password
+                  </strong>{" "}
+                  to connect to this server.
+                </AuthDescription>
+              )}
+              {["scramSha256", "scramSha512", "plain"].includes(authTab) && (
+                <AuthDescription description={activeDescription}>
+                  You have to{" "}
+                  <strong className="text-foreground-secondary">
+                    provide username and password
+                  </strong>{" "}
+                  to connect to this server.
+                </AuthDescription>
+              )}
+              {authTab === "gssapi" && (
+                <AuthDescription>
+                  You have to{" "}
+                  <strong className="text-foreground-secondary">
+                    authenticate using Kerberos (GSSAPI)
+                  </strong>{" "}
+                  to connect to this server.
+                </AuthDescription>
+              )}
+              {authTab === "X509" && (
+                <AuthDescription>
+                  You have to{" "}
+                  <strong className="text-foreground-secondary">
+                    download the certificate file
+                  </strong>{" "}
+                  from the service provider to connect to this server.
+                </AuthDescription>
+              )}
+              {authTab === "apiKey" && (
+                <ApiKey security={filteredType<ApiKeyType>("apiKey")} />
+              )}
+              {authTab === "openIdConnect" && (
+                <OpenID security={filteredType<OpenIdConnect>("openIdConnect")} />
+              )}
+              {authTab === "oauth2" && (
+                <OAuth2 security={filteredType<Oauth2Flows>("oauth2")} />
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

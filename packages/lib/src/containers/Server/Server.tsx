@@ -1,9 +1,6 @@
-import { useEffect, useId, useState } from "react";
 import Markdown from "../../components/Markdown";
 import IconLink from "../../icons/Link";
 import IconShieldCheck from "../../icons/ShieldCheck";
-import IconArrowRight from "../../icons/ArrowRight";
-import IconDownRight from "../../icons/ArrowDown";
 import { ChannelAddress } from "../../components/ChannelAddress";
 import { Server as ServerInterface } from "../../types/asyncapi/Server";
 import { ServerVariable } from "../../types/asyncapi/ServerVariable";
@@ -36,15 +33,6 @@ export default function Server({
   // `variables` is typed as a Map (a codegen artifact from the AsyncAPI JSON schema),
   // but parsed documents are always plain objects at runtime — never real Map instances.
   const variableEntries = variables as unknown as Record<string, ServerVariable> | undefined;
-  const [authExpanded, setAuthExpanded] = useState(false);
-  const authHeadingId = useId();
-  const authPanelId = useId();
-
-  // Mirrors MessageRow's auto-expand-on-select: navigating here specifically
-  // for the Authorization content shouldn't leave it hidden.
-  useEffect(() => {
-    if (focusSection === "security") setAuthExpanded(true);
-  }, [focusSection]);
 
   return (
     <div>
@@ -77,41 +65,15 @@ export default function Server({
       <Markdown>{description}</Markdown>
       {security && security.length > 0 && (
         <div id={serverKey ? `server-${serverKey}-security` : undefined}>
-          <h3 id={authHeadingId} className="font-bold text-foreground-secondary mt-8">
+          <h3 className="font-bold text-foreground-secondary mt-8">
             <IconShieldCheck className="inline-block mr-2 -mt-1 h-6 text-foreground-muted" />
             Authorization
           </h3>
           <p className="prose text-foreground-muted mt-4">
             This server accepts the following authorization mechanism{security.length > 1 ? "s" : ""}:
           </p>
-          <div className="mt-4 rounded-lg border border-border overflow-hidden">
-            <button
-              type="button"
-              aria-expanded={authExpanded}
-              aria-controls={authPanelId}
-              aria-labelledby={authHeadingId}
-              onClick={() => setAuthExpanded((v) => !v)}
-              className="flex w-full items-center justify-between px-4 py-3 bg-neutral-50 text-left hover:bg-neutral-100 transition-colors"
-            >
-              <span className="text-xs font-normal text-foreground-muted bg-neutral-100 border border-border rounded-full px-2 py-0.5">
-                {security.length}
-              </span>
-              {authExpanded ? (
-                <IconDownRight className="w-4 h-4 text-foreground-muted shrink-0" />
-              ) : (
-                <IconArrowRight className="w-4 h-4 text-foreground-muted shrink-0" />
-              )}
-            </button>
-            <div
-              id={authPanelId}
-              className={`grid transition-all duration-200 ease-in-out ${authExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
-            >
-              <div className="overflow-hidden">
-                <div className="px-4 py-2 border-t border-border">
-                  <Authorization securities={security} />
-                </div>
-              </div>
-            </div>
+          <div className="mt-4">
+            <Authorization securities={security} />
           </div>
         </div>
       )}
