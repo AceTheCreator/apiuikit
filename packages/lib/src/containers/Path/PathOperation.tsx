@@ -2,6 +2,7 @@ import { SchemaTab } from "../../components/schema";
 import Markdown from "../../components/Markdown";
 import IconExternalLink from "../../icons/ExternalLink";
 import { ChannelAddress } from "../../components/ChannelAddress";
+import { CodeSamples } from "../../components/CodeSamples";
 import {
   HttpMethod,
   OpenAPIOperationData,
@@ -108,6 +109,15 @@ export default function PathOperation({ method, path, op, id, globalSecurity }: 
 
       {op.summary && <p className="text-sm text-foreground-secondary">{op.summary}</p>}
       {op.description && <Markdown>{op.description}</Markdown>}
+
+      <CodeSamples
+        method={method}
+        path={path}
+        parameters={parameters}
+        requestBody={op.requestBody}
+        security={security}
+        id={id}
+      />
 
       {PARAMETER_GROUPS.map(({ location, label }) => (
         <div key={location}>

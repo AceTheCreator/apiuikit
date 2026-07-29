@@ -22,6 +22,16 @@ function buildCompleteMarker(): Plugin {
 export default defineConfig({
   // Library builds shouldn't ship the Vite demo's public/ assets (e.g. vite.svg).
   publicDir: false,
+  resolve: {
+    alias: {
+      // @readme/httpsnippet (used by CodeSamples/codeSamples.ts) imports Node's
+      // built-in `url` module for its legacy parse()/format() API. Vite only
+      // stubs Node builtins for the browser (no named exports), so alias to the
+      // standalone browser-safe `url` polyfill instead — it gets bundled into
+      // apiuikit's own dist output, so consumers don't need to configure anything.
+      url: 'url',
+    },
+  },
   plugins: [
     react(),
     // .d.ts generation is slow and unnecessary for the playground watch loop;

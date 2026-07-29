@@ -47,6 +47,21 @@ describe("OpenAPI", () => {
     expect(detail.getByText("limit")).toBeInTheDocument();
   });
 
+  it("renders a curl code sample with the resolved server URL for an endpoint's detail panel", () => {
+    render(<OpenAPI openapi={asDoc(exampleDoc)} />);
+
+    fireEvent.click(screen.getByText("List all pets").closest("tr")!);
+    const codeSamples = within(document.getElementById("endpoint-get /pets-code-samples")!);
+    expect(codeSamples.getByText("https://api.example.com/v1/pets", { exact: false })).toBeInTheDocument();
+  });
+
+  it("hides the code samples panel when show.codeSamples is false", () => {
+    render(<OpenAPI openapi={asDoc(exampleDoc)} config={{ show: { codeSamples: false } }} />);
+
+    fireEvent.click(screen.getByText("List all pets").closest("tr")!);
+    expect(document.getElementById("endpoint-get /pets-code-samples")).toBeNull();
+  });
+
   it("switches away from the active tab when a config change hides it", () => {
     const { rerender } = render(<OpenAPI openapi={asDoc(exampleDoc)} />);
 

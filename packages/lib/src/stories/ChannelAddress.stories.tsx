@@ -21,6 +21,7 @@ const withPortalHost = (Story: ComponentType) => {
         rootElement: null,
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
+        showCodeSamples: true,
       }}
     >
       <div className="mx-auto w-full max-w-2xl p-8">

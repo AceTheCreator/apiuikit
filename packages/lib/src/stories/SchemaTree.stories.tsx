@@ -36,7 +36,7 @@ const deref = (refPath: string): unknown => {
 
 const withSchemaContext = (Story: ComponentType) => (
   <AsyncAPIDocumentContext.Provider
-    value={{ document: mockDocument, deref, portalHost: null, rootElement: null, depthColors: DEFAULT_DEPTH_COLORS, showExtensions: true }}
+    value={{ document: mockDocument, deref, portalHost: null, rootElement: null, depthColors: DEFAULT_DEPTH_COLORS, showExtensions: true, showCodeSamples: true }}
   >
     <div className="mx-auto w-full max-w-3xl p-4">
       <Story />

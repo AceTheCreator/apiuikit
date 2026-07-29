@@ -59,6 +59,7 @@ export function buildDocumentContext(rawDoc: unknown) {
           rootElement,
           depthColors: DEFAULT_DEPTH_COLORS,
           showExtensions: true,
+          showCodeSamples: true,
         }}
       >
         <div ref={setRootElement} className="relative">

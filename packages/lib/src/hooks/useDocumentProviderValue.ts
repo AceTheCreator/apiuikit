@@ -52,10 +52,11 @@ export function useDocumentProviderValue(document: Record<string, unknown>, conf
     ? config.theme.depthColors
     : DEFAULT_DEPTH_COLORS;
   const showExtensions = config.show?.extensions !== false;
+  const showCodeSamples = config.show?.codeSamples !== false;
 
   const contextValue = useMemo(
-    () => ({ document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions }),
-    [document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions],
+    () => ({ document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples }),
+    [document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples],
   );
 
   const themeVars = config.theme ? buildThemeVars(config.theme) : {};

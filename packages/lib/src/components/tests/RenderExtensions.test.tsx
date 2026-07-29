@@ -14,6 +14,7 @@ function withContext(showExtensions: boolean, children: React.ReactNode) {
         rootElement: null,
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions,
+        showCodeSamples: true,
       }}
     >
       {children}

@@ -23,6 +23,8 @@ export interface ShowConfig {
   endpoints?: boolean;
   /** Whether to render known x-* spec extensions (see the `x-tensions` catalog). Defaults to true. */
   extensions?: boolean;
+  /** OpenAPI only: per-operation cURL/JavaScript/Python request examples. Defaults to true. */
+  codeSamples?: boolean;
 }
 
 export interface ExpandConfig {
