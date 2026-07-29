@@ -149,7 +149,7 @@ export default function PathOperation({ method, path, op, id, globalSecurity }: 
               key={mediaType}
               schema={media.schema ?? {}}
               label={`Request Body (${mediaType})`}
-              rootName="Body "
+              rootName="Body"
               description={op.requestBody?.description}
             />
           ))}
