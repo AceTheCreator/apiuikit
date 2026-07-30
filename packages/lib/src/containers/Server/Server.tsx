@@ -1,10 +1,9 @@
 import { useEffect, useId, useState } from "react";
 import Markdown from "../../components/Markdown";
-import IconLink from "../../icons/Link";
 import IconShieldCheck from "../../icons/ShieldCheck";
 import IconArrowRight from "../../icons/ArrowRight";
 import IconDownRight from "../../icons/ArrowDown";
-import { ChannelAddress } from "../../components/ChannelAddress";
+import ServerAddressBanner from "../../components/ServerAddressBanner";
 import { Server as ServerInterface } from "../../types/asyncapi/Server";
 import { ServerVariable } from "../../types/asyncapi/ServerVariable";
 import { Tag as TagType } from "../../types/asyncapi/Tag";
@@ -48,11 +47,7 @@ export default function Server({
 
   return (
     <div>
-      <div className="font-bold text-foreground-secondary mt-8 mb-4 bg-neutral-200 border border-neutral-500 p-4 rounded-lg">
-        <div className="border border-dotted border-black p-2 rounded-lg bg-surface">
-          <IconLink className="inline-block mr-1 -mt-1 h-6 text-foreground-muted" />
-          {host && <ChannelAddress address={host} parameters={variableEntries} className="font-bold leading-tight tracking-tight px-0" />}
-        </div>
+      <ServerAddressBanner address={host} variables={variableEntries}>
         <div className="mt-2">
           {tags &&
             tags.map((tag, index) => {
@@ -73,7 +68,7 @@ export default function Server({
               );
             })}
         </div>
-      </div>
+      </ServerAddressBanner>
       <Markdown>{description}</Markdown>
       {security && security.length > 0 && (
         <div id={serverKey ? `server-${serverKey}-security` : undefined}>
