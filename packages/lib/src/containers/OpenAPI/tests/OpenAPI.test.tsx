@@ -57,6 +57,35 @@ describe("OpenAPI", () => {
     expect(document.getElementById("panel-schemas")).not.toBeNull();
   });
 
+  it("renders info-level x-* extensions (x-logo and catalog entries)", async () => {
+    const doc = {
+      ...(exampleDoc as Record<string, unknown>),
+      info: {
+        ...(exampleDoc.info as Record<string, unknown>),
+        "x-logo": "https://example.com/logo.svg",
+        "x-x": "@PetstoreAPI",
+      },
+    };
+    render(<OpenAPI openapi={asDoc(doc)} />);
+
+    const logo = await screen.findByRole("img", { name: "logo" });
+    expect(logo).toHaveAttribute("src", "https://example.com/logo.svg");
+    expect(await screen.findByRole("link", { name: /@PetstoreAPI on X/i })).toBeInTheDocument();
+  });
+
+  it("hides catalog extensions when show.extensions is false", () => {
+    const doc = {
+      ...(exampleDoc as Record<string, unknown>),
+      info: {
+        ...(exampleDoc.info as Record<string, unknown>),
+        "x-x": "@PetstoreAPI",
+      },
+    };
+    render(<OpenAPI openapi={asDoc(doc)} config={{ show: { extensions: false } }} />);
+
+    expect(screen.queryByRole("link", { name: /@PetstoreAPI on X/i })).not.toBeInTheDocument();
+  });
+
   it('self-heals when kind="resolved" is passed a document that still has $refs', () => {
     render(<OpenAPI kind="resolved" openapi={asDoc(exampleDoc)} />);
 
