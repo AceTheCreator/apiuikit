@@ -52,6 +52,6 @@ export const defaultConfig: ConfigInterface = {
     schemas: false,
   },
   sidebar: {
-    useChannelAddressAsIdentifier: false,
+    useChannelAddressAsIdentifier: true,
   },
 };

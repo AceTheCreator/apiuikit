@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import OpenAPIDocumentProvider from "./OpenAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
-import OpenAPINavigation, { OpenAPINavSectionId, OpenAPINavTab } from "../../components/OpenAPINavigation";
+import { OpenAPINavigation, OpenAPINavSectionId, OpenAPINavTab } from "../../components/Navigation";
 import SearchPanel from "../../components/SearchPanel";
 import { useOpenAPISearch } from "../../hooks/useOpenAPISearch";
 import { useSearchResultFocus, ActiveHighlight } from "../../hooks/useSearchResultFocus";
@@ -143,11 +143,11 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
         )}
         {show.sidebar !== false && (
           <OpenAPINavigation
-            info={openapi.info}
             paths={show.endpoints !== false ? openapi.paths : undefined}
             schemas={show.schemas !== false ? openapi.components?.schemas : undefined}
             servers={show.servers !== false ? serverUrls : undefined}
-            activeTab={focusedNavSection}
+            hasInfo={show.info !== false}
+            activeTab={focusedNavSection ?? effectiveTab}
             onTabChange={focusTab}
             onItemSelect={(tab, key) => {
               focusTab(tab);

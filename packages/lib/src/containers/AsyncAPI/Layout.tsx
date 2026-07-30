@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import AsyncAPIDocumentProvider from "./AsyncAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
-import Navigation, { NavSectionId } from "../../components/Navigation";
+import { AsyncAPINavigation, NavSectionId } from "../../components/Navigation";
 import SearchPanel from "../../components/SearchPanel";
 import { useSpecSearch } from "../../hooks/useSpecSearch";
 import { useSearchResultFocus, ActiveHighlight } from "../../hooks/useSearchResultFocus";
@@ -160,8 +160,7 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
           </div>
         )}
         {show.sidebar !== false && (
-          <Navigation
-            info={asyncapi.info}
+          <AsyncAPINavigation
             operations={
               show.operations !== false ? asyncapi.operations : undefined
             }
@@ -179,8 +178,9 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
                 : undefined
             }
             servers={show.servers !== false ? asyncapi.servers : undefined}
+            hasInfo={show.info !== false}
             sidebarConfig={config.sidebar}
-            activeTab={focusedNavSection}
+            activeTab={focusedNavSection ?? effectiveTab}
             onTabChange={focusTab}
             onItemSelect={(tab, key) => {
               focusTab(tab);
