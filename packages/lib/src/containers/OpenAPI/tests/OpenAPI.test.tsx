@@ -14,7 +14,7 @@ describe("OpenAPI", () => {
 
     const panel = within(document.getElementById("panel-endpoints")!);
     expect(panel.getAllByText("/pets").length).toBeGreaterThan(0);
-    expect(panel.getByText("List all pets")).toBeInTheDocument();
+    expect(panel.getByRole("button", { name: "GET /pets" })).toBeInTheDocument();
   });
 
   it("resolves $refs into the schemas tab", () => {
@@ -41,7 +41,7 @@ describe("OpenAPI", () => {
   it("opens an endpoint's detail panel with parameters and responses", () => {
     render(<OpenAPI openapi={asDoc(exampleDoc)} />);
 
-    fireEvent.click(screen.getByText("List all pets").closest("tr")!);
+    fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
     const detail = within(document.getElementById("endpoint-get /pets-detail")!);
     expect(detail.getByText("List all pets")).toBeInTheDocument();
     expect(detail.getByText("limit")).toBeInTheDocument();

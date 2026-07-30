@@ -28,7 +28,6 @@ export default function Paths({ paths, security, securitySchemes, selectedKey = 
   const selectedOp = selected ? paths[selected.path]?.[selected.method] : null;
 
   const rows = endpoints.map(({ key, method, path }) => {
-    const op = paths[path]?.[method];
     const isSelected = selectedKey === key;
     return (
       <tr
@@ -48,9 +47,6 @@ export default function Paths({ paths, security, securitySchemes, selectedKey = 
       >
         <td className="px-6 py-2 max-w-0 w-full group-hover:bg-neutral-50">
           <ChannelAddress address={path} truncate className="text-xs" />
-          {op?.summary && (
-            <p className="text-xs text-foreground-muted truncate">{op.summary}</p>
-          )}
         </td>
         <td className="px-6 py-2 w-28 group-hover:bg-neutral-50">
           <MethodBadge method={method} className="w-20" />
@@ -67,7 +63,7 @@ export default function Paths({ paths, security, securitySchemes, selectedKey = 
       </div>
     </div>
   ) : (
-    selectedKey ?? "Endpoint"
+    selectedKey
   );
 
   const content = (
@@ -91,7 +87,7 @@ export default function Paths({ paths, security, securitySchemes, selectedKey = 
   return (
     <>
       <div className="flex justify-center w-full">
-        <Section title="Endpoints" content={content} stickySideContent={false} />
+        <Section content={content} stickySideContent={false} />
       </div>
 
       <SidePanel isOpen={!!selected} side="right" onClose={() => setSelectedKey(null)} title={panelTitle}>
