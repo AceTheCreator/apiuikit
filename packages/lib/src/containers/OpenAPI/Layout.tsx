@@ -101,6 +101,7 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
       <Paths
         paths={openapi.paths ?? {}}
         security={openapi.security}
+        securitySchemes={openapi.components?.securitySchemes}
         selectedKey={selectedEndpointKey}
         onSelectKey={setSelectedEndpointKey}
       />

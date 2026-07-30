@@ -1,13 +1,15 @@
 import { SchemaTab } from "../../components/schema";
 import Markdown from "../../components/Markdown";
-import MethodBadge from "../../components/MethodBadge";
+import Authorization from "../../components/Authorization";
+import CollapsiblePanel from "../../components/CollapsiblePanel";
 import IconExternalLink from "../../icons/ExternalLink";
-import { ChannelAddress } from "../../components/ChannelAddress";
+import IconShieldCheck from "../../icons/ShieldCheck";
 import { PARAMETER_GROUPS } from "../../contants";
 import {
   HttpMethod,
   OpenAPIOperationData,
   OpenAPIParameterData,
+  OpenAPISecuritySchemeData,
 } from "../../types/openapi";
 
 function ParameterTable({ parameters, location }: { parameters: OpenAPIParameterData[]; location: string }) {
@@ -54,19 +56,43 @@ interface PathOperationProps {
   id: string | null;
   /** Falls back to this when the operation doesn't declare its own `security`. */
   globalSecurity?: Array<Record<string, string[]>>;
+  /** Scheme definitions (`components.securitySchemes`), resolved by name against `security`'s requirements to render the actual scheme details, not just their names. */
+  securitySchemes?: Record<string, OpenAPISecuritySchemeData>;
 }
 
-export default function PathOperation({ method, path, op, id, globalSecurity }: PathOperationProps) {
+export default function PathOperation({ op, id, globalSecurity, securitySchemes }: PathOperationProps) {
   const parameters = op.parameters ?? [];
   const security = op.security ?? globalSecurity ?? [];
   const responses = op.responses ?? {};
   const requestBodyContent = op.requestBody?.content ?? {};
 
+  // The requirement list only names schemes + the scopes *this operation*
+  // asks for; the scheme definitions themselves (auth flows, key placement,
+  // ...) live separately in `components.securitySchemes`. Union the required
+  // scopes per scheme name across whatever OR'd requirement entries
+  // reference it, so Authorization can show what's actually needed here
+  // rather than the scheme's entire scope catalog.
+  const requiredScopesByScheme = new Map<string, string[]>();
+  for (const requirement of security) {
+    for (const [schemeName, scopes] of Object.entries(requirement)) {
+      if (scopes.length === 0) continue;
+      const existing = requiredScopesByScheme.get(schemeName) ?? [];
+      requiredScopesByScheme.set(schemeName, Array.from(new Set([...existing, ...scopes])));
+    }
+  }
+
+  const resolvedSchemes = Array.from(new Set(security.flatMap((requirement) => Object.keys(requirement))))
+    .map((name) => {
+      const scheme = securitySchemes?.[name];
+      if (!scheme) return null;
+      const requiredScopes = requiredScopesByScheme.get(name);
+      return requiredScopes ? { ...scheme, requiredScopes } : scheme;
+    })
+    .filter((scheme): scheme is OpenAPISecuritySchemeData => !!scheme);
+
   return (
     <div className="space-y-6" id={`endpoint-${id}-detail`}>
       <div className="flex items-center gap-2">
-        <MethodBadge method={method} />
-        <ChannelAddress address={path} className="text-sm font-mono" />
         {op.deprecated && (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
             Deprecated
@@ -105,20 +131,25 @@ export default function PathOperation({ method, path, op, id, globalSecurity }: 
           <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
             Authorization
           </p>
-          <div className="flex flex-wrap gap-1.5">
-            {security.flatMap((requirement, i) =>
-              Object.entries(requirement).map(([schemeName, scopes]) => (
-                <span
-                  key={`${i}-${schemeName}`}
-                  className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-neutral-100 text-foreground-secondary"
-                  title={scopes.length ? `Scopes: ${scopes.join(", ")}` : undefined}
-                >
-                  {schemeName}
-                  {scopes.length > 0 ? ` (${scopes.join(", ")})` : ""}
+
+
+          {resolvedSchemes.length > 0 && (
+            <CollapsiblePanel
+              className="mt-3"
+              trigger={
+                <span className="flex items-center gap-2 text-xs font-normal text-foreground-muted">
+                  <IconShieldCheck className="h-4 w-4 text-foreground-muted" />
+                  <span className="bg-neutral-100 border border-border rounded-full px-2 py-0.5">
+                    {resolvedSchemes.length}
+                  </span>
                 </span>
-              )),
-            )}
-          </div>
+              }
+            >
+              <div className="px-4 py-2 border-t border-border">
+                <Authorization securities={resolvedSchemes} />
+              </div>
+            </CollapsiblePanel>
+          )}
         </div>
       )}
 

@@ -3,18 +3,19 @@ import Section from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
 import { ChannelAddress } from "../../components/ChannelAddress";
 import MethodBadge from "../../components/MethodBadge";
-import { flattenEndpoints, OpenAPIPathItemData } from "../../types/openapi";
+import { flattenEndpoints, OpenAPIPathItemData, OpenAPISecuritySchemeData } from "../../types/openapi";
 import PathOperation from "./PathOperation";
 
 interface PathsProps {
   paths: Record<string, OpenAPIPathItemData | undefined>;
   security?: Array<Record<string, string[]>>;
+  securitySchemes?: Record<string, OpenAPISecuritySchemeData>;
   selectedKey?: string | null;
   onSelectKey?: (key: string | null) => void;
   focusSection?: string | null;
 }
 
-export default function Paths({ paths, security, selectedKey = null, onSelectKey }: PathsProps) {
+export default function Paths({ paths, security, securitySchemes, selectedKey = null, onSelectKey }: PathsProps) {
   const setSelectedKey = (key: string | null) => onSelectKey?.(key);
 
   const endpoints = useMemo(() => flattenEndpoints(paths), [paths]);
@@ -101,6 +102,7 @@ export default function Paths({ paths, security, selectedKey = null, onSelectKey
             op={selectedOp}
             id={selected.key}
             globalSecurity={security}
+            securitySchemes={securitySchemes}
           />
         )}
       </SidePanel>

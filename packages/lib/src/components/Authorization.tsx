@@ -2,18 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Tabs from "./Tabs";
 import Markdown from "./Markdown";
-import { UserPassword } from "../types/asyncapi/UserPassword";
-import { ApiKey as ApiKeyType } from "../types/asyncapi/ApiKey";
-import { X509 } from "../types/asyncapi/X509";
-import { SymmetricEncryption } from "../types/asyncapi/SymmetricEncryption";
-import { AsymmetricEncryption } from "../types/asyncapi/AsymmetricEncryption";
-import { BearerHttpSecurityScheme } from "../types/asyncapi/BearerHttpSecurityScheme";
-import { ApiKeyHttpSecurityScheme } from "../types/asyncapi/ApiKeyHttpSecurityScheme";
-import { Oauth2Flows } from "../types/asyncapi/Oauth2Flows";
-import { OpenIdConnect } from "../types/asyncapi/OpenIdConnect";
-import { SaslPlainSecurityScheme } from "../types/asyncapi/SaslPlainSecurityScheme";
-import { SaslScramSecurityScheme } from "../types/asyncapi/SaslScramSecurityScheme";
-import { SaslGssapiSecurityScheme } from "../types/asyncapi/SaslGssapiSecurityScheme";
 import { formatArrayToCodeString } from "../helpers/formatEnumDescription";
 import {
   AUTHORIZATION_CODE_DESCRIPTION,
@@ -26,24 +14,54 @@ import {
   PASSWORD_TEXT,
 } from "../contants";
 
-type SecurityScheme =
-  | UserPassword
-  | ApiKeyType
-  | X509
-  | SymmetricEncryption
-  | AsymmetricEncryption
-  | BearerHttpSecurityScheme
-  | ApiKeyHttpSecurityScheme
-  | Oauth2Flows
-  | OpenIdConnect
-  | SaslPlainSecurityScheme
-  | SaslScramSecurityScheme
-  | SaslGssapiSecurityScheme;
+// Structurally compatible with both AsyncAPI's several security scheme types
+// (UserPassword, ApiKey, X509, ..., BearerHttpSecurityScheme,
+// ApiKeyHttpSecurityScheme, Oauth2Flows, OpenIdConnect, the Sasl* schemes) and
+// OpenAPI's SecuritySchemeObject union — each spec's actual scheme is a
+// superset of what's read here, so this component and its sub-components
+// work for either without callers casting. The two specs differ in a few
+// spots handled explicitly below rather than papered over:
+//  - `in`: AsyncAPI's broker-style ApiKey uses "user"|"password" (which
+//    connection field carries the key); OpenAPI's ApiKey (and AsyncAPI's own
+//    httpApiKey) uses "header"|"query"|"cookie" (which request parameter
+//    does) — genuinely different placements, not just a naming difference.
+//  - OAuth2 flow scopes: AsyncAPI names the field `availableScopes`, OpenAPI
+//    names it `scopes` — read as a fallback chain.
+// Not `extends Record<string, unknown>` — this component only ever reads
+// named fields, never a dynamic string key, and requiring an index signature
+// would reject named interfaces like openapi-types' `HttpSecurityScheme`
+// (real security scheme objects, no index signature of their own) even
+// though they satisfy every field below structurally.
+export interface SecuritySchemeData {
+  type: string;
+  description?: string;
+  in?: string;
+  /** The header/query/cookie parameter name — OpenAPI's apiKey / AsyncAPI's httpApiKey. */
+  name?: string;
+  /** The `http` scheme, e.g. "bearer" | "basic". */
+  scheme?: string;
+  bearerFormat?: string;
+  openIdConnectUrl?: string;
+  scopes?: string[];
+  /** The scopes a specific security *requirement* actually asks for (set by the caller when it's resolving one operation's requirement, not the scheme definition itself) — preferred over the scheme's full scope catalog when present, since a requirement is usually only asking for a subset of it. */
+  requiredScopes?: string[];
+  flows?: Record<
+    string,
+    {
+      authorizationUrl?: string;
+      tokenUrl?: string;
+      refreshUrl?: string;
+      availableScopes?: string[] | Record<string, string>;
+      scopes?: Record<string, string>;
+    }
+  >;
+}
 
 const tabs = [
   { id: "userPassword", name: "User/Password" },
   { id: "oauth2", name: "OAuth2" },
   { id: "apiKey", name: "API key" },
+  { id: "bearer", name: "Bearer Token" },
   { id: "openIdConnect", name: "OpenID" },
   { id: "X509", name: "X.509 certificate" },
   { id: "scramSha256", name: "SASL" },
@@ -52,21 +70,34 @@ const tabs = [
   { id: "gssapi", name: "SASL" },
 ];
 
+/**
+ * Which tab a scheme belongs to. Most types map onto a tab id directly
+ * (case-insensitively) — `http` and AsyncAPI's `httpApiKey` are the two
+ * spots that need translating onto an existing (or the new `bearer`) tab.
+ */
+function tabIdFor(scheme: SecuritySchemeData): string {
+  const type = scheme.type?.toLowerCase();
+  if (type === "httpapikey") return "apiKey";
+  if (type === "http") {
+    const httpScheme = scheme.scheme?.toLowerCase();
+    if (httpScheme === "basic") return "userPassword";
+    if (httpScheme?.includes("mutual") || httpScheme?.includes("tls")) return "X509";
+    return "bearer";
+  }
+  return scheme.type;
+}
+
 interface Props {
-  securities: SecurityScheme[];
+  securities: SecuritySchemeData[];
 }
 
 export default function Authorization({ securities }: Props) {
   // Security scheme $refs are already inlined by resolveDocument /
-  // @asyncapi/parser before the document reaches any component.
+  // @asyncapi/parser / @scalar/openapi-parser before the document reaches any component.
   const filteredTabs = useMemo(() => {
-    return tabs.filter((tab) => {
-      const tabId = tab.id;
-      return securities?.some(
-        (security: SecurityScheme) =>
-          security.type.toLowerCase() === tabId.toLowerCase()
-      );
-    });
+    return tabs.filter((tab) =>
+      securities?.some((security) => tabIdFor(security).toLowerCase() === tab.id.toLowerCase()),
+    );
   }, [securities]);
   const [authTab, setAuthTab] = useState(
     filteredTabs.length > 0 ? filteredTabs[0].id : null
@@ -78,11 +109,11 @@ export default function Authorization({ securities }: Props) {
     }
   }, [filteredTabs]);
 
-  function filteredType<T extends SecurityScheme>(type: string): T {
-    return securities.find((security) => security.type === type) as T;
+  function filteredType<T extends SecuritySchemeData>(tabId: string): T {
+    return securities.find((security) => tabIdFor(security).toLowerCase() === tabId.toLowerCase()) as T;
   }
 
-  const activeDescription = authTab ? filteredType<SecurityScheme>(authTab)?.description : undefined;
+  const activeDescription = authTab ? filteredType<SecuritySchemeData>(authTab)?.description : undefined;
 
   return (
     <div>
@@ -91,7 +122,7 @@ export default function Authorization({ securities }: Props) {
       )}
       <div className="py-4 prose text-foreground-muted">
         {authTab === "userPassword" && (
-          <AuthDescription>
+          <AuthDescription description={activeDescription}>
             You have to{" "}
             <strong className="text-foreground-secondary">
               provide user and password
@@ -109,7 +140,7 @@ export default function Authorization({ securities }: Props) {
           </AuthDescription>
         )}
         {authTab === "gssapi" && (
-          <AuthDescription>
+          <AuthDescription description={activeDescription}>
             You have to{" "}
             <strong className="text-foreground-secondary">
               authenticate using Kerberos (GSSAPI)
@@ -118,7 +149,7 @@ export default function Authorization({ securities }: Props) {
           </AuthDescription>
         )}
         {authTab === "X509" && (
-          <AuthDescription>
+          <AuthDescription description={activeDescription}>
             You have to{" "}
             <strong className="text-foreground-secondary">
               download the certificate file
@@ -126,14 +157,17 @@ export default function Authorization({ securities }: Props) {
             from the service provider to connect to this server.
           </AuthDescription>
         )}
+        {authTab === "bearer" && (
+          <Bearer security={filteredType<SecuritySchemeData>("bearer")} />
+        )}
         {authTab === "apiKey" && (
-          <ApiKey security={filteredType<ApiKeyType>("apiKey")} />
+          <ApiKey security={filteredType<SecuritySchemeData>("apiKey")} />
         )}
         {authTab === "openIdConnect" && (
-          <OpenID security={filteredType<OpenIdConnect>("openIdConnect")} />
+          <OpenID security={filteredType<SecuritySchemeData>("openIdConnect")} />
         )}
         {authTab === "oauth2" && (
-          <OAuth2 security={filteredType<Oauth2Flows>("oauth2")} />
+          <OAuth2 security={filteredType<SecuritySchemeData>("oauth2")} />
         )}
       </div>
     </div>
@@ -151,10 +185,41 @@ const AuthDescription = ({ description, children }: { description?: string; chil
   return <span>{children}</span>;
 };
 
-export const ApiKey = ({ security }: { security: ApiKeyType }) => {
+export const Bearer = ({ security }: { security: SecuritySchemeData }) => {
+  if (security?.description) return <Markdown>{security.description}</Markdown>;
+
+  return (
+    <span>
+      You have to{" "}
+      <strong className="text-foreground-secondary">
+        provide a bearer token
+      </strong>{" "}
+      in the <code>Authorization</code> header
+      {security?.bearerFormat ? <> (format: {security.bearerFormat})</> : null} to connect to this server.
+    </span>
+  );
+};
+
+export const ApiKey = ({ security }: { security: SecuritySchemeData }) => {
   if (security?.description) return <Markdown>{security.description}</Markdown>;
 
   const keyLocation = security?.in;
+
+  // OpenAPI's apiKey / AsyncAPI's httpApiKey — the key travels as an actual
+  // HTTP request parameter, not as a broker connection credential.
+  if (keyLocation === "header" || keyLocation === "query" || keyLocation === "cookie") {
+    return (
+      <span>
+        You have to{" "}
+        <strong className="text-foreground-secondary">
+          provide your API key in the {keyLocation} parameter
+          {security?.name ? <> named <code>{security.name}</code></> : null}
+        </strong>{" "}
+        to connect to this server.
+      </span>
+    );
+  }
+
   if (keyLocation === "password") {
     return (
       <span>
@@ -177,7 +242,12 @@ export const ApiKey = ({ security }: { security: ApiKeyType }) => {
   );
 };
 
-export const OpenID = ({ security }: { security: OpenIdConnect }) => {
+export const OpenID = ({ security }: { security: SecuritySchemeData }) => {
+  // Prefer the scopes this specific requirement asks for over the scheme's
+  // own catalog — OpenAPI's OpenID scheme doesn't even carry its own scopes
+  // list, so `requiredScopes` (set by the caller resolving one operation's
+  // requirement) is often the only scope info available at all here.
+  const scopesValue = security.requiredScopes?.length ? security.requiredScopes : security.scopes;
   return (
     <>
       {security?.description ? (
@@ -192,11 +262,13 @@ export const OpenID = ({ security }: { security: OpenIdConnect }) => {
         </a>
         .
       </p>
-      {security?.scopes && (
+      {scopesValue && scopesValue.length > 0 && (
         <div className="py-4 @sm:py-5 @sm:grid @sm:grid-cols-3 items-center @sm:gap-4">
-          <dt className="text-sm font-medium text-foreground-muted">Scopes</dt>
+          <dt className="text-sm font-medium text-foreground-muted">
+            {security.requiredScopes?.length ? "Required scopes" : "Scopes"}
+          </dt>
           <dd className="mt-1 text-sm text-foreground @sm:mt-0 @sm:col-span-2">
-            <code>{formatArrayToCodeString(security.scopes)}</code>
+            <code>{formatArrayToCodeString(scopesValue)}</code>
           </dd>
         </div>
       )}
@@ -204,7 +276,7 @@ export const OpenID = ({ security }: { security: OpenIdConnect }) => {
   );
 };
 
-export const OAuth2 = ({ security }: { security: Oauth2Flows }) => {
+export const OAuth2 = ({ security }: { security: SecuritySchemeData }) => {
   const flows = security?.flows;
   return (
     <>
@@ -231,6 +303,14 @@ export const OAuth2 = ({ security }: { security: Oauth2Flows }) => {
               description = AUTHORIZATION_CODE_DESCRIPTION;
               break;
           }
+          // Prefer the scopes this specific requirement asks for over the
+          // flow's full catalog — a requirement is usually only asking for a
+          // subset of what the scheme makes available. AsyncAPI names the
+          // catalog field `availableScopes`, OpenAPI names it `scopes`.
+          const scopesValue = security.requiredScopes?.length
+            ? security.requiredScopes
+            : flowData.availableScopes ?? flowData.scopes;
+          const scopesLabel = security.requiredScopes?.length ? "Required scopes" : "Available scopes";
           return (
             <div key={flow}>
               <div>
@@ -279,16 +359,16 @@ export const OAuth2 = ({ security }: { security: Oauth2Flows }) => {
                       </dd>
                     </div>
                   )}
-                  {flowData.availableScopes && (
+                  {scopesValue && (
                     <div className="py-4 @sm:py-5 @sm:grid @sm:grid-cols-3 @sm:gap-4 items-center">
                       <dt className="text-sm font-medium text-foreground-muted">
-                        Scopes
+                        {scopesLabel}
                       </dt>
                       <dd className="mt-1 text-sm text-foreground @sm:mt-0 @sm:col-span-2">
                         <div className="flex flex-wrap gap-1.5">
-                          {(Array.isArray(flowData.availableScopes)
-                            ? flowData.availableScopes
-                            : Object.keys(flowData.availableScopes)
+                          {(Array.isArray(scopesValue)
+                            ? scopesValue
+                            : Object.keys(scopesValue)
                           ).map((scope: string) => (
                             <code
                               key={scope}
