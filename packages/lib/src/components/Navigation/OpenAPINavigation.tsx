@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { ChannelAddress } from "../ChannelAddress";
+import MethodBadge from "../MethodBadge";
 import { flattenEndpoints, FlatEndpoint, OpenAPIPathItemData } from "../../types/openapi";
-import { METHOD_BADGE_CLASSNAME } from "../../containers/Path/PathOperation";
 import Navigation, { defineNavSection, ErasedNavSection } from "./Navigation";
 import IconBookOpen from "../../icons/BookOpen";
 import IconServer from "../../icons/Server";
@@ -92,11 +92,7 @@ export default function OpenAPINavigation({
       targetId: (endpoint) => `endpoint-${endpoint.key}`,
       renderItem: (endpoint) => (
         <>
-          <span
-            className={`shrink-0 text-[10px] font-medium uppercase px-1.5 py-0.5 rounded ${METHOD_BADGE_CLASSNAME[endpoint.method]}`}
-          >
-            {endpoint.method}
-          </span>
+          <MethodBadge method={endpoint.method} size="xs" className="shrink-0" />
           <ChannelAddress address={endpoint.path} className="text-xs bg-transparent p-0" />
         </>
       ),

@@ -1,30 +1,14 @@
 import { SchemaTab } from "../../components/schema";
 import Markdown from "../../components/Markdown";
+import MethodBadge from "../../components/MethodBadge";
 import IconExternalLink from "../../icons/ExternalLink";
 import { ChannelAddress } from "../../components/ChannelAddress";
+import { PARAMETER_GROUPS } from "../../contants";
 import {
   HttpMethod,
   OpenAPIOperationData,
   OpenAPIParameterData,
 } from "../../types/openapi";
-
-export const METHOD_BADGE_CLASSNAME: Record<HttpMethod, string> = {
-  get: "bg-blue-100 text-blue-800",
-  post: "bg-green-100 text-green-800",
-  put: "bg-yellow-100 text-yellow-800",
-  patch: "bg-orange-100 text-orange-800",
-  delete: "bg-red-100 text-red-800",
-  options: "bg-neutral-100 text-foreground-secondary",
-  head: "bg-neutral-100 text-foreground-secondary",
-  trace: "bg-neutral-100 text-foreground-secondary",
-};
-
-const PARAMETER_GROUPS: Array<{ location: OpenAPIParameterData["in"]; label: string }> = [
-  { location: "path", label: "Path Parameters" },
-  { location: "query", label: "Query Parameters" },
-  { location: "header", label: "Header Parameters" },
-  { location: "cookie", label: "Cookie Parameters" },
-];
 
 function ParameterTable({ parameters, location }: { parameters: OpenAPIParameterData[]; location: string }) {
   const rows = parameters.filter((param) => param.in === location);
@@ -81,11 +65,7 @@ export default function PathOperation({ method, path, op, id, globalSecurity }: 
   return (
     <div className="space-y-6" id={`endpoint-${id}-detail`}>
       <div className="flex items-center gap-2">
-        <span
-          className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium uppercase ${METHOD_BADGE_CLASSNAME[method]}`}
-        >
-          {method}
-        </span>
+        <MethodBadge method={method} />
         <ChannelAddress address={path} className="text-sm font-mono" />
         {op.deprecated && (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">

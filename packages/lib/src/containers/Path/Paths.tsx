@@ -2,8 +2,9 @@ import { useMemo } from "react";
 import Section from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
 import { ChannelAddress } from "../../components/ChannelAddress";
+import MethodBadge from "../../components/MethodBadge";
 import { flattenEndpoints, OpenAPIPathItemData } from "../../types/openapi";
-import PathOperation, { METHOD_BADGE_CLASSNAME } from "./PathOperation";
+import PathOperation from "./PathOperation";
 
 interface PathsProps {
   paths: Record<string, OpenAPIPathItemData | undefined>;
@@ -51,11 +52,7 @@ export default function Paths({ paths, security, selectedKey = null, onSelectKey
           )}
         </td>
         <td className="px-6 py-2 w-28 group-hover:bg-neutral-50">
-          <div
-            className={`inline-flex w-20 items-center justify-center px-2 py-1 text-center rounded-md text-xs font-medium uppercase ${METHOD_BADGE_CLASSNAME[method]}`}
-          >
-            {method}
-          </div>
+          <MethodBadge method={method} className="w-20" />
         </td>
       </tr>
     );
@@ -63,11 +60,7 @@ export default function Paths({ paths, security, selectedKey = null, onSelectKey
 
   const panelTitle = selected ? (
     <div className="flex items-center gap-2 min-w-0">
-      <span
-        className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium uppercase ${METHOD_BADGE_CLASSNAME[selected.method]}`}
-      >
-        {selected.method}
-      </span>
+      <MethodBadge method={selected.method} />
       <div className="min-w-0 flex-1 overflow-hidden">
         <ChannelAddress address={selected.path} className="text-xs" />
       </div>

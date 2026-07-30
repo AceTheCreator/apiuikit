@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { Operation } from "../../types/asyncapi/Operation";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
-import { OperationAction } from "../../types/asyncapi/OperationAction";
 import { SideBarConfig } from "../../config/config";
 import { ChannelAddress } from "../ChannelAddress";
+import MethodBadge from "../MethodBadge";
 import { Parameter } from "../../types/asyncapi/Parameter";
 import Navigation, { defineNavSection, ErasedNavSection } from "./Navigation";
 import IconBookOpen from "../../icons/BookOpen";
@@ -111,21 +111,9 @@ export default function AsyncAPINavigation({
           return <ChannelAddress address={channel.address} parameters={channel.parameters} className="text-xs bg-transparent p-0" />;
         }
 
-        const action = operations[key]?.action;
-        const actionColor =
-          action === OperationAction.SEND
-            ? "bg-green-100 text-green-700"
-            : action === OperationAction.RECEIVE
-            ? "bg-blue-100 text-blue-700"
-            : null;
-
         return (
           <>
-            {actionColor && (
-              <span className={`shrink-0 text-[10px] font-medium uppercase px-1.5 py-0.5 rounded ${actionColor}`}>
-                {action}
-              </span>
-            )}
+            <MethodBadge method={operations[key]?.action} size="xs" className="shrink-0" />
             <span className="truncate">{key}</span>
           </>
         );
