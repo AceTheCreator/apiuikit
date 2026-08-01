@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import PathOperation from "../PathOperation";
 import { DocumentContext } from "../../../contexts";
@@ -107,5 +107,50 @@ describe("PathOperation security", () => {
     expect(screen.getByText("read:pets")).toBeInTheDocument();
     expect(screen.queryByText("write:pets")).not.toBeInTheDocument();
     expect(screen.getByText("Required scopes")).toBeInTheDocument();
+  });
+});
+
+describe("PathOperation responses", () => {
+  const opWithResponses: OpenAPIOperationData = {
+    summary: "List pets",
+    responses: {
+      "200": {
+        description: "A list of pets",
+        content: { "application/json": { schema: { type: "array", items: {} } } },
+      },
+      "404": {
+        description: "No pets found",
+        content: { "application/json": { schema: { type: "object" } } },
+      },
+    },
+  };
+
+  it("shows the first response's content by default, as a tab per status", () => {
+    render(withContext(<PathOperation method="get" path="/pets" op={opWithResponses} id="get /pets" />));
+
+    expect(screen.getByRole("button", { name: "200" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "404" })).toBeInTheDocument();
+    expect(screen.getByText("A list of pets")).toBeInTheDocument();
+    expect(screen.queryByText("No pets found")).not.toBeInTheDocument();
+  });
+
+  it("switches to the other status's content when its tab is clicked", () => {
+    render(withContext(<PathOperation method="get" path="/pets" op={opWithResponses} id="get /pets" />));
+
+    fireEvent.click(screen.getByRole("button", { name: "404" }));
+
+    expect(screen.getByText("No pets found")).toBeInTheDocument();
+    expect(screen.queryByText("A list of pets")).not.toBeInTheDocument();
+  });
+
+  it("only ever shows one status's content at a time (not every response stacked as its own card)", () => {
+    const { container } = render(
+      withContext(<PathOperation method="get" path="/pets" op={opWithResponses} id="get /pets" />),
+    );
+
+    // Both status labels appear once each — as tab buttons — with no second,
+    // stacked-card copy of either elsewhere in the tree.
+    expect(within(container).getAllByText("200")).toHaveLength(1);
+    expect(within(container).getAllByText("404")).toHaveLength(1);
   });
 });

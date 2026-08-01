@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { SchemaTab } from "../../components/schema";
 import Markdown from "../../components/Markdown";
 import Authorization from "../../components/Authorization";
@@ -9,8 +10,65 @@ import {
   HttpMethod,
   OpenAPIOperationData,
   OpenAPIParameterData,
+  OpenAPIResponseData,
   OpenAPISecuritySchemeData,
 } from "../../types/openapi";
+
+function statusBadgeClassName(status: string): string {
+  if (status.startsWith("2")) return "bg-green-100 text-green-800";
+  if (status.startsWith("4") || status.startsWith("5")) return "bg-red-100 text-red-800";
+  return "bg-neutral-100 text-foreground-secondary";
+}
+
+// Mirrors Reply's own request/reply tab strip (folder-style tabs sitting
+// directly on top of a shared content panel) — one tab per response status,
+// instead of stacking every status as its own bordered card.
+function ResponseTabs({ responses }: { responses: Record<string, OpenAPIResponseData> }) {
+  const statuses = Object.keys(responses);
+  const [status, setStatus] = useState(statuses[0]);
+  const response = responses[status];
+  const mediaTypes = Object.entries(response?.content ?? {});
+
+  return (
+    <div>
+      <div className="flex items-end gap-0.5 -ml-2 flex-wrap">
+        {statuses.map((s) => (
+          <button
+            key={s}
+            onClick={() => setStatus(s)}
+            className={`px-3 py-1.5 rounded-t-md transition-colors ${
+              status === s
+                ? "bg-neutral-100 border border-b-0 border-border"
+                : "hover:bg-neutral-50"
+            }`}
+          >
+            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-mono ${statusBadgeClassName(s)}`}>
+              {s}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <div className="-mx-5 px-5 py-4 bg-neutral-100 border-t border-border min-h-32">
+        {response?.description && (
+          <p className="text-sm text-foreground-secondary mb-3">{response.description}</p>
+        )}
+        {mediaTypes.length > 0 ? (
+          mediaTypes.map(([mediaType, media]) => (
+            <SchemaTab
+              key={mediaType}
+              schema={media.schema ?? {}}
+              label={`Body (${mediaType})`}
+              rootName="Body"
+            />
+          ))
+        ) : (
+          <p className="text-xs text-foreground-muted italic">No response body.</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function ParameterTable({ parameters, location }: { parameters: OpenAPIParameterData[]; location: string }) {
   const rows = parameters.filter((param) => param.in === location);
@@ -170,42 +228,7 @@ export default function PathOperation({ op, id, globalSecurity, securitySchemes 
       {Object.keys(responses).length > 0 && (
         <div>
           <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">Responses</p>
-          <div className="space-y-4">
-            {Object.entries(responses).map(([status, response]) => {
-              const content = response.content ?? {};
-              const mediaTypes = Object.entries(content);
-              return (
-                <div key={status} className="rounded-lg border border-border p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-mono ${
-                        status.startsWith("2")
-                          ? "bg-green-100 text-green-800"
-                          : status.startsWith("4") || status.startsWith("5")
-                            ? "bg-red-100 text-red-800"
-                            : "bg-neutral-100 text-foreground-secondary"
-                      }`}
-                    >
-                      {status}
-                    </span>
-                    {response.description && (
-                      <span className="text-sm text-foreground-secondary">{response.description}</span>
-                    )}
-                  </div>
-                  {mediaTypes.length > 0 ? (
-                    mediaTypes.map(([mediaType, media]) => (
-                      <SchemaTab
-                        key={mediaType}
-                        schema={media.schema ?? {}}
-                        label={`Body (${mediaType})`}
-                        rootName="Body"
-                      />
-                    ))
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
+          <ResponseTabs responses={responses} />
         </div>
       )}
     </div>
