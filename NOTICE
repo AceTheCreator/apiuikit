@@ -1,0 +1,17 @@
+apiuikit
+Copyright 2026 Azeez Elegbede
+
+This product includes software developed under the Apache License,
+Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0).
+
+This product includes code ported from the following Apache-2.0 licensed
+works, Copyright the AsyncAPI Initiative:
+
+  - @asyncapi/avro-schema-parser
+    https://github.com/asyncapi/avro-schema-parser
+
+  - @asyncapi/protobuf-schema-parser
+    https://github.com/asyncapi/protobuf-schema-parser
+
+See packages/lib/THIRD_PARTY_NOTICES.md for details on what was ported and
+the modifications made.
