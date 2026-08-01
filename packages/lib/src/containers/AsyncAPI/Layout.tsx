@@ -3,10 +3,12 @@ import AsyncAPIDocumentProvider from "./AsyncAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
 import Navigation, { NavSectionId } from "../../components/Navigation";
 import SearchPanel from "../../components/SearchPanel";
+import MarkdownExportMenu from "../../components/MarkdownExportMenu";
 import { useSpecSearch } from "../../hooks/useSpecSearch";
 import { useSearchResultFocus, ActiveHighlight } from "../../hooks/useSearchResultFocus";
 import { SearchEntry } from "../../helpers/searchIndex";
 import { clearSearchHighlight } from "../../helpers/textHighlight";
+import { asyncApiToMarkdown } from "../../helpers/toMarkdown";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
 import { ConfigInterface } from "../../config";
 import IconMessage from "../../icons/Message";
@@ -114,6 +116,7 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
         selectedKey={selectedOperationKey}
         onSelectKey={setSelectedOperationKey}
         focusSection={focusSection}
+        showCopyMarkdown={show.copyMarkdown !== false}
       />
     ) : effectiveTab === "messages" ? (
       <Messages
@@ -142,6 +145,12 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
             onQueryChange={setSearchQuery}
             results={searchResults}
             onSelectResult={handleSearchSelect}
+          />
+        )}
+        {show.copyMarkdown !== false && (
+          <MarkdownExportMenu
+            serialize={(deref) => asyncApiToMarkdown(asyncapi, deref)}
+            leftOffset={108}
           />
         )}
         {show.info !== false && (

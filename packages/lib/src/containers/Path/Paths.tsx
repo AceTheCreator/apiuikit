@@ -2,7 +2,10 @@ import { useMemo } from "react";
 import Section from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
 import { ChannelAddress } from "../../components/ChannelAddress";
-import { flattenEndpoints, OpenAPIPathItemData } from "../../types/openapi";
+import CopyMarkdownButton from "../../components/CopyMarkdownButton";
+import { useAsyncAPIDocument } from "../../contexts";
+import { flattenEndpoints, OpenAPIDocumentData, OpenAPIPathItemData } from "../../types/openapi";
+import { openApiEndpointToMarkdown } from "../../helpers/toMarkdown";
 import PathOperation, { METHOD_BADGE_CLASSNAME } from "./PathOperation";
 
 interface PathsProps {
@@ -11,10 +14,13 @@ interface PathsProps {
   selectedKey?: string | null;
   onSelectKey?: (key: string | null) => void;
   focusSection?: string | null;
+  showCopyMarkdown?: boolean;
 }
 
-export default function Paths({ paths, security, selectedKey = null, onSelectKey }: PathsProps) {
+export default function Paths({ paths, security, selectedKey = null, onSelectKey, showCopyMarkdown }: PathsProps) {
   const setSelectedKey = (key: string | null) => onSelectKey?.(key);
+  const { document, deref } = useAsyncAPIDocument();
+  const doc = document as OpenAPIDocumentData;
 
   const endpoints = useMemo(() => flattenEndpoints(paths), [paths]);
 
@@ -100,7 +106,20 @@ export default function Paths({ paths, security, selectedKey = null, onSelectKey
         <Section title="Endpoints" content={content} stickySideContent={false} />
       </div>
 
-      <SidePanel isOpen={!!selected} side="right" onClose={() => setSelectedKey(null)} title={panelTitle}>
+      <SidePanel
+        isOpen={!!selected}
+        side="right"
+        onClose={() => setSelectedKey(null)}
+        title={panelTitle}
+        headerActions={
+          selected && selectedOp && showCopyMarkdown ? (
+            <CopyMarkdownButton
+              getMarkdown={() => openApiEndpointToMarkdown(doc, selected.method, selected.path, deref)}
+              label="Copy endpoint for LLM"
+            />
+          ) : undefined
+        }
+      >
         {selected && selectedOp && (
           <PathOperation
             method={selected.method}

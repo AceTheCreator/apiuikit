@@ -72,6 +72,10 @@ a {
     stop-color: var(--color-secondary-light);
   }
 
+/* Base offsets for the floating toggle buttons that share this class: sidebar
+   at left:12px (default below), search at left:60px (12 + 40 width + 8 gap —
+   see SearchPanel.tsx), copy-as-markdown at left:108px (60 + 40 + 8 — see
+   MarkdownExportMenu.tsx). Each keeps them side by side instead of overlapping. */
 .panel-toggle-btn {
   position: absolute;
   top: 10px;

@@ -3,10 +3,12 @@ import OpenAPIDocumentProvider from "./OpenAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
 import OpenAPINavigation, { OpenAPINavSectionId, OpenAPINavTab } from "../../components/OpenAPINavigation";
 import SearchPanel from "../../components/SearchPanel";
+import MarkdownExportMenu from "../../components/MarkdownExportMenu";
 import { useOpenAPISearch } from "../../hooks/useOpenAPISearch";
 import { useSearchResultFocus, ActiveHighlight } from "../../hooks/useSearchResultFocus";
 import { SearchEntry } from "../../helpers/searchIndex";
 import { clearSearchHighlight } from "../../helpers/textHighlight";
+import { openApiToMarkdown } from "../../helpers/toMarkdown";
 import { ConfigInterface } from "../../config";
 import IconOperation from "../../icons/Operation";
 import IconSchema from "../../icons/Schema";
@@ -103,6 +105,7 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
         security={openapi.security}
         selectedKey={selectedEndpointKey}
         onSelectKey={setSelectedEndpointKey}
+        showCopyMarkdown={show.copyMarkdown !== false}
       />
     ) : effectiveTab === "schemas" ? (
       <Schemas
@@ -125,6 +128,12 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
             onQueryChange={setSearchQuery}
             results={searchResults}
             onSelectResult={handleSearchSelect}
+          />
+        )}
+        {show.copyMarkdown !== false && (
+          <MarkdownExportMenu
+            serialize={(deref) => openApiToMarkdown(openapi, deref)}
+            leftOffset={108}
           />
         )}
         {show.info !== false && (
