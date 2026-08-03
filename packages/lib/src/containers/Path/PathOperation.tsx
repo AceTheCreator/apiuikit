@@ -10,6 +10,7 @@ import IconArrowDown from "../../icons/ArrowDown";
 import { PARAMETER_GROUPS } from "../../contants";
 import {
   HttpMethod,
+  OpenAPIHeaderData,
   OpenAPIMediaTypeData,
   OpenAPIOperationData,
   OpenAPIParameterData,
@@ -90,11 +91,21 @@ function ResponseTabs({ responses }: { responses: Record<string, OpenAPIResponse
   const mediaTypes = Object.keys(response?.content ?? {});
   const [selectedMediaType, setSelectedMediaType] = useState(mediaTypes[0]);
   const activeMedia = selectedMediaType ? response?.content?.[selectedMediaType] : undefined;
+  const headers = (response?.headers ?? {}) as Record<string, OpenAPIHeaderData>;
+  const [section, setSection] = useState<"body" | "headers">("body");
 
-  // Different statuses can declare entirely different content types, so the
-  // selection can't just carry over when switching status.
+  const hasBody = mediaTypes.length > 0 && !!activeMedia;
+  const hasHeaders = Object.keys(headers).length > 0;
+  // Same rule as MessageDetails' Payload/Headers switch: the tab strip only
+  // appears when both halves exist, and a lone half renders on its own.
+  const showSectionTabs = hasBody && hasHeaders;
+  const currentSection = !hasBody ? "headers" : !hasHeaders ? "body" : section;
+
+  // Different statuses can declare entirely different content types (and may
+  // not have headers at all), so neither selection can carry over on switch.
   useEffect(() => {
     setSelectedMediaType(Object.keys(response?.content ?? {})[0]);
+    setSection("body");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
@@ -122,48 +133,86 @@ function ResponseTabs({ responses }: { responses: Record<string, OpenAPIResponse
         {response?.description && (
           <p className="text-sm text-foreground-secondary mb-3">{response.description}</p>
         )}
-        {mediaTypes.length > 0 && activeMedia ? (
-          <SchemaTab
-            schema={activeMedia.schema ?? {}}
-            label={
-              <MediaTypeLabel
-                prefix="Body"
-                mediaTypes={mediaTypes}
-                selected={selectedMediaType}
-                onChange={setSelectedMediaType}
-              />
-            }
-            rootName="Body"
-            example={resolveMediaExample(activeMedia)}
+        {showSectionTabs && (
+          <Tabs
+            tabs={[
+              { id: "body", name: "Body" },
+              { id: "headers", name: "Headers" },
+            ]}
+            current={currentSection}
+            onChange={(id) => setSection(id as "body" | "headers")}
           />
-        ) : (
-          <p className="text-xs text-foreground-muted italic">No response body.</p>
         )}
+        <div className={showSectionTabs ? "mt-4" : undefined}>
+          {/* Keyed per section: without distinct keys React reuses one
+              SchemaTab across the swap and keeps its selected view, so the
+              section's own `defaultView` would never apply after a switch. */}
+          {currentSection === "headers" && hasHeaders ? (
+            <SchemaTab
+              key="headers"
+              schema={headersToSchema(headers)}
+              label="Headers"
+              rootName="Headers"
+              defaultView="schema"
+            />
+          ) : hasBody ? (
+            <SchemaTab
+              key="body"
+              schema={activeMedia.schema ?? {}}
+              label={
+                <MediaTypeLabel
+                  prefix="Body"
+                  mediaTypes={mediaTypes}
+                  selected={selectedMediaType}
+                  onChange={setSelectedMediaType}
+                />
+              }
+              rootName="Body"
+              example={resolveMediaExample(activeMedia)}
+            />
+          ) : (
+            <p className="text-xs text-foreground-muted italic">No response body.</p>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-// A parameter group has no single schema of its own — each parameter is its
-// own little schema fragment. Bundling them as one synthetic object schema
-// (one property per parameter) lets the group render through SchemaTab
-// exactly like a message's headers do in the AsyncAPI flow, instead of a
-// bespoke table.
-function parametersToSchema(parameters: OpenAPIParameterData[]): Record<string, unknown> {
+// A parameter or response-header group has no single schema of its own — each
+// entry is its own little schema fragment. Bundling them as one synthetic
+// object schema (one property per entry) lets the group render through
+// SchemaTab exactly like a message's headers do in the AsyncAPI flow, instead
+// of a bespoke table.
+interface NamedSchemaField {
+  name: string;
+  schema?: unknown;
+  description?: string;
+  required?: boolean;
+}
+
+function fieldsToSchema(fields: NamedSchemaField[]): Record<string, unknown> {
   const properties: Record<string, unknown> = {};
   const required: string[] = [];
 
-  for (const param of parameters) {
-    const schema = (param.schema as Record<string, unknown> | undefined) ?? {};
-    properties[param.name] = {
+  for (const field of fields) {
+    const schema = (field.schema as Record<string, unknown> | undefined) ?? {};
+    properties[field.name] = {
       ...schema,
-      description: schema.description ?? param.description,
+      description: schema.description ?? field.description,
     };
-    if (param.required) required.push(param.name);
+    if (field.required) required.push(field.name);
   }
 
   return { type: "object", properties, ...(required.length > 0 ? { required } : {}) };
 }
+
+const parametersToSchema = (parameters: OpenAPIParameterData[]) => fieldsToSchema(parameters);
+
+// Response headers are keyed by name rather than carrying one, and `$ref`
+// entries are already inlined by resolveDocument before this runs.
+const headersToSchema = (headers: Record<string, OpenAPIHeaderData>) =>
+  fieldsToSchema(Object.entries(headers).map(([name, header]) => ({ name, ...header })));
 
 // Mirrors MessageDetails' own Payload/Headers switch: a tab per group that
 // actually has parameters, shown only when there's more than one such group
@@ -188,7 +237,12 @@ function ParameterGroups({ parameters }: { parameters: OpenAPIParameterData[] })
         />
       )}
       <div className={groups.length > 1 ? "mt-4" : undefined}>
-        <SchemaTab schema={schema} label={currentGroup.label} rootName={currentGroup.label} />
+        <SchemaTab
+          schema={schema}
+          label={currentGroup.label}
+          rootName={currentGroup.label}
+          defaultView="schema"
+        />
       </div>
     </div>
   );

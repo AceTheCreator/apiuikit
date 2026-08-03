@@ -12,6 +12,7 @@ export type OpenAPIParameterData = OpenAPIV3.ParameterObject | OpenAPIV3_1.Param
 export type OpenAPIRequestBodyData = OpenAPIV3.RequestBodyObject | OpenAPIV3_1.RequestBodyObject;
 export type OpenAPIResponseData = OpenAPIV3.ResponseObject | OpenAPIV3_1.ResponseObject;
 export type OpenAPIMediaTypeData = OpenAPIV3.MediaTypeObject | OpenAPIV3_1.MediaTypeObject;
+export type OpenAPIHeaderData = OpenAPIV3.HeaderObject | OpenAPIV3_1.HeaderObject;
 export type OpenAPISecuritySchemeData = OpenAPIV3.SecuritySchemeObject | OpenAPIV3_1.SecuritySchemeObject;
 export type OpenAPITagData = OpenAPIV3.TagObject | OpenAPIV3_1.TagObject;
 export type OpenAPIExternalDocsData = OpenAPIV3.ExternalDocumentationObject | OpenAPIV3_1.ExternalDocumentationObject;

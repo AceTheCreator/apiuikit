@@ -155,3 +155,72 @@ describe("PathOperation responses", () => {
     expect(within(container).getAllByText("404")).toHaveLength(1);
   });
 });
+
+describe("PathOperation response headers", () => {
+  // Mirrors the Petstore spec's /user/login 200, which declares both.
+  const opWithHeaders: OpenAPIOperationData = {
+    summary: "Logs user into the system",
+    responses: {
+      "200": {
+        description: "successful operation",
+        headers: {
+          "X-Rate-Limit": {
+            description: "calls per hour allowed by the user",
+            schema: { type: "integer", format: "int32" },
+          },
+          "X-Expires-After": {
+            description: "date in UTC when token expires",
+            schema: { type: "string", format: "date-time" },
+          },
+        },
+        content: { "application/json": { schema: { type: "string" } } },
+      },
+    },
+  };
+
+  it("offers a Headers tab beside Body and renders each header as a schema row", () => {
+    render(withContext(<PathOperation method="get" path="/user/login" op={opWithHeaders} id="get /user/login" />));
+
+    fireEvent.click(screen.getByRole("tab", { name: "Headers" }));
+
+    // Opens straight on Schema (not the faked Example): a header's value is
+    // generated at runtime, so the documented name/type/description is what
+    // there is to show.
+    expect(screen.getByText("X-Rate-Limit")).toBeInTheDocument();
+    expect(screen.getByText("X-Expires-After")).toBeInTheDocument();
+    expect(screen.getByText("calls per hour allowed by the user")).toBeInTheDocument();
+  });
+
+  it("renders headers directly, with no tab strip, when the response has no body", () => {
+    const op: OpenAPIOperationData = {
+      responses: {
+        "204": {
+          description: "No content",
+          headers: { Location: { description: "Where the resource landed", schema: { type: "string" } } },
+        },
+      },
+    };
+
+    render(withContext(<PathOperation method="delete" path="/pets/{id}" op={op} id="delete /pets/{id}" />));
+
+    // No Body/Headers strip at all: the lone half renders on its own.
+    expect(screen.queryByRole("tab", { name: "Body" })).not.toBeInTheDocument();
+    expect(screen.queryByText("No response body.")).not.toBeInTheDocument();
+    expect(screen.getByText("Location")).toBeInTheDocument();
+  });
+
+  it("shows no tab strip for a body-only response", () => {
+    const op: OpenAPIOperationData = {
+      responses: {
+        "200": {
+          description: "A list of pets",
+          content: { "application/json": { schema: { type: "array", items: {} } } },
+        },
+      },
+    };
+
+    render(withContext(<PathOperation method="get" path="/pets" op={op} id="get /pets" />));
+
+    expect(screen.queryByRole("tab", { name: "Headers" })).not.toBeInTheDocument();
+  });
+});

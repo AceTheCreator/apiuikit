@@ -64,6 +64,16 @@ describe("SchemaTabs", () => {
     expect(document.querySelector("pre")).not.toBeInTheDocument();
   });
 
+  it('opens on the schema tree when defaultView is "schema", keeping Example available', () => {
+    // For groups whose values are generated at runtime (request parameters,
+    // response headers) a faked example is noise; the documented shape isn't.
+    renderTabs({ schema: jsonSchema, label: "Headers", defaultView: "schema" });
+
+    expect(screen.getByRole("tab", { name: "Schema" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Example" })).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByText("name")).toBeInTheDocument();
+  });
+
   it("colors the first visible schema row with the first depth color, not the second", () => {
     // SchemaTab always renders the tree with `rootName` set, which suppresses the
     // root row — its children (like "name" here) are the first thing a user sees,

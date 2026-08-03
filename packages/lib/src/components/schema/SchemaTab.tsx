@@ -19,6 +19,7 @@ function SchemaTabs({
   conversionError,
   pendingConversion,
   example,
+  defaultView = "example",
 }: {
   /** JSON Schema to render in the Schema/Example tabs. */
   schema: unknown;
@@ -40,10 +41,20 @@ function SchemaTabs({
   pendingConversion?: boolean;
   /** A real example value declared in the spec (OpenAPI media type `example`/`examples`, or an AsyncAPI message example) — shown as-is on the Example tab instead of auto-generating one. */
   example?: unknown;
+  /**
+   * Which view opens first. Defaults to "example", the right call for a body
+   * or payload, where a sample value is the most useful thing to see. Pass
+   * "schema" for groups whose values are generated at runtime and so can only
+   * ever be faked here (request parameters, response headers), where the
+   * documented name/type/description is what the reader actually wants.
+   */
+  defaultView?: "schema" | "example";
 }) {
   const formatBadge = schemaFormatBadge(schemaFormat);
   const showExample = !pendingConversion && supportsGeneratedExamples(schemaFormat, conversionError);
-  const [tab, setTab] = useState<"schema" | "json" | "example">(showExample ? "example" : "schema");
+  const [tab, setTab] = useState<"schema" | "json" | "example">(
+    showExample && defaultView === "example" ? "example" : "schema",
+  );
 
   // If the Example tab disappears (conversion failed / non-JSON-Schema format)
   // while it was selected, fall back so the panel is not blank.
