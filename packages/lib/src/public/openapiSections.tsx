@@ -43,10 +43,17 @@ export function OpenAPIProvider({
 }
 
 /** Shared with public/sections.tsx via createSectionRoot — see that file's doc for the details. */
-const SectionRoot = createSectionRoot(OpenAPIDocumentProvider, "OpenAPI");
+const SectionRoot = createSectionRoot(OpenAPIDocumentProvider, "OpenAPI", "openapi");
 
 function useDocument(): OpenAPIDocumentData {
-  return useDocumentContext().document as OpenAPIDocumentData;
+  const context = useDocumentContext();
+  // The specType check narrows `document` to the OpenAPI shape. The cast on
+  // the other branch covers only the mis-nested case (an OpenAPI section
+  // under an AsyncAPI provider, already warned about by SectionRoot), where
+  // returning the wrong-shaped document renders empty instead of crashing.
+  return context.specType === "openapi"
+    ? context.document
+    : (context.document as unknown as OpenAPIDocumentData);
 }
 
 // --- Servers ---------------------------------------------------------------

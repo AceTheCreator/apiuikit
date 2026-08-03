@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import PathOperation from "../PathOperation";
 import { DocumentContext } from "../../../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../../../components/schema/depthColors";
-import type { OpenAPIOperationData, OpenAPISecuritySchemeData } from "../../../types/openapi";
+import type { OpenAPIDocumentData, OpenAPIOperationData, OpenAPISecuritySchemeData } from "../../../types/openapi";
 
 const baseOp: OpenAPIOperationData = {
   summary: "List pets",
@@ -17,7 +17,8 @@ function withContext(children: React.ReactNode) {
   return (
     <DocumentContext.Provider
       value={{
-        document: {},
+        specType: "openapi",
+        document: {} as OpenAPIDocumentData,
         deref: () => undefined,
         portalHost: null,
         rootElement: null,

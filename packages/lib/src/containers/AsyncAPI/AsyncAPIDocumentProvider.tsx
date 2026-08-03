@@ -18,7 +18,7 @@ export function AsyncAPIDocumentProvider({
   className = "",
   children,
 }: AsyncAPIDocumentProviderProps) {
-  const { contextValue, themeVars, setPortalHost, setRootElement } = useDocumentProviderValue(asyncapi, config);
+  const { contextValue, themeVars, setPortalHost, setRootElement } = useDocumentProviderValue("asyncapi", asyncapi, config);
 
   return (
     <DocumentContext.Provider value={contextValue}>

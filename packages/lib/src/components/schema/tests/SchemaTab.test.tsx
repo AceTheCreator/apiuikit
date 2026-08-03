@@ -4,13 +4,15 @@ import { describe, expect, it } from "vitest";
 import SchemaTabs from "../SchemaTab";
 import { AsyncAPIDocumentContext } from "../../../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../depthColors";
+import type { AsyncAPIDocumentData } from "../../../types/schema";
 
 /** SchemaTree (the Schema tab body) reads deref/expand state from the document context. */
 function Providers({ children }: { children: ReactNode }) {
   return (
     <AsyncAPIDocumentContext.Provider
       value={{
-        document: {},
+        specType: "asyncapi",
+        document: {} as AsyncAPIDocumentData,
         deref: () => undefined,
         portalHost: null,
         rootElement: null,
