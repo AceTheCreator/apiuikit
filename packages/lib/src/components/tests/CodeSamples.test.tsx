@@ -23,6 +23,7 @@ function withContext(showCodeSamples: boolean, children: ReactNode) {
   return (
     <DocumentContext.Provider
       value={{
+        specType: "openapi",
         document: testDocument,
         deref: () => undefined,
         portalHost: null,
