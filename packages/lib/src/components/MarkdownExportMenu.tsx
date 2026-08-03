@@ -14,8 +14,8 @@ interface MarkdownExportMenuProps {
    * when a menu item is clicked — serialization isn't free for large
    * documents, so it shouldn't run on every render/open. */
   serialize: (deref: (ref: string) => unknown) => string;
-  /** Left offset (px) for this floating button, continuing the sidebar (12px)
-   * / search (60px) toggle-button offset sequence — see index.css. */
+  /** Left offset (px) for this floating button. Layouts pass 60 when search is
+   * shown (12 + 40 width + 8 gap) or 12 when it isn't — see index.css. */
   leftOffset: number;
 }
 

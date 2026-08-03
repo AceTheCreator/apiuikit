@@ -70,12 +70,17 @@ export function AsyncAPIProvider({
  * provider (standalone mode). Shared with public/openapiSections.tsx via
  * createSectionRoot — see that file's doc for the details.
  */
-const SectionRoot = createSectionRoot(AsyncAPIDocumentProvider, "AsyncAPI");
+const SectionRoot = createSectionRoot(AsyncAPIDocumentProvider, "AsyncAPI", "asyncapi");
 
-/** The context's `document` is typed loosely (Record<string, unknown>); the
- * sections need the structured shape, exactly as Layout casts it. */
 function useDocument(): AsyncAPIDocumentData {
-  return useAsyncAPIDocument().document as AsyncAPIDocumentData;
+  const context = useAsyncAPIDocument();
+  // The specType check narrows `document` to the AsyncAPI shape. The cast on
+  // the other branch covers only the mis-nested case (an AsyncAPI section
+  // under an OpenAPI provider, already warned about by SectionRoot), where
+  // returning the wrong-shaped document renders empty instead of crashing.
+  return context.specType === "asyncapi"
+    ? context.document
+    : (context.document as unknown as AsyncAPIDocumentData);
 }
 
 // --- Servers ---------------------------------------------------------------

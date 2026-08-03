@@ -72,10 +72,9 @@ a {
     stop-color: var(--color-secondary-light);
   }
 
-/* Base offsets for the floating toggle buttons that share this class: sidebar
-   at left:12px (default below), search at left:60px (12 + 40 width + 8 gap —
-   see SearchPanel.tsx), copy-as-markdown at left:108px (60 + 40 + 8 — see
-   MarkdownExportMenu.tsx). Each keeps them side by side instead of overlapping. */
+/* Base offsets for the floating toggle buttons that share this class: search
+   at left:12px (see SearchPanel.tsx), copy-as-markdown at left:60px when search
+   is shown (12 + 40 width + 8 gap) or 12px when it isn't (see Layouts). */
 .panel-toggle-btn {
   position: absolute;
   top: 10px;
@@ -97,26 +96,6 @@ a {
 
 .panel-toggle-btn:hover {
   color: #334155;
-}
-
-
-.panel-icon-rect {
-  width: 5px;
-  transition: width 0.15s ease-in-out;
-}
-
-.panel-icon-rect-collapsed {
-  width: 10px;
-}
-
-/* closed: hover grows rect to signal expand */
-.panel-toggle-btn:hover .panel-icon-rect:not(.panel-icon-rect-collapsed) {
-  width: 10px;
-}
-
-/* open: hover shrinks rect to signal collapse */
-.panel-toggle-btn:hover .panel-icon-rect-collapsed {
-  width: 1px;
 }
 
 ::highlight(search-match) {

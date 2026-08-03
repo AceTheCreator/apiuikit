@@ -2,12 +2,12 @@ import { ChannelAddress } from "../../components/ChannelAddress";
 import Section from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
 import CopyMarkdownButton from "../../components/CopyMarkdownButton";
+import MethodBadge from "../../components/MethodBadge";
 import { useAsyncAPIDocument } from "../../contexts";
 import { Operation_TEXT } from "../../contants";
 import { Channel } from "../../types/asyncapi/Channel";
 import { Parameter } from "../../types/asyncapi/Parameter";
 import { Operation as OperationType } from "../../types/asyncapi/Operation";
-import { OperationAction } from "../../types/asyncapi/OperationAction";
 import { AsyncAPIDocumentData } from "../../types/schema";
 import { asyncApiOperationToMarkdown } from "../../helpers/toMarkdown";
 import Operation from "./Operation";
@@ -39,13 +39,7 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
     const channel = op.channel as unknown as Channel;
     const address = channel?.address;
     const parameters = channel?.parameters as unknown as Record<string, Parameter> | undefined;
-    const isSend = op.action === OperationAction.SEND;
     const actionLabel = op.action?.toUpperCase() ?? "";
-    const badgeClassName = isSend
-      ? "bg-green-100 text-green-800"
-      : op.action === OperationAction.RECEIVE
-        ? "bg-blue-100 text-blue-800"
-        : "bg-neutral-100 text-foreground-secondary";
     const isSelected = selectedKey === key;
 
     return (
@@ -70,11 +64,7 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
           {address && <ChannelAddress address={address} parameters={parameters} truncate />}
         </td>
         <td className="px-6 py-4 w-32 group-hover:bg-neutral-50">
-          <div
-            className={`inline-flex w-24 items-center justify-center px-2 py-1 text-center rounded-md text-xs font-medium uppercase ${badgeClassName}`}
-          >
-            {actionLabel}
-          </div>
+          <MethodBadge method={op.action} className="w-24" />
         </td>
         <td className="group-hover:bg-neutral-50" />
       </tr>
@@ -82,20 +72,10 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
   });
 
   const selectedChannel = selectedOp ? (selectedOp.channel as unknown as Channel) : null;
-  const selectedIsSend = selectedOp?.action === OperationAction.SEND;
-  const selectedBadgeClassName = selectedIsSend
-    ? "bg-green-100 text-green-800"
-    : selectedOp?.action === OperationAction.RECEIVE
-      ? "bg-blue-100 text-blue-800"
-      : "bg-neutral-100 text-foreground-secondary";
   const panelTitle =
     selectedOp && selectedChannel?.address ? (
       <div className="flex items-center gap-2 min-w-0">
-        <span
-          className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium uppercase ${selectedBadgeClassName}`}
-        >
-          {selectedOp.action}
-        </span>
+        <MethodBadge method={selectedOp.action} />
         <div className="min-w-0 flex-1 overflow-hidden">
           <ChannelAddress
             address={selectedChannel.address}

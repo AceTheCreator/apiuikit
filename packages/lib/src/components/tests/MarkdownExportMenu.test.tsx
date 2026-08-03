@@ -4,12 +4,14 @@ import { describe, expect, it, vi } from "vitest";
 import MarkdownExportMenu from "../MarkdownExportMenu";
 import { AsyncAPIDocumentContext } from "../../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../schema/depthColors";
+import type { AsyncAPIDocumentData } from "../../types/schema";
 
 function Providers({ children }: { children: ReactNode }) {
   return (
     <AsyncAPIDocumentContext.Provider
       value={{
-        document: {},
+        specType: "asyncapi",
+        document: {} as AsyncAPIDocumentData,
         deref: () => undefined,
         portalHost: document.body,
         rootElement: null,
@@ -23,7 +25,7 @@ function Providers({ children }: { children: ReactNode }) {
 }
 
 const renderMenu = (serialize = () => "# Hello") =>
-  render(<MarkdownExportMenu serialize={serialize} leftOffset={108} />, { wrapper: Providers });
+  render(<MarkdownExportMenu serialize={serialize} leftOffset={60} />, { wrapper: Providers });
 
 describe("MarkdownExportMenu", () => {
   it("opens the menu on trigger click and closes on Escape", () => {

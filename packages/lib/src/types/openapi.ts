@@ -12,6 +12,7 @@ export type OpenAPIParameterData = OpenAPIV3.ParameterObject | OpenAPIV3_1.Param
 export type OpenAPIRequestBodyData = OpenAPIV3.RequestBodyObject | OpenAPIV3_1.RequestBodyObject;
 export type OpenAPIResponseData = OpenAPIV3.ResponseObject | OpenAPIV3_1.ResponseObject;
 export type OpenAPIMediaTypeData = OpenAPIV3.MediaTypeObject | OpenAPIV3_1.MediaTypeObject;
+export type OpenAPIHeaderData = OpenAPIV3.HeaderObject | OpenAPIV3_1.HeaderObject;
 export type OpenAPISecuritySchemeData = OpenAPIV3.SecuritySchemeObject | OpenAPIV3_1.SecuritySchemeObject;
 export type OpenAPITagData = OpenAPIV3.TagObject | OpenAPIV3_1.TagObject;
 export type OpenAPIExternalDocsData = OpenAPIV3.ExternalDocumentationObject | OpenAPIV3_1.ExternalDocumentationObject;
@@ -56,6 +57,22 @@ export interface FlatEndpoint {
 
 export const endpointKey = (method: string, path: string) => `${method} ${path}`;
 
+/**
+ * Parameters shared across every method on a path can be declared once on
+ * the PathItem instead of repeated per operation (e.g. a `{userId}` path
+ * param declared on `/users/{userId}` itself) — merge those in, with the
+ * operation's own parameters overriding a path-item one of the same name+in.
+ */
+export function resolveOperationParameters(
+  pathItem: OpenAPIPathItemData | undefined,
+  operation: OpenAPIOperationData | null | undefined,
+): OpenAPIParameterData[] {
+  const merged = new Map<string, OpenAPIParameterData>();
+  for (const param of pathItem?.parameters ?? []) merged.set(`${param.in}:${param.name}`, param);
+  for (const param of operation?.parameters ?? []) merged.set(`${param.in}:${param.name}`, param);
+  return Array.from(merged.values());
+}
+
 /** Flattens `paths` (each holding multiple HTTP methods) into one row per operation, sorted by path. Shared by Paths.tsx (the Endpoints list) and OpenAPINavigation.tsx (the sidebar), which otherwise duplicated this walk. */
 export function flattenEndpoints(paths: Record<string, OpenAPIPathItemData | undefined>): FlatEndpoint[] {
   return Object.keys(paths)
@@ -73,16 +90,24 @@ export function flattenEndpoints(paths: Record<string, OpenAPIPathItemData | und
 
 /**
  * Internal document model produced by both entry points (mirrors
- * AsyncAPIDocumentData): the no-parser path resolves $refs via
- * `resolveDocument`, the with-parser path gets a fully dereferenced object
- * back from `@scalar/openapi-parser`. Either way, downstream components only
- * ever deal with this plain-object shape.
+ * AsyncAPIDocumentData). Both the no-parser path and `@scalar/openapi-parser`
+ * output are normalized through `resolveDocument`, so downstream components
+ * always deal with one shape: a plain acyclic object tree where cycle points
+ * are `$ref` nodes resolved lazily via the context's `deref` (see
+ * resolveDocument's contract).
  */
 export interface OpenAPIDocumentData extends Record<string, unknown> {
   openapi: string;
   info: OpenAPIInfoData;
   servers?: OpenAPIServerData[];
   paths?: Record<string, OpenAPIPathItemData | undefined>;
+  /**
+   * OpenAPI 3.1's top-level `webhooks`: operations the API sends *out* rather
+   * than ones a client calls. Each value is a Path Item Object exactly like
+   * `paths`', keyed by an event name instead of a URL path, so both render
+   * through the same components.
+   */
+  webhooks?: Record<string, OpenAPIPathItemData | undefined>;
   components?: {
     schemas?: Record<string, SchemaNodeData>;
     securitySchemes?: Record<string, OpenAPISecuritySchemeData>;

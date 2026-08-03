@@ -48,6 +48,10 @@ export function MessageDetails({
     [message.headers, deref, protobufReady],
   );
 
+  // Prefer the message's own declared example over letting the Example tab
+  // fake-generate one from the schema.
+  const firstExample = (message.examples as Array<{ payload?: unknown; headers?: unknown }> | undefined)?.[0];
+
   const hasMore =
     message.description ||
     message.payload ||
@@ -89,6 +93,7 @@ export function MessageDetails({
                       originalSchema={payload.originalSchema}
                       conversionError={payload.conversionError}
                       pendingConversion={payload.pendingConversion}
+                      example={firstExample?.payload}
                     />
                   )}
                   {(schemaTab === "headers" || !message.payload) && headers && (
@@ -100,6 +105,7 @@ export function MessageDetails({
                       originalSchema={headers.originalSchema}
                       conversionError={headers.conversionError}
                       pendingConversion={headers.pendingConversion}
+                      example={firstExample?.headers}
                     />
                   )}
                 </div>

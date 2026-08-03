@@ -21,9 +21,25 @@ function getLazyExtension(key: string): ExtensionComponent {
   return cached as ExtensionComponent;
 }
 
+/**
+ * View of an object's x-* spec-extension fields. Values are `unknown` because
+ * extension payloads are arbitrary JSON, validated at runtime by the extension
+ * component that renders them. Spec object types declare no x-* keys (and no
+ * index signature), so they can't assign to this directly; extension readers
+ * accept `object` and narrow through `getExtension` / the key scan instead of
+ * making every caller cast.
+ */
+export type ExtensionSource = { [key: `x-${string}`]: unknown };
+
+const isExtensionKey = (key: string): key is `x-${string}` => key.startsWith("x-");
+
+/** Reads one x-* field off any spec object, e.g. `getExtension(info, "x-logo")`. */
+export const getExtension = (source: object | undefined, key: `x-${string}`): unknown =>
+  source ? (source as ExtensionSource)[key] : undefined;
+
 interface RenderExtensionsProps {
   /** The object to scan for x-* fields, e.g. the `info` object. */
-  source: Record<string, unknown> | undefined;
+  source: object | undefined;
   /** Prefix for each matched extension's `path` prop, e.g. "info". */
   pathPrefix: string;
 }
@@ -41,8 +57,8 @@ export function RenderExtensions({ source, pathPrefix }: RenderExtensionsProps) 
   if (!showExtensions || !source) return null;
 
   const matches = Object.keys(source).filter(
-    (key) =>
-      key.startsWith("x-") &&
+    (key): key is `x-${string}` =>
+      isExtensionKey(key) &&
       !isReservedExtensionKey(key) &&
       Object.prototype.hasOwnProperty.call(catalog, key),
   );
@@ -55,7 +71,7 @@ export function RenderExtensions({ source, pathPrefix }: RenderExtensionsProps) 
         const LazyExtension = getLazyExtension(key);
         return (
           <Suspense key={key} fallback={null}>
-            <LazyExtension value={source[key]} path={`${pathPrefix}.${key}`} />
+            <LazyExtension value={getExtension(source, key)} path={`${pathPrefix}.${key}`} />
           </Suspense>
         );
       })}
