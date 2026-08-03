@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.4",
+  "openapi": "3.1.0",
   "info": {
     "title": "Swagger Petstore - OpenAPI 3.0",
     "description": "This is a sample Pet Store Server based on the OpenAPI 3.0 specification.  You can find out more about\nSwagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach!\nYou can now help us improve the API whether it's by making changes to the definition itself or to the code.\nThat way, with time, we can improve the API in general, and expose some of the new features in OAS3.\n\nSome useful links:\n- [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)\n- [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)",
@@ -1029,6 +1029,98 @@
           },
           "default": {
             "description": "Unexpected error"
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {
+    "newPet": {
+      "post": {
+        "tags": [
+          "pet"
+        ],
+        "summary": "New pet added.",
+        "description": "Sent to your registered URL whenever a new pet is added to the store.",
+        "operationId": "newPetWebhook",
+        "requestBody": {
+          "description": "The pet that was added",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Pet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Return a 200 to acknowledge receipt. Non-2xx responses are retried with backoff.",
+            "headers": {
+              "X-Webhook-Retry-After": {
+                "description": "Seconds to wait before the next retry, sent only on a failed delivery",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Return a 410 to permanently unsubscribe this URL"
+          }
+        }
+      }
+    },
+    "petStatusChanged": {
+      "post": {
+        "tags": [
+          "pet"
+        ],
+        "summary": "Pet status changed.",
+        "description": "Sent when a pet's `status` changes, for example from `available` to `sold`.",
+        "operationId": "petStatusChangedWebhook",
+        "requestBody": {
+          "description": "The pet in its new state",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Pet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledged"
+          }
+        }
+      }
+    },
+    "orderPlaced": {
+      "post": {
+        "tags": [
+          "store"
+        ],
+        "summary": "Order placed.",
+        "description": "Sent when a customer places an order in the store.",
+        "operationId": "orderPlacedWebhook",
+        "requestBody": {
+          "description": "The order that was placed",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Order"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledged"
           }
         }
       }

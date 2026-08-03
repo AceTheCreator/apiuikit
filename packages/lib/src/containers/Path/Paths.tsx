@@ -19,6 +19,10 @@ interface PathsProps {
   selectedKey?: string | null;
   onSelectKey?: (key: string | null) => void;
   focusSection?: string | null;
+  /** Heading for the identifier column. "Webhook" for OpenAPI 3.1 webhooks, whose keys are event names rather than URL paths. */
+  columnLabel?: string;
+  /** Prefix for this list's DOM anchor ids, keeping webhook anchors distinct from endpoint ones for search and sidebar navigation. */
+  idPrefix?: string;
 }
 
 // Query parameters aren't otherwise visible until "Show more" is expanded —
@@ -48,7 +52,15 @@ function toChannelAddressParameters(parameters: OpenAPIParameterData[]): Record<
   return result;
 }
 
-export default function Paths({ paths, security, securitySchemes, selectedKey = null, onSelectKey }: PathsProps) {
+export default function Paths({
+  paths,
+  security,
+  securitySchemes,
+  selectedKey = null,
+  onSelectKey,
+  columnLabel = "Path",
+  idPrefix = "endpoint",
+}: PathsProps) {
   const setSelectedKey = (key: string | null) => onSelectKey?.(key);
 
   const endpoints = useMemo(() => flattenEndpoints(paths), [paths]);
@@ -66,7 +78,7 @@ export default function Paths({ paths, security, securitySchemes, selectedKey = 
     return (
       <tr
         key={key}
-        id={`endpoint-${key}`}
+        id={`${idPrefix}-${key}`}
         onClick={() => setSelectedKey(key)}
         role="button"
         tabIndex={0}
@@ -117,7 +129,7 @@ export default function Paths({ paths, security, securitySchemes, selectedKey = 
         <thead className="bg-neutral-100 w-full">
           <tr>
             <th className="px-6 py-5 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
-              Path
+              {columnLabel}
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
               Method
@@ -142,6 +154,7 @@ export default function Paths({ paths, security, securitySchemes, selectedKey = 
             path={selected.path}
             op={{ ...selectedOp, parameters: operationParameters }}
             id={selected.key}
+            idPrefix={idPrefix}
             globalSecurity={security}
             securitySchemes={securitySchemes}
           />

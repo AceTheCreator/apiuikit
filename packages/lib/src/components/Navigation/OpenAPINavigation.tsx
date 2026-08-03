@@ -7,8 +7,9 @@ import SpecNavigation from "./SpecNavigation";
 import { infoNavSection, schemasNavSection } from "./sharedSections";
 import IconServer from "../../icons/Server";
 import IconOperation from "../../icons/Operation";
+import IconConnection from "../../icons/Connection";
 
-export type OpenAPINavTab = "endpoints" | "schemas";
+export type OpenAPINavTab = "endpoints" | "webhooks" | "schemas";
 // Servers and Info aren't switchable tabs (they're always on screen, above
 // the tabs), but they need the same "find it in the sidebar, jump straight
 // to it" path as everything else, so they're sections here without being a
@@ -17,6 +18,8 @@ export type OpenAPINavSectionId = OpenAPINavTab | "servers" | "info";
 
 interface OpenAPINavigationProps {
   paths?: Record<string, OpenAPIPathItemData | undefined>;
+  /** OpenAPI 3.1 `webhooks`, same Path Item shape as `paths`. */
+  webhooks?: Record<string, OpenAPIPathItemData | undefined>;
   schemas?: Record<string, unknown>;
   servers?: string[];
   /** Whether the Info panel is currently shown: controls only whether its tick appears here, mirroring the Layout's own `show.info` gate. */
@@ -42,6 +45,7 @@ const EMPTY_SERVERS: string[] = [];
 
 export default function OpenAPINavigation({
   paths = EMPTY_PATHS,
+  webhooks = EMPTY_PATHS,
   schemas = EMPTY_SCHEMAS,
   servers = EMPTY_SERVERS,
   hasInfo = true,
@@ -52,6 +56,7 @@ export default function OpenAPINavigation({
   selectedItem,
 }: OpenAPINavigationProps) {
   const endpoints = useMemo(() => flattenEndpoints(paths), [paths]);
+  const webhookItems = useMemo(() => flattenEndpoints(webhooks), [webhooks]);
 
   // Memoized so Navigation's scroll-spy observer (keyed on `sections`
   // identity) and its element memos survive unrelated Layout re-renders
@@ -85,9 +90,23 @@ export default function OpenAPINavigation({
         </>
       ),
     }),
+    defineNavSection<FlatEndpoint>({
+      id: "webhooks",
+      label: "Webhooks",
+      icon: IconConnection,
+      items: webhookItems,
+      itemKey: (webhook) => webhook.key,
+      targetId: (webhook) => `webhook-${webhook.key}`,
+      renderItem: (webhook) => (
+        <>
+          <MethodBadge method={webhook.method} size="xs" className="shrink-0" />
+          <span className="truncate">{webhook.path}</span>
+        </>
+      ),
+    }),
     schemasNavSection(schemas),
   ];
-  }, [endpoints, schemas, servers, hasInfo]);
+  }, [endpoints, webhookItems, schemas, servers, hasInfo]);
 
   return (
     <SpecNavigation<OpenAPINavTab>

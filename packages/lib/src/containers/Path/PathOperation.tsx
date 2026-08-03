@@ -391,13 +391,23 @@ interface PathOperationProps {
   path: string;
   op: OpenAPIOperationData;
   id: string | null;
+  /** Prefix for this operation's DOM anchor ids, so webhook anchors stay distinct from endpoint ones. */
+  idPrefix?: string;
   /** Falls back to this when the operation doesn't declare its own `security`. */
   globalSecurity?: Array<Record<string, string[]>>;
   /** Scheme definitions (`components.securitySchemes`), resolved by name against `security`'s requirements to render the actual scheme details, not just their names. */
   securitySchemes?: Record<string, OpenAPISecuritySchemeData>;
 }
 
-export default function PathOperation({ method, path, op, id, globalSecurity, securitySchemes }: PathOperationProps) {
+export default function PathOperation({
+  method,
+  path,
+  op,
+  id,
+  idPrefix = "endpoint",
+  globalSecurity,
+  securitySchemes,
+}: PathOperationProps) {
   // Path and query parameters are already surfaced via the address bar's
   // tooltip (see Paths.tsx) — only header/cookie parameters still need their
   // own tab here.
@@ -432,7 +442,7 @@ export default function PathOperation({ method, path, op, id, globalSecurity, se
     .filter((scheme): scheme is OpenAPISecuritySchemeData => !!scheme);
 
   return (
-    <div className="space-y-6" id={`endpoint-${id}-detail`}>
+    <div className="space-y-6" id={`${idPrefix}-${id}-detail`}>
       <div className="flex items-center gap-2">
         {op.deprecated && (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
@@ -457,7 +467,7 @@ export default function PathOperation({ method, path, op, id, globalSecurity, se
       {op.description && <Markdown>{op.description}</Markdown>}
 
       {security.length > 0 && (
-        <div id={`endpoint-${id}-security`}>
+        <div id={`${idPrefix}-${id}-security`}>
           <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
             Authorization
           </p>

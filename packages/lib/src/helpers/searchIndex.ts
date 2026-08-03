@@ -4,8 +4,8 @@ import { Server } from "../types/asyncapi/Server";
 // "endpoints"/"endpoint" are OpenAPI's equivalent of AsyncAPI's "operations"/"operation" —
 // added here (rather than a parallel SearchEntry type) so SearchPanel/useSpecSearch's
 // consumers stay spec-agnostic; see helpers/openapiSearchIndex.ts.
-export type SearchTab = "operations" | "messages" | "schemas" | "info" | "servers" | "endpoints";
-export type SearchType = "operation" | "message" | "schema" | "info" | "server" | "endpoint";
+export type SearchTab = "operations" | "messages" | "schemas" | "info" | "servers" | "endpoints" | "webhooks";
+export type SearchType = "operation" | "message" | "schema" | "info" | "server" | "endpoint" | "webhook";
 
 export interface SearchEntry {
   id: string;

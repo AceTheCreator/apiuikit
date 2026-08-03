@@ -5,6 +5,7 @@ import SearchPanel from "../../components/SearchPanel";
 import { useOpenAPISearch } from "../../hooks/useOpenAPISearch";
 import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
 import { ConfigInterface } from "../../config";
+import IconConnection from "../../icons/Connection";
 import IconOperation from "../../icons/Operation";
 import IconSchema from "../../icons/Schema";
 import OpenAPIInformation from "../Information/OpenAPIInformation";
@@ -21,13 +22,22 @@ export interface OpenAPILayoutProps {
 type OpenAPITabKey = OpenAPINavTab;
 
 const isOpenAPITabKey = (value: string): value is OpenAPITabKey =>
-  value === "endpoints" || value === "schemas";
+  value === "endpoints" || value === "webhooks" || value === "schemas";
 
 export default function Layout({ openapi, config }: OpenAPILayoutProps) {
   const show = config.show ?? {};
 
+  // Webhooks are 3.1-only and rare, so unlike the other tabs this one appears
+  // only when the document actually declares some — an always-empty Webhooks
+  // tab on every 3.0 document would be noise.
+  const webhooks = openapi.webhooks ?? {};
+  const hasWebhooks = Object.keys(webhooks).length > 0;
+
   const tabs: ContentTabItem[] = [
     ...(show.endpoints !== false ? [{ id: "endpoints", name: "Endpoints", icon: IconOperation }] : []),
+    ...(hasWebhooks && show.webhooks !== false
+      ? [{ id: "webhooks", name: "Webhooks", icon: IconConnection }]
+      : []),
     ...(show.schemas !== false ? [{ id: "schemas", name: "Schemas", icon: IconSchema }] : []),
   ];
 
@@ -52,6 +62,7 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
     isTabKey: isOpenAPITabKey,
     sections: [
       { id: "endpoints", visible: show.endpoints !== false },
+      { id: "webhooks", visible: hasWebhooks && show.webhooks !== false },
       { id: "schemas", visible: show.schemas !== false },
       { id: "servers", visible: show.servers !== false },
     ],
@@ -68,6 +79,16 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
         securitySchemes={openapi.components?.securitySchemes}
         selectedKey={selected.endpoints}
         onSelectKey={(key) => setSelectedKey("endpoints", key)}
+      />
+    ) : effectiveTab === "webhooks" ? (
+      <Paths
+        paths={webhooks}
+        security={openapi.security}
+        securitySchemes={openapi.components?.securitySchemes}
+        selectedKey={selected.webhooks}
+        onSelectKey={(key) => setSelectedKey("webhooks", key)}
+        columnLabel="Webhook"
+        idPrefix="webhook"
       />
     ) : effectiveTab === "schemas" ? (
       <Schemas
@@ -109,6 +130,7 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
         {show.sidebar !== false && (
           <OpenAPINavigation
             paths={show.endpoints !== false ? openapi.paths : undefined}
+            webhooks={hasWebhooks && show.webhooks !== false ? webhooks : undefined}
             schemas={show.schemas !== false ? openapi.components?.schemas : undefined}
             servers={show.servers !== false ? serverUrls : undefined}
             hasInfo={show.info !== false}

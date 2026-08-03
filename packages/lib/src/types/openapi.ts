@@ -101,6 +101,13 @@ export interface OpenAPIDocumentData extends Record<string, unknown> {
   info: OpenAPIInfoData;
   servers?: OpenAPIServerData[];
   paths?: Record<string, OpenAPIPathItemData | undefined>;
+  /**
+   * OpenAPI 3.1's top-level `webhooks`: operations the API sends *out* rather
+   * than ones a client calls. Each value is a Path Item Object exactly like
+   * `paths`', keyed by an event name instead of a URL path, so both render
+   * through the same components.
+   */
+  webhooks?: Record<string, OpenAPIPathItemData | undefined>;
   components?: {
     schemas?: Record<string, SchemaNodeData>;
     securitySchemes?: Record<string, OpenAPISecuritySchemeData>;

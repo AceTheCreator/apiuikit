@@ -1,4 +1,4 @@
-import { OpenAPIDocumentData, HTTP_METHODS } from "../types/openapi";
+import { OpenAPIDocumentData, OpenAPIPathItemData, HTTP_METHODS } from "../types/openapi";
 import { addSchemaEntries, normalizeString, SearchEntry } from "./searchIndex";
 
 export function buildOpenAPISearchIndex(openapi: OpenAPIDocumentData): SearchEntry[] {
@@ -38,9 +38,27 @@ export function buildOpenAPISearchIndex(openapi: OpenAPIDocumentData): SearchEnt
     });
   }
 
-  if (openapi.paths) {
-    for (const path of Object.keys(openapi.paths)) {
-      const pathItem = openapi.paths[path];
+  // `paths` and 3.1's `webhooks` hold the same Path Item shape and differ only
+  // in what the key means (URL path vs event name), so they index identically
+  // apart from their tab, anchor prefix, and labels.
+  const addPathItemEntries = (
+    pathItems: Record<string, OpenAPIPathItemData | undefined>,
+    {
+      tab,
+      type,
+      idPrefix,
+      docKey,
+      sectionLabel,
+    }: {
+      tab: "endpoints" | "webhooks";
+      type: "endpoint" | "webhook";
+      idPrefix: string;
+      docKey: string;
+      sectionLabel: string;
+    },
+  ) => {
+    for (const path of Object.keys(pathItems)) {
+      const pathItem = pathItems[path];
       if (!pathItem) continue;
       for (const method of HTTP_METHODS) {
         const op = pathItem[method];
@@ -48,14 +66,14 @@ export function buildOpenAPISearchIndex(openapi: OpenAPIDocumentData): SearchEnt
         const key = `${method} ${path}`;
         const name = op.summary ?? `${method.toUpperCase()} ${path}`;
         entries.push({
-          id: `endpoint-${key}`,
-          targetId: `endpoint-${key}-detail`,
-          type: "endpoint",
-          tab: "endpoints",
+          id: `${idPrefix}-${key}`,
+          targetId: `${idPrefix}-${key}-detail`,
+          type,
+          tab,
           key,
           name,
-          path: `paths.${path}.${method}`,
-          location: `Endpoints > ${method.toUpperCase()} ${path}`,
+          path: `${docKey}.${path}.${method}`,
+          location: `${sectionLabel} > ${method.toUpperCase()} ${path}`,
           subtitle: op.description,
           text: normalizeString([
             method,
@@ -70,6 +88,26 @@ export function buildOpenAPISearchIndex(openapi: OpenAPIDocumentData): SearchEnt
         });
       }
     }
+  };
+
+  if (openapi.paths) {
+    addPathItemEntries(openapi.paths, {
+      tab: "endpoints",
+      type: "endpoint",
+      idPrefix: "endpoint",
+      docKey: "paths",
+      sectionLabel: "Endpoints",
+    });
+  }
+
+  if (openapi.webhooks) {
+    addPathItemEntries(openapi.webhooks, {
+      tab: "webhooks",
+      type: "webhook",
+      idPrefix: "webhook",
+      docKey: "webhooks",
+      sectionLabel: "Webhooks",
+    });
   }
 
   if (openapi.components?.schemas) {

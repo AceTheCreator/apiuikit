@@ -97,6 +97,59 @@ describe("OpenAPI", () => {
     expect(screen.queryByRole("link", { name: /@PetstoreAPI on X/i })).not.toBeInTheDocument();
   });
 
+  describe("webhooks (OpenAPI 3.1)", () => {
+    const withWebhooks = {
+      ...(exampleDoc as Record<string, unknown>),
+      openapi: "3.1.0",
+      webhooks: {
+        newPet: {
+          post: {
+            summary: "New pet notification",
+            description: "Sent when a pet is added to the store.",
+            requestBody: {
+              content: { "application/json": { schema: { type: "object" } } },
+            },
+            responses: { "200": { description: "Acknowledged" } },
+          },
+        },
+      },
+    };
+
+    it("adds a Webhooks tab and lists each webhook by event name", () => {
+      render(<OpenAPI openapi={asDoc(withWebhooks)} />);
+
+      fireEvent.click(screen.getByRole("tab", { name: "Webhooks" }));
+      const panel = within(document.getElementById("panel-webhooks")!);
+
+      // Keyed by event name, not a URL path, so the column says so.
+      expect(panel.getByText("Webhook")).toBeInTheDocument();
+      expect(panel.getByRole("button", { name: "POST newPet" })).toBeInTheDocument();
+    });
+
+    it("opens a webhook's detail panel with its own anchor id, distinct from endpoint anchors", () => {
+      render(<OpenAPI openapi={asDoc(withWebhooks)} />);
+
+      fireEvent.click(screen.getByRole("tab", { name: "Webhooks" }));
+      fireEvent.click(screen.getByRole("button", { name: "POST newPet" }));
+
+      expect(document.getElementById("webhook-post newPet-detail")).not.toBeNull();
+      expect(document.getElementById("endpoint-post newPet-detail")).toBeNull();
+      expect(screen.getByText("New pet notification")).toBeInTheDocument();
+    });
+
+    it("shows no Webhooks tab for a document that declares none", () => {
+      render(<OpenAPI openapi={asDoc(exampleDoc)} />);
+
+      expect(screen.queryByRole("tab", { name: "Webhooks" })).not.toBeInTheDocument();
+    });
+
+    it("hides the Webhooks tab when show.webhooks is false", () => {
+      render(<OpenAPI openapi={asDoc(withWebhooks)} config={{ show: { webhooks: false } }} />);
+
+      expect(screen.queryByRole("tab", { name: "Webhooks" })).not.toBeInTheDocument();
+    });
+  });
+
   it('self-heals when kind="resolved" is passed a document that still has $refs, and warns about the false promise', () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
