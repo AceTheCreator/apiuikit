@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ConfigInterface, defaultConfig } from "../config";
+import { SpecType } from "../contexts";
 import { buildThemeVars } from "../utils/theme";
 import { DEFAULT_DEPTH_COLORS } from "../components/schema/depthColors";
 
@@ -8,12 +9,18 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 /**
  * Builds the shared DocumentContext value (deref resolver, portal/root refs,
- * theme-derived settings) plus the CSS custom properties for the theme —
+ * theme-derived settings) plus the CSS custom properties for the theme,
  * used by both AsyncAPIDocumentProvider and OpenAPIDocumentProvider, which
- * differ only in the document's declared type and the portal element's
- * className.
+ * differ only in the spec type they declare and the portal element's
+ * className. Generic so the returned contextValue keeps the caller's literal
+ * `specType` and document type, and thus lands as the right member of the
+ * DocumentContextValue union.
  */
-export function useDocumentProviderValue(document: Record<string, unknown>, config: ConfigInterface = defaultConfig) {
+export function useDocumentProviderValue<S extends SpecType, D extends object>(
+  specType: S,
+  document: D,
+  config: ConfigInterface = defaultConfig,
+) {
   const derefCache = useMemo(() => new Map<string, unknown>(), []);
   const [portalHost, setPortalHost] = useState<HTMLDivElement | null>(null);
   const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null);
@@ -55,8 +62,8 @@ export function useDocumentProviderValue(document: Record<string, unknown>, conf
   const showCodeSamples = config.show?.codeSamples !== false;
 
   const contextValue = useMemo(
-    () => ({ document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples }),
-    [document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples],
+    () => ({ specType, document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples }),
+    [specType, document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples],
   );
 
   const themeVars = config.theme ? buildThemeVars(config.theme) : {};

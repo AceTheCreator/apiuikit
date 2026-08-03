@@ -95,26 +95,6 @@ a {
   color: #334155;
 }
 
-
-.panel-icon-rect {
-  width: 5px;
-  transition: width 0.15s ease-in-out;
-}
-
-.panel-icon-rect-collapsed {
-  width: 10px;
-}
-
-/* closed: hover grows rect to signal expand */
-.panel-toggle-btn:hover .panel-icon-rect:not(.panel-icon-rect-collapsed) {
-  width: 10px;
-}
-
-/* open: hover shrinks rect to signal collapse */
-.panel-toggle-btn:hover .panel-icon-rect-collapsed {
-  width: 1px;
-}
-
 ::highlight(search-match) {
   background-color: yellow;
   color: black;

@@ -2,6 +2,7 @@ import { useState, type ComponentType } from "react";
 import { AsyncAPIDocumentContext } from "../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../components/schema/depthColors";
 import { resolveDocument } from "../helpers/resolveDocument";
+import type { AsyncAPIDocumentData } from "../types/schema";
 
 /**
  * Centers a component story at one consistent max width and makes it fill that
@@ -53,7 +54,8 @@ export function buildDocumentContext(rawDoc: unknown) {
     return (
       <AsyncAPIDocumentContext.Provider
         value={{
-          document,
+          specType: "asyncapi",
+          document: document as AsyncAPIDocumentData,
           deref,
           portalHost,
           rootElement,

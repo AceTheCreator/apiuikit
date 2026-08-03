@@ -2,9 +2,7 @@ import { AsyncAPIRenderer, OpenAPIRenderer, defaultConfig } from 'apiuikit'
 import type { ConfigInterface } from 'apiuikit'
 import 'apiuikit/style.css'
 import { useMemo, useState } from 'react'
-// TEMP: default to OpenAPI torture while developing OpenAPI support.
-// Revert to `./examples/example1.json` when done.
-import openapiTortureExample from './examples/openapi-torture.yaml?raw'
+import openapiPetstoreExample from './examples/openapi-petstore.json'
 import { DiagnosticsPanel } from './components/DiagnosticsPanel'
 import type { ParserDiagnostic } from './components/DiagnosticsPanel'
 import { EditorPane } from './components/EditorPane'
@@ -21,7 +19,7 @@ import { useResizableSplit } from './hooks/useResizableSplit'
 import { scrollbarStyle, UI_PALETTES } from './theme'
 import type { UiMode } from './theme'
 
-const DEFAULT_DOC_TEXT = openapiTortureExample
+const DEFAULT_DOC_TEXT = JSON.stringify(openapiPetstoreExample, null, 2)
 
 export interface PlaygroundProps {
   /** Initial AsyncAPI document text (JSON or YAML). Uncontrolled — only read on mount. */

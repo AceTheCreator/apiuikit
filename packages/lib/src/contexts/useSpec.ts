@@ -1,13 +1,15 @@
 import { createContext, useContext } from "react";
+import type { AsyncAPIDocumentData } from "../types/schema";
+import type { OpenAPIDocumentData } from "../types/openapi";
 
-type SpecDocument = Record<string, unknown>;
+/** Which spec produced the ambient document. The discriminant of DocumentContextValue. */
+export type SpecType = "asyncapi" | "openapi";
 
-interface DocumentContextValue {
-  document: SpecDocument;
+interface DocumentContextBase {
   /** Resolves a JSON Pointer $ref string to the object it references in the document. */
   deref: (ref: string) => unknown;
   portalHost: HTMLElement | null;
-  /** The Layout component's own root element — used to scope viewport-fixed overlays (e.g. SidePanel) to where the <AsyncAPI> or <OpenAPI> widget is actually embedded, rather than the full browser viewport. */
+  /** The Layout component's own root element, used to scope viewport-fixed overlays (e.g. SidePanel) to where the <AsyncAPI> or <OpenAPI> widget is actually embedded, rather than the full browser viewport. */
   rootElement: HTMLElement | null;
   /** Whether schema tree nodes start expanded by default. Defaults to false. */
   defaultSchemaExpanded?: boolean;
@@ -19,12 +21,28 @@ interface DocumentContextValue {
   showCodeSamples: boolean;
 }
 
+export interface AsyncAPIDocumentContextValue extends DocumentContextBase {
+  specType: "asyncapi";
+  document: AsyncAPIDocumentData;
+}
+
+export interface OpenAPIDocumentContextValue extends DocumentContextBase {
+  specType: "openapi";
+  document: OpenAPIDocumentData;
+}
+
+/**
+ * Discriminated on `specType`: checking it narrows `document` to the matching
+ * spec's shape, so spec-specific consumers don't need to cast. Spec-agnostic
+ * consumers that only need deref/portalHost/rootElement/depthColors (SidePanel,
+ * SearchPanel, SchemaTree, ExpandToggle, ...) work under any provider without
+ * looking at the discriminant.
+ */
+export type DocumentContextValue = AsyncAPIDocumentContextValue | OpenAPIDocumentContextValue;
+
 // Shared by every spec type's provider (AsyncAPIDocumentProvider,
-// OpenAPIDocumentProvider, ...) — `document` is intentionally untyped here,
-// so the same context works regardless of which spec produced it. Presentational
-// components that only need deref/portalHost/rootElement/depthColors (SidePanel,
-// SearchPanel, SchemaTree, ExpandToggle, ...) are spec-agnostic and work under
-// any provider without change.
+// OpenAPIDocumentProvider, ...): one context regardless of which spec
+// produced the document.
 export const DocumentContext = createContext<DocumentContextValue | null>(null);
 
 export const useDocumentContext = () => {
@@ -38,8 +56,7 @@ export const useDocumentContext = () => {
 };
 
 // Back-compat aliases: AsyncAPI-facing code (and the public `useAsyncAPIDocument`
-// export) keeps working unchanged — this is the same context object, just under
-// its original name.
-// The name was changed for supporting openapi also.
+// export) keeps working unchanged. This is the same context object, just under
+// its original name; the name was changed when OpenAPI support was added.
 export const AsyncAPIDocumentContext = DocumentContext;
 export const useAsyncAPIDocument = useDocumentContext;

@@ -4,8 +4,8 @@ import { Server } from "../types/asyncapi/Server";
 // "endpoints"/"endpoint" are OpenAPI's equivalent of AsyncAPI's "operations"/"operation" —
 // added here (rather than a parallel SearchEntry type) so SearchPanel/useSpecSearch's
 // consumers stay spec-agnostic; see helpers/openapiSearchIndex.ts.
-export type SearchTab = "operations" | "messages" | "schemas" | "info" | "servers" | "endpoints";
-export type SearchType = "operation" | "message" | "schema" | "info" | "server" | "endpoint";
+export type SearchTab = "operations" | "messages" | "schemas" | "info" | "servers" | "endpoints" | "webhooks";
+export type SearchType = "operation" | "message" | "schema" | "info" | "server" | "endpoint" | "webhook";
 
 export interface SearchEntry {
   id: string;
@@ -116,10 +116,10 @@ export const addSchemaEntries = (
 
     if (!isRecord(node)) return;
 
-    // Pre-resolved (dereferenced) documents can make a schema contain itself
-    // as a plain object reference — e.g. a recursive `TimelineNode` whose
-    // `previous` property points back at the same object. Guard by identity
-    // rather than recursing forever.
+    // Defense in depth: resolveDocument's contract says indexed documents are
+    // acyclic (cycles arrive as `$ref` nodes), but this walker also runs over
+    // whatever a caller hands it, so guard by identity rather than trusting
+    // that and recursing forever if it's violated.
     if (visited.has(node)) return;
     visited.add(node);
 
