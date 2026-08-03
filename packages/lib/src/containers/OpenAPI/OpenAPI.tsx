@@ -21,10 +21,12 @@ export interface IOpenAPIProps {
  */
 const OpenAPI = (props: IOpenAPIProps) => {
   const raw = props.openapi;
-  // Always resolve: documents without $refs (including `kind: "resolved"`
-  // parser output) pass through resolveDocument's cheap scan untouched,
-  // identity preserved, no copy, while documents that still carry refs get
-  // inlined even if the caller wrongly promised they were pre-resolved.
+  // Always normalize: documents already meeting resolveDocument's contract
+  // (no $refs, no object cycles) pass through its cheap scan untouched,
+  // identity preserved, no copy. Documents that still carry refs get inlined
+  // even if the caller wrongly promised they were pre-resolved, and parser
+  // output with real object cycles (recursive schemas) gets those cycles cut
+  // back into `$ref` nodes.
   const openapi = useMemo(() => resolveDocument(raw), [raw]);
   const config = props.config ?? defaultConfig;
   return <Layout openapi={openapi} config={config} />;

@@ -149,21 +149,60 @@ describe("resolveDocument", () => {
     expect(resolveDocument(doc)).toBe(doc);
   });
 
-  it("returns already-resolved cyclic input (parser output shape) untouched", () => {
+  it("re-refs real object cycles (parser output shape) into $ref nodes", () => {
     const schema: Record<string, unknown> = { type: "object" };
     schema.properties = { self: schema };
     const doc = { components: { schemas: { schema } } };
 
-    expect(resolveDocument(doc)).toBe(doc);
+    const resolved = resolveDocument(doc) as {
+      components: { schemas: { schema: { properties: { self: unknown } } } };
+    };
+
+    expect(resolved).not.toBe(doc);
+    expect(resolved.components.schemas.schema.properties.self).toEqual({
+      $ref: "#/components/schemas/schema",
+    });
+    expect(() => JSON.stringify(resolved)).not.toThrow();
+    // The input keeps its cycle: never mutated.
+    expect((doc.components.schemas.schema.properties as { self: unknown }).self).toBe(schema);
   });
 
-  it("terminates on input that already contains object cycles", () => {
-    const node: Record<string, unknown> = { name: "self" };
-    node.child = node;
+  it("cuts cycles reached through arrays too", () => {
+    const node: Record<string, unknown> = { type: "object" };
+    node.children = [node];
+    const doc = { schema: node };
 
-    expect(() => resolveDocument(node)).not.toThrow();
-    const resolved = resolveDocument(node) as Record<string, unknown>;
-    // The cycle is preserved through the copy, not exploded.
-    expect(resolved.child).toBe(resolved);
+    const resolved = resolveDocument(doc) as { schema: { children: unknown[] } };
+
+    expect(resolved.schema.children[0]).toEqual({ $ref: "#/schema" });
+    expect(() => JSON.stringify(resolved)).not.toThrow();
+  });
+
+  it("escapes / and ~ in generated cycle pointers so deref can walk them back", () => {
+    const node: Record<string, unknown> = { type: "object" };
+    node.self = node;
+    const doc = { paths: { "/users/{id}": { schema: node } } };
+
+    const resolved = resolveDocument(doc) as {
+      paths: { "/users/{id}": { schema: { self: { $ref: string } } } };
+    };
+
+    expect(resolved.paths["/users/{id}"].schema.self.$ref).toBe(
+      "#/paths/~1users~1{id}/schema",
+    );
+  });
+
+  it("keeps acyclic shared subtrees shared instead of re-refing them", () => {
+    const shared: Record<string, unknown> = { type: "string" };
+    // A cycle elsewhere forces the normalizing walk to run at all.
+    const cyclic: Record<string, unknown> = { type: "object" };
+    cyclic.self = cyclic;
+    const doc = { a: shared, b: shared, cyclic };
+
+    const resolved = resolveDocument(doc) as Record<string, unknown>;
+
+    // Diamonds (shared but acyclic) stay one shared copy, not a $ref.
+    expect(resolved.a).toBe(resolved.b);
+    expect((resolved.a as Record<string, unknown>).type).toBe("string");
   });
 });

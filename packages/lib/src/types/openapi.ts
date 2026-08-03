@@ -89,10 +89,11 @@ export function flattenEndpoints(paths: Record<string, OpenAPIPathItemData | und
 
 /**
  * Internal document model produced by both entry points (mirrors
- * AsyncAPIDocumentData): the no-parser path resolves $refs via
- * `resolveDocument`, the with-parser path gets a fully dereferenced object
- * back from `@scalar/openapi-parser`. Either way, downstream components only
- * ever deal with this plain-object shape.
+ * AsyncAPIDocumentData). Both the no-parser path and `@scalar/openapi-parser`
+ * output are normalized through `resolveDocument`, so downstream components
+ * always deal with one shape: a plain acyclic object tree where cycle points
+ * are `$ref` nodes resolved lazily via the context's `deref` (see
+ * resolveDocument's contract).
  */
 export interface OpenAPIDocumentData extends Record<string, unknown> {
   openapi: string;
