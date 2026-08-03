@@ -2,8 +2,10 @@ import AsyncAPIDocumentProvider from "./AsyncAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
 import { AsyncAPINavigation, NavTab } from "../../components/Navigation";
 import SearchPanel from "../../components/SearchPanel";
+import MarkdownExportMenu from "../../components/MarkdownExportMenu";
 import { useSpecSearch } from "../../hooks/useSpecSearch";
 import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
+import { asyncApiToMarkdown } from "../../helpers/toMarkdown";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
 import { ConfigInterface } from "../../config";
 import IconMessage from "../../icons/Message";
@@ -73,6 +75,7 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
         selectedKey={selected.operations}
         onSelectKey={(key) => setSelectedKey("operations", key)}
         focusSection={focusSection}
+        showCopyMarkdown={show.copyMarkdown !== false}
       />
     ) : effectiveTab === "messages" ? (
       <Messages
@@ -101,6 +104,14 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
             onQueryChange={setSearchQuery}
             results={searchResults}
             onSelectResult={handleSearchSelect}
+          />
+        )}
+        {show.copyMarkdown !== false && (
+          <MarkdownExportMenu
+            serialize={(deref) => asyncApiToMarkdown(asyncapi, deref)}
+            // Search toggle is at 12px; sit immediately to its right when it's shown
+            // (12 + 40 width + 8 gap), else take the vacated first slot.
+            leftOffset={show.search !== false ? 60 : 12}
           />
         )}
         {show.info !== false && (

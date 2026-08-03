@@ -27,6 +27,8 @@ export interface ShowConfig {
   extensions?: boolean;
   /** OpenAPI only: per-operation cURL/JavaScript/Python request examples. Defaults to true. */
   codeSamples?: boolean;
+  /** The "Copy for LLM" / "View as Markdown" floating button. Defaults to true. */
+  copyMarkdown?: boolean;
 }
 
 export interface ExpandConfig {
