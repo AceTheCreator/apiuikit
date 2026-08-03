@@ -56,6 +56,22 @@ export interface FlatEndpoint {
 
 export const endpointKey = (method: string, path: string) => `${method} ${path}`;
 
+/**
+ * Parameters shared across every method on a path can be declared once on
+ * the PathItem instead of repeated per operation (e.g. a `{userId}` path
+ * param declared on `/users/{userId}` itself) — merge those in, with the
+ * operation's own parameters overriding a path-item one of the same name+in.
+ */
+export function resolveOperationParameters(
+  pathItem: OpenAPIPathItemData | undefined,
+  operation: OpenAPIOperationData | null | undefined,
+): OpenAPIParameterData[] {
+  const merged = new Map<string, OpenAPIParameterData>();
+  for (const param of pathItem?.parameters ?? []) merged.set(`${param.in}:${param.name}`, param);
+  for (const param of operation?.parameters ?? []) merged.set(`${param.in}:${param.name}`, param);
+  return Array.from(merged.values());
+}
+
 /** Flattens `paths` (each holding multiple HTTP methods) into one row per operation, sorted by path. Shared by Paths.tsx (the Endpoints list) and OpenAPINavigation.tsx (the sidebar), which otherwise duplicated this walk. */
 export function flattenEndpoints(paths: Record<string, OpenAPIPathItemData | undefined>): FlatEndpoint[] {
   return Object.keys(paths)

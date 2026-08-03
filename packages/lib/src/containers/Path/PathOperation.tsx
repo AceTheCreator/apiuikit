@@ -1,18 +1,78 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SchemaTab } from "../../components/schema";
 import Markdown from "../../components/Markdown";
+import Tabs from "../../components/Tabs";
 import Authorization from "../../components/Authorization";
 import CollapsiblePanel from "../../components/CollapsiblePanel";
 import IconExternalLink from "../../icons/ExternalLink";
 import IconShieldCheck from "../../icons/ShieldCheck";
+import IconArrowDown from "../../icons/ArrowDown";
 import { PARAMETER_GROUPS } from "../../contants";
 import {
   HttpMethod,
+  OpenAPIMediaTypeData,
   OpenAPIOperationData,
   OpenAPIParameterData,
   OpenAPIResponseData,
   OpenAPISecuritySchemeData,
 } from "../../types/openapi";
+
+// operationIds are conventionally PascalCase with no separators (e.g.
+// "PostPaymentIntentsIntentCapture") — insert spaces between words so the
+// lead-in sentence reads naturally instead of running them together.
+function humanizeOperationId(operationId: string): string {
+  return operationId
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
+}
+
+// The media type switch lives right in the SchemaTab's own heading — e.g.
+// "Request Body (application/json)" — with the bracketed part becoming a
+// real selector once there's more than one to choose from, instead of a
+// separate control above the schema.
+function MediaTypeLabel({
+  prefix,
+  mediaTypes,
+  selected,
+  onChange,
+}: {
+  prefix: string;
+  mediaTypes: string[];
+  selected: string;
+  onChange: (mediaType: string) => void;
+}) {
+  if (mediaTypes.length <= 1) {
+    return <>{mediaTypes[0] ? `${prefix} (${mediaTypes[0]})` : prefix}</>;
+  }
+  return (
+    <>
+      {prefix} (
+      <select
+        aria-label={`${prefix} media type`}
+        value={selected}
+        onChange={(event) => onChange(event.target.value)}
+        className="bg-transparent border-0 p-0 cursor-pointer underline decoration-dotted focus:outline-none"
+      >
+        {mediaTypes.map((mediaType) => (
+          <option key={mediaType} value={mediaType}>
+            {mediaType}
+          </option>
+        ))}
+      </select>
+      )
+    </>
+  );
+}
+
+// Prefers the media type's own declared `example`, then the first named
+// `examples` entry's value (skipping unresolved $ref entries), over letting
+// the Example tab fake-generate one from the schema.
+function resolveMediaExample(media: OpenAPIMediaTypeData | undefined): unknown {
+  if (!media) return undefined;
+  if (media.example !== undefined) return media.example;
+  const firstNamedExample = media.examples ? Object.values(media.examples)[0] : undefined;
+  return firstNamedExample && "value" in firstNamedExample ? firstNamedExample.value : undefined;
+}
 
 function statusBadgeClassName(status: string): string {
   if (status.startsWith("2")) return "bg-green-100 text-green-800";
@@ -27,7 +87,16 @@ function ResponseTabs({ responses }: { responses: Record<string, OpenAPIResponse
   const statuses = Object.keys(responses);
   const [status, setStatus] = useState(statuses[0]);
   const response = responses[status];
-  const mediaTypes = Object.entries(response?.content ?? {});
+  const mediaTypes = Object.keys(response?.content ?? {});
+  const [selectedMediaType, setSelectedMediaType] = useState(mediaTypes[0]);
+  const activeMedia = selectedMediaType ? response?.content?.[selectedMediaType] : undefined;
+
+  // Different statuses can declare entirely different content types, so the
+  // selection can't just carry over when switching status.
+  useEffect(() => {
+    setSelectedMediaType(Object.keys(response?.content ?? {})[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   return (
     <div>
@@ -53,15 +122,20 @@ function ResponseTabs({ responses }: { responses: Record<string, OpenAPIResponse
         {response?.description && (
           <p className="text-sm text-foreground-secondary mb-3">{response.description}</p>
         )}
-        {mediaTypes.length > 0 ? (
-          mediaTypes.map(([mediaType, media]) => (
-            <SchemaTab
-              key={mediaType}
-              schema={media.schema ?? {}}
-              label={`Body (${mediaType})`}
-              rootName="Body"
-            />
-          ))
+        {mediaTypes.length > 0 && activeMedia ? (
+          <SchemaTab
+            schema={activeMedia.schema ?? {}}
+            label={
+              <MediaTypeLabel
+                prefix="Body"
+                mediaTypes={mediaTypes}
+                selected={selectedMediaType}
+                onChange={setSelectedMediaType}
+              />
+            }
+            rootName="Body"
+            example={resolveMediaExample(activeMedia)}
+          />
         ) : (
           <p className="text-xs text-foreground-muted italic">No response body.</p>
         )}
@@ -70,39 +144,190 @@ function ResponseTabs({ responses }: { responses: Record<string, OpenAPIResponse
   );
 }
 
-function ParameterTable({ parameters, location }: { parameters: OpenAPIParameterData[]; location: string }) {
-  const rows = parameters.filter((param) => param.in === location);
-  if (rows.length === 0) return null;
+// A parameter group has no single schema of its own — each parameter is its
+// own little schema fragment. Bundling them as one synthetic object schema
+// (one property per parameter) lets the group render through SchemaTab
+// exactly like a message's headers do in the AsyncAPI flow, instead of a
+// bespoke table.
+function parametersToSchema(parameters: OpenAPIParameterData[]): Record<string, unknown> {
+  const properties: Record<string, unknown> = {};
+  const required: string[] = [];
+
+  for (const param of parameters) {
+    const schema = (param.schema as Record<string, unknown> | undefined) ?? {};
+    properties[param.name] = {
+      ...schema,
+      description: schema.description ?? param.description,
+    };
+    if (param.required) required.push(param.name);
+  }
+
+  return { type: "object", properties, ...(required.length > 0 ? { required } : {}) };
+}
+
+// Mirrors MessageDetails' own Payload/Headers switch: a tab per group that
+// actually has parameters, shown only when there's more than one such group
+// — a single group renders directly with no tab bar, same rule as there.
+function ParameterGroups({ parameters }: { parameters: OpenAPIParameterData[] }) {
+  const groups = PARAMETER_GROUPS.filter(({ location }) => parameters.some((p) => p.in === location));
+  const [activeLocation, setActiveLocation] = useState<string | null>(groups[0]?.location ?? null);
+
+  if (groups.length === 0) return null;
+
+  const current = groups.some((g) => g.location === activeLocation) ? activeLocation! : groups[0].location!;
+  const currentGroup = groups.find((g) => g.location === current)!;
+  const schema = parametersToSchema(parameters.filter((param) => param.in === current));
+
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-neutral-50">
-          <tr>
-            <th className="px-4 py-2 text-left text-xs font-medium text-foreground-muted uppercase">Name</th>
-            <th className="px-4 py-2 text-left text-xs font-medium text-foreground-muted uppercase">Type</th>
-            <th className="px-4 py-2 text-left text-xs font-medium text-foreground-muted uppercase">Description</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {rows.map((param) => {
-            const schema = param.schema as { type?: string } | undefined;
-            return (
-              <tr key={param.name}>
-                <td className="px-4 py-2 font-mono text-foreground-secondary align-top whitespace-nowrap">
-                  {param.name}
-                  {param.required && <span className="ml-1 text-red-500">*</span>}
-                </td>
-                <td className="px-4 py-2 text-foreground-muted align-top whitespace-nowrap">
-                  {schema?.type ?? "—"}
-                </td>
-                <td className="px-4 py-2 text-foreground-secondary align-top">
-                  {param.description && <Markdown>{param.description}</Markdown>}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div>
+      {groups.length > 1 && (
+        <Tabs
+          tabs={groups.map(({ location, label }) => ({ id: location!, name: label.replace(/ Parameters$/, "") }))}
+          current={current}
+          onChange={setActiveLocation}
+        />
+      )}
+      <div className={groups.length > 1 ? "mt-4" : undefined}>
+        <SchemaTab schema={schema} label={currentGroup.label} rootName={currentGroup.label} />
+      </div>
+    </div>
+  );
+}
+
+// Mirrors MessageDetails: Parameters and Request Body are grouped into one
+// block (tab-switched between the two, same rule as Payload/Headers — only
+// shown when both are present) and hidden behind a Show more/Show less
+// toggle, collapsed by default, instead of always being fully rendered.
+function OperationDetails({
+  parameters,
+  requestBodyContent,
+  requestBodyDescription,
+  expanded,
+  onToggleExpanded,
+}: {
+  parameters: OpenAPIParameterData[];
+  requestBodyContent: Record<string, OpenAPIMediaTypeData>;
+  requestBodyDescription?: string;
+  expanded: boolean;
+  onToggleExpanded: () => void;
+}) {
+  const hasParameters = parameters.length > 0;
+  const mediaTypes = Object.keys(requestBodyContent);
+  const hasBody = mediaTypes.length > 0;
+  const hasMore = hasParameters || hasBody;
+  const [tab, setTab] = useState<"parameters" | "body">(hasParameters ? "parameters" : "body");
+  const [selectedMediaType, setSelectedMediaType] = useState(mediaTypes[0]);
+  const activeMedia = selectedMediaType ? requestBodyContent[selectedMediaType] : undefined;
+
+  if (!hasMore) return null;
+
+  return (
+    <>
+      <div
+        className={`grid transition-all duration-200 ease-in-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+      >
+        <div className="overflow-hidden">
+          <div className="px-4 pb-4 space-y-4 border-t border-border pt-3">
+            {hasParameters && hasBody && (
+              <Tabs
+                tabs={[
+                  { id: "parameters", name: "Parameters" },
+                  { id: "body", name: "Request Body" },
+                ]}
+                current={tab}
+                onChange={(id) => setTab(id as "parameters" | "body")}
+              />
+            )}
+            <div className={hasParameters && hasBody ? "mt-4" : undefined}>
+              {(tab === "parameters" || !hasBody) && hasParameters && (
+                <ParameterGroups parameters={parameters} />
+              )}
+              {(tab === "body" || !hasParameters) && hasBody && activeMedia && (
+                <SchemaTab
+                  schema={activeMedia.schema ?? {}}
+                  label={
+                    <MediaTypeLabel
+                      prefix="Request Body"
+                      mediaTypes={mediaTypes}
+                      selected={selectedMediaType}
+                      onChange={setSelectedMediaType}
+                    />
+                  }
+                  rootName="Body "
+                  description={requestBodyDescription}
+                  example={resolveMediaExample(activeMedia)}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={onToggleExpanded}
+        className="w-full flex items-center justify-center gap-1.5 py-2 border-t border-border bg-neutral-50 hover:bg-neutral-100 transition-colors text-xs text-foreground-muted hover:text-foreground-secondary"
+      >
+        <span>{expanded ? "Show less" : "Show more"}</span>
+        <IconArrowDown
+          className={`w-3 h-3 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+        />
+      </button>
+    </>
+  );
+}
+
+// Joins the parts a request actually has ("request body", "headers",
+// "cookie") into "a, b, and c" — so the lead-in sentence always names
+// what's really there instead of a generic, possibly-misleading "request".
+function describeRequestParts(parts: string[]): string {
+  if (parts.length <= 1) return parts[0] ?? "request";
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
+  return `${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}`;
+}
+
+// Mirrors Message's own card: an always-visible header sitting above the
+// collapsible Parameters/Request Body detail. The lead-in sentence (naming
+// whichever of request body/headers/cookie are present) lives inside the
+// card itself so its top is never blank — the request-body media type
+// selector, when there's more than one, lives inline in the SchemaTab's own
+// heading instead (see MediaTypeLabel/OperationDetails).
+function RequestCard({
+  label,
+  parameters,
+  requestBodyContent,
+  requestBodyDescription,
+}: {
+  label: string;
+  parameters: OpenAPIParameterData[];
+  requestBodyContent: Record<string, OpenAPIMediaTypeData>;
+  requestBodyDescription?: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const mediaTypes = Object.keys(requestBodyContent);
+
+  if (parameters.length === 0 && mediaTypes.length === 0) return null;
+
+  const parts = [
+    mediaTypes.length > 0 ? "request body" : null,
+    parameters.some((param) => param.in === "header") ? "headers" : null,
+    parameters.some((param) => param.in === "cookie") ? "cookie" : null,
+  ].filter((part): part is string => !!part);
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <div className="px-4 py-3">
+        <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">
+          <span className="font-bold">{label}</span> expects the following {describeRequestParts(parts)}:
+        </p>
+      </div>
+
+      <OperationDetails
+        parameters={parameters}
+        requestBodyContent={requestBodyContent}
+        requestBodyDescription={requestBodyDescription}
+        expanded={expanded}
+        onToggleExpanded={() => setExpanded((v) => !v)}
+      />
     </div>
   );
 }
@@ -118,11 +343,15 @@ interface PathOperationProps {
   securitySchemes?: Record<string, OpenAPISecuritySchemeData>;
 }
 
-export default function PathOperation({ op, id, globalSecurity, securitySchemes }: PathOperationProps) {
-  const parameters = op.parameters ?? [];
+export default function PathOperation({ method, path, op, id, globalSecurity, securitySchemes }: PathOperationProps) {
+  // Path and query parameters are already surfaced via the address bar's
+  // tooltip (see Paths.tsx) — only header/cookie parameters still need their
+  // own tab here.
+  const parameters = (op.parameters ?? []).filter((param) => param.in !== "query" && param.in !== "path");
   const security = op.security ?? globalSecurity ?? [];
   const responses = op.responses ?? {};
   const requestBodyContent = op.requestBody?.content ?? {};
+  const label = op.operationId ? humanizeOperationId(op.operationId) : `${method.toUpperCase()} ${path}`;
 
   // The requirement list only names schemes + the scopes *this operation*
   // asks for; the scheme definitions themselves (auth flows, key placement,
@@ -173,17 +402,6 @@ export default function PathOperation({ op, id, globalSecurity, securitySchemes 
       {op.summary && <p className="text-sm text-foreground-secondary">{op.summary}</p>}
       {op.description && <Markdown>{op.description}</Markdown>}
 
-      {PARAMETER_GROUPS.map(({ location, label }) => (
-        <div key={location}>
-          {parameters.some((p) => p.in === location) && (
-            <>
-              <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">{label}</p>
-              <ParameterTable parameters={parameters} location={location!} />
-            </>
-          )}
-        </div>
-      ))}
-
       {security.length > 0 && (
         <div id={`endpoint-${id}-security`}>
           <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
@@ -211,23 +429,19 @@ export default function PathOperation({ op, id, globalSecurity, securitySchemes 
         </div>
       )}
 
-      {Object.keys(requestBodyContent).length > 0 && (
-        <div>
-          {Object.entries(requestBodyContent).map(([mediaType, media]) => (
-            <SchemaTab
-              key={mediaType}
-              schema={media.schema ?? {}}
-              label={`Request Body (${mediaType})`}
-              rootName="Body "
-              description={op.requestBody?.description}
-            />
-          ))}
-        </div>
-      )}
+      <RequestCard
+        label={label}
+        parameters={parameters}
+        requestBodyContent={requestBodyContent}
+        requestBodyDescription={op.requestBody?.description}
+      />
 
       {Object.keys(responses).length > 0 && (
         <div>
-          <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">Responses</p>
+          <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
+            <span className="font-bold">{label}</span> expects{" "}
+            {Object.keys(responses).length > 1 ? "one of the following responses" : "the following response"}:
+          </p>
           <ResponseTabs responses={responses} />
         </div>
       )}

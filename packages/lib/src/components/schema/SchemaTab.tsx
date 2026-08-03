@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { SchemaViewer } from "../../containers/Schema/SchemaViewer";
 import SchemaTree from "./SchemaTree";
 import TabToggle from "../TabToggle";
@@ -18,11 +18,12 @@ function SchemaTabs({
   originalSchema,
   conversionError,
   pendingConversion,
+  example,
 }: {
   /** JSON Schema to render in the Schema/Example tabs. */
   schema: unknown;
-  /** Heading shown above the tab toggle, e.g. "Payload" or "Headers". */
-  label: string;
+  /** Heading shown above the tab toggle, e.g. "Payload" or "Headers" — can embed interactive content, e.g. a media type selector. */
+  label: ReactNode;
   /**
    * Path prefix for schema tree rows. Defaults to `label`. Use when the heading
    * should include extra context (e.g. media type) that must not appear in paths.
@@ -37,6 +38,8 @@ function SchemaTabs({
   conversionError?: string;
   /** True while a Protobuf converter is still loading, see lazyProtoToJsonSchema.ts. */
   pendingConversion?: boolean;
+  /** A real example value declared in the spec (OpenAPI media type `example`/`examples`, or an AsyncAPI message example) — shown as-is on the Example tab instead of auto-generating one. */
+  example?: unknown;
 }) {
   const formatBadge = schemaFormatBadge(schemaFormat);
   const showExample = !pendingConversion && supportsGeneratedExamples(schemaFormat, conversionError);
@@ -94,12 +97,14 @@ function SchemaTabs({
         <p className="text-xs text-foreground-muted">Loading Protobuf definition…</p>
       ) : (
         <>
-          {tab === "schema" && <SchemaTree schema={schema} rootName={rootName ?? label} />}
+          {tab === "schema" && (
+            <SchemaTree schema={schema} rootName={rootName ?? (typeof label === "string" ? label : undefined)} />
+          )}
           {tab === "json" && (
             <SchemaViewer schema={originalSchema ?? schema} />
           )}
           {tab === "example" && showExample && (
-            <Examples schema={schema as Record<string, unknown>} />
+            <Examples schema={schema as Record<string, unknown>} providedExample={example} />
           )}
         </>
       )}

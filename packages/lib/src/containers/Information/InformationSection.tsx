@@ -61,6 +61,7 @@ export default function InformationSection({
         stickySideContent={true}
         reverseLayoutOnMobile={true}
         info={true}
+        mobileLeadContent={logo}
       />
     </div>
   );

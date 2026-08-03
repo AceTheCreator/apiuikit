@@ -38,13 +38,19 @@ describe("OpenAPI", () => {
     expect(screen.queryByPlaceholderText("Search document...")).not.toBeInTheDocument();
   });
 
-  it("opens an endpoint's detail panel with parameters and responses", () => {
+  it("opens an endpoint's detail panel with responses; its only parameter (a query param) surfaces via the address bar, not a Parameters tab", () => {
     render(<OpenAPI openapi={asDoc(exampleDoc)} />);
 
     fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
     const detail = within(document.getElementById("endpoint-get /pets-detail")!);
     expect(detail.getByText("List all pets")).toBeInTheDocument();
-    expect(detail.getByText("limit")).toBeInTheDocument();
+
+    // Query parameters are appended to the address bar as `{name}` chunks
+    // (with a hover tooltip for type/description), the same way path
+    // parameters already appear — GET /pets has no other parameters and no
+    // request body, so the Parameters/Body request card doesn't render at all.
+    expect(screen.getByText("{limit}")).toBeInTheDocument();
+    expect(detail.queryByText(/expects the following request/i)).not.toBeInTheDocument();
   });
 
   it("switches away from the active tab when a config change hides it", () => {
@@ -68,8 +74,13 @@ describe("OpenAPI", () => {
     };
     render(<OpenAPI openapi={asDoc(doc)} />);
 
-    const logo = await screen.findByRole("img", { name: "logo" });
-    expect(logo).toHaveAttribute("src", "https://example.com/logo.svg");
+    // Rendered twice (once for the mobile lead position, once atop the
+    // desktop sidebar), with only one visible per breakpoint via CSS.
+    const logos = await screen.findAllByRole("img", { name: "logo" });
+    expect(logos.length).toBeGreaterThan(0);
+    for (const logo of logos) {
+      expect(logo).toHaveAttribute("src", "https://example.com/logo.svg");
+    }
     expect(await screen.findByRole("link", { name: /@PetstoreAPI on X/i })).toBeInTheDocument();
   });
 
