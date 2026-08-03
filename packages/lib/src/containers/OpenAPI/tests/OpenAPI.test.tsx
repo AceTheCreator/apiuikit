@@ -97,6 +97,46 @@ describe("OpenAPI", () => {
     expect(screen.queryByRole("link", { name: /@PetstoreAPI on X/i })).not.toBeInTheDocument();
   });
 
+  it("follows a response link to the operation its operationId names", () => {
+    const doc = {
+      openapi: "3.0.0",
+      info: { title: "Users", version: "1.0.0" },
+      paths: {
+        "/users": {
+          post: {
+            summary: "Create a user",
+            responses: {
+              "201": {
+                description: "Created",
+                links: {
+                  GetCreatedUser: {
+                    operationId: "getUser",
+                    description: "Fetch the newly created user",
+                    parameters: { userId: "$response.body#/id" },
+                  },
+                },
+              },
+            },
+          },
+        },
+        "/users/{userId}": {
+          get: { operationId: "getUser", summary: "Retrieve a user", responses: {} },
+        },
+      },
+    };
+
+    render(<OpenAPI openapi={asDoc(doc)} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "POST /users" }));
+    expect(screen.getByText("Create a user")).toBeInTheDocument();
+
+    // Following the link swaps the open panel over to the linked operation.
+    fireEvent.click(screen.getByRole("button", { name: "Fetch the newly created user" }));
+
+    expect(screen.getByText("Retrieve a user")).toBeInTheDocument();
+    expect(screen.queryByText("Create a user")).not.toBeInTheDocument();
+  });
+
   describe("webhooks (OpenAPI 3.1)", () => {
     const withWebhooks = {
       ...(exampleDoc as Record<string, unknown>),

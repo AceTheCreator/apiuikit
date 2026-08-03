@@ -81,6 +81,7 @@ function OpenAPIEndpointsBody() {
     <PathsContainer
       paths={document.paths ?? {}}
       security={document.security}
+      securitySchemes={document.components?.securitySchemes}
       selectedKey={selectedKey}
       onSelectKey={setSelectedKey}
     />
@@ -91,6 +92,35 @@ export function OpenAPIEndpoints(props: OpenAPISectionProps) {
   return (
     <SectionRoot {...props}>
       <OpenAPIEndpointsBody />
+    </SectionRoot>
+  );
+}
+
+// --- Webhooks ----------------------------------------------------------------
+
+function OpenAPIWebhooksBody() {
+  const document = useDocument();
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const webhooks = document.webhooks ?? {};
+  if (Object.keys(webhooks).length === 0) return null;
+  return (
+    <PathsContainer
+      paths={webhooks}
+      security={document.security}
+      securitySchemes={document.components?.securitySchemes}
+      selectedKey={selectedKey}
+      onSelectKey={setSelectedKey}
+      columnLabel="Webhook"
+      idPrefix="webhook"
+    />
+  );
+}
+
+/** OpenAPI 3.1 `webhooks`. Renders nothing for a document that declares none. */
+export function OpenAPIWebhooks(props: OpenAPISectionProps) {
+  return (
+    <SectionRoot {...props}>
+      <OpenAPIWebhooksBody />
     </SectionRoot>
   );
 }

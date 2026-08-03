@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import PathOperation from "../PathOperation";
 import { DocumentContext } from "../../../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../../../components/schema/depthColors";
@@ -153,6 +153,110 @@ describe("PathOperation responses", () => {
     // stacked-card copy of either elsewhere in the tree.
     expect(within(container).getAllByText("200")).toHaveLength(1);
     expect(within(container).getAllByText("404")).toHaveLength(1);
+  });
+});
+
+describe("PathOperation response links", () => {
+  // Mirrors the torture example's /users 201, which links the created user's
+  // id into the getUser operation.
+  const opWithLinks: OpenAPIOperationData = {
+    summary: "Create a user",
+    responses: {
+      "201": {
+        description: "User created",
+        content: { "application/json": { schema: { type: "object" } } },
+        links: {
+          GetCreatedUser: {
+            operationId: "getUser",
+            description: "Fetch the newly created user",
+            parameters: { userId: "$response.body#/id" },
+          },
+        },
+      },
+    },
+  };
+
+  it("reads as a sentence below the response, not as its own tab", () => {
+    render(withContext(<PathOperation method="post" path="/users" op={opWithLinks} id="post /users" />));
+
+    // A link is a relationship to another operation, not a view of this
+    // response, so it sits inline rather than competing for a tab.
+    expect(screen.queryByRole("tab", { name: "Links" })).not.toBeInTheDocument();
+
+    // The description is its own node (the clickable part when navigable), so
+    // assert on the sentence around it. The JSON Pointer expression reads as
+    // a plain path in prose.
+    const label = screen.getByText("Fetch the newly created user");
+    expect(label.closest("p")).toHaveTextContent(
+      "Fetch the newly created user using userId from response.body.id.",
+    );
+  });
+
+  it("makes the description itself the clickable part and reports the target to the caller", () => {
+    const onFollowOperation = vi.fn();
+    render(
+      withContext(
+        <PathOperation
+          method="post"
+          path="/users"
+          op={opWithLinks}
+          id="post /users"
+          onFollowOperation={onFollowOperation}
+          isOperationKnown={(operationId) => operationId === "getUser"}
+        />,
+      ),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Fetch the newly created user" }));
+
+    expect(onFollowOperation).toHaveBeenCalledWith("getUser");
+  });
+
+  it("renders an unresolvable target as plain text instead of a dead link", () => {
+    render(
+      withContext(
+        <PathOperation
+          method="post"
+          path="/users"
+          op={opWithLinks}
+          id="post /users"
+          onFollowOperation={vi.fn()}
+          isOperationKnown={() => false}
+        />,
+      ),
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Fetch the newly created user" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Fetch the newly created user")).toBeInTheDocument();
+  });
+
+  it("labels a link with no description by its target, which stays plain for an operationRef", () => {
+    const op: OpenAPIOperationData = {
+      responses: {
+        "200": {
+          description: "OK",
+          links: { ByRef: { operationRef: "#/paths/~1users~1{id}/get" } },
+        },
+      },
+    };
+
+    render(
+      withContext(
+        <PathOperation
+          method="get"
+          path="/x"
+          op={op}
+          id="get /x"
+          onFollowOperation={vi.fn()}
+          isOperationKnown={() => true}
+        />,
+      ),
+    );
+
+    expect(screen.getByText("#/paths/~1users~1{id}/get")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /paths/ })).not.toBeInTheDocument();
   });
 });
 

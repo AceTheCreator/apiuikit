@@ -8,15 +8,20 @@ import IconExternalLink from "../../icons/ExternalLink";
 import IconShieldCheck from "../../icons/ShieldCheck";
 import IconArrowDown from "../../icons/ArrowDown";
 import { PARAMETER_GROUPS } from "../../contants";
+import ResponseLinks from "./ResponseLinks";
 import {
   HttpMethod,
   OpenAPIHeaderData,
+  OpenAPILinkData,
   OpenAPIMediaTypeData,
   OpenAPIOperationData,
   OpenAPIParameterData,
   OpenAPIResponseData,
   OpenAPISecuritySchemeData,
 } from "../../types/openapi";
+
+/** The parts of a response that can each have their own view: body schema, headers, and links. */
+type ResponseSection = "body" | "headers" | "links";
 
 // operationIds are conventionally PascalCase with no separators (e.g.
 // "PostPaymentIntentsIntentCapture") — insert spaces between words so the
@@ -84,7 +89,15 @@ function statusBadgeClassName(status: string): string {
 // Mirrors Reply's own request/reply tab strip (folder-style tabs sitting
 // directly on top of a shared content panel) — one tab per response status,
 // instead of stacking every status as its own bordered card.
-function ResponseTabs({ responses }: { responses: Record<string, OpenAPIResponseData> }) {
+function ResponseTabs({
+  responses,
+  onFollowOperation,
+  isOperationKnown,
+}: {
+  responses: Record<string, OpenAPIResponseData>;
+  onFollowOperation?: (operationId: string) => void;
+  isOperationKnown?: (operationId: string) => boolean;
+}) {
   const statuses = Object.keys(responses);
   const [status, setStatus] = useState(statuses[0]);
   const response = responses[status];
@@ -92,17 +105,31 @@ function ResponseTabs({ responses }: { responses: Record<string, OpenAPIResponse
   const [selectedMediaType, setSelectedMediaType] = useState(mediaTypes[0]);
   const activeMedia = selectedMediaType ? response?.content?.[selectedMediaType] : undefined;
   const headers = (response?.headers ?? {}) as Record<string, OpenAPIHeaderData>;
-  const [section, setSection] = useState<"body" | "headers">("body");
+  const links = (response?.links ?? {}) as Record<string, OpenAPILinkData>;
+  const [section, setSection] = useState<ResponseSection>("body");
 
   const hasBody = mediaTypes.length > 0 && !!activeMedia;
   const hasHeaders = Object.keys(headers).length > 0;
+  const hasLinks = Object.keys(links).length > 0;
+
   // Same rule as MessageDetails' Payload/Headers switch: the tab strip only
-  // appears when both halves exist, and a lone half renders on its own.
-  const showSectionTabs = hasBody && hasHeaders;
-  const currentSection = !hasBody ? "headers" : !hasHeaders ? "body" : section;
+  // appears when a response has more than one of these, and a lone one renders
+  // on its own. Ordered body-first so the most-wanted view is the default.
+  // `links` isn't among them: it describes a relationship to another
+  // operation rather than a view of this response, so it reads as prose
+  // below the content instead of competing for a tab.
+  const availableSections = [
+    ...(hasBody ? [{ id: "body" as const, name: "Body" }] : []),
+    ...(hasHeaders ? [{ id: "headers" as const, name: "Headers" }] : []),
+  ];
+  const showSectionTabs = availableSections.length > 1;
+  const currentSection = availableSections.some((s) => s.id === section)
+    ? section
+    : availableSections[0]?.id;
 
   // Different statuses can declare entirely different content types (and may
-  // not have headers at all), so neither selection can carry over on switch.
+  // have no headers or links at all), so neither selection carries over on a
+  // switch; `currentSection` clamps if "body" isn't among this status's.
   useEffect(() => {
     setSelectedMediaType(Object.keys(response?.content ?? {})[0]);
     setSection("body");
@@ -135,19 +162,16 @@ function ResponseTabs({ responses }: { responses: Record<string, OpenAPIResponse
         )}
         {showSectionTabs && (
           <Tabs
-            tabs={[
-              { id: "body", name: "Body" },
-              { id: "headers", name: "Headers" },
-            ]}
-            current={currentSection}
-            onChange={(id) => setSection(id as "body" | "headers")}
+            tabs={availableSections}
+            current={currentSection!}
+            onChange={(id) => setSection(id as ResponseSection)}
           />
         )}
         <div className={showSectionTabs ? "mt-4" : undefined}>
           {/* Keyed per section: without distinct keys React reuses one
               SchemaTab across the swap and keeps its selected view, so the
               section's own `defaultView` would never apply after a switch. */}
-          {currentSection === "headers" && hasHeaders ? (
+          {currentSection === "headers" ? (
             <SchemaTab
               key="headers"
               schema={headersToSchema(headers)}
@@ -174,6 +198,13 @@ function ResponseTabs({ responses }: { responses: Record<string, OpenAPIResponse
             <p className="text-xs text-foreground-muted italic">No response body.</p>
           )}
         </div>
+        {hasLinks && (
+          <ResponseLinks
+            links={links}
+            onFollowOperation={onFollowOperation}
+            isOperationKnown={isOperationKnown}
+          />
+        )}
       </div>
     </div>
   );
@@ -397,6 +428,10 @@ interface PathOperationProps {
   globalSecurity?: Array<Record<string, string[]>>;
   /** Scheme definitions (`components.securitySchemes`), resolved by name against `security`'s requirements to render the actual scheme details, not just their names. */
   securitySchemes?: Record<string, OpenAPISecuritySchemeData>;
+  /** Opens the operation a response link points at, by its `operationId`. */
+  onFollowOperation?: (operationId: string) => void;
+  /** Whether an `operationId` resolves to an operation in the same list, so a response link can be navigable rather than plain text. */
+  isOperationKnown?: (operationId: string) => boolean;
 }
 
 export default function PathOperation({
@@ -407,6 +442,8 @@ export default function PathOperation({
   idPrefix = "endpoint",
   globalSecurity,
   securitySchemes,
+  onFollowOperation,
+  isOperationKnown,
 }: PathOperationProps) {
   // Path and query parameters are already surfaced via the address bar's
   // tooltip (see Paths.tsx) — only header/cookie parameters still need their
@@ -506,7 +543,11 @@ export default function PathOperation({
             <span className="font-bold">{label}</span> expects{" "}
             {Object.keys(responses).length > 1 ? "one of the following responses" : "the following response"}:
           </p>
-          <ResponseTabs responses={responses} />
+          <ResponseTabs
+            responses={responses}
+            onFollowOperation={onFollowOperation}
+            isOperationKnown={isOperationKnown}
+          />
         </div>
       )}
     </div>
