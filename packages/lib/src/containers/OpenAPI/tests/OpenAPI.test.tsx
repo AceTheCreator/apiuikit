@@ -56,7 +56,7 @@ describe("OpenAPI", () => {
   it("renders a curl code sample with the resolved server URL for an endpoint's detail panel", () => {
     render(<OpenAPI openapi={asDoc(exampleDoc)} />);
 
-    fireEvent.click(screen.getByText("List all pets").closest("tr")!);
+    fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
     const codeSamples = within(document.getElementById("endpoint-get /pets-code-samples")!);
     expect(codeSamples.getByText("https://api.example.com/v1/pets", { exact: false })).toBeInTheDocument();
   });
@@ -64,7 +64,7 @@ describe("OpenAPI", () => {
   it("hides the code samples panel when show.codeSamples is false", () => {
     render(<OpenAPI openapi={asDoc(exampleDoc)} config={{ show: { codeSamples: false } }} />);
 
-    fireEvent.click(screen.getByText("List all pets").closest("tr")!);
+    fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
     expect(document.getElementById("endpoint-get /pets-code-samples")).toBeNull();
   });
 
