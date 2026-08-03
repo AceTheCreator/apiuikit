@@ -2,15 +2,15 @@ import { useMemo } from "react";
 import { ChannelAddress } from "../ChannelAddress";
 import MethodBadge from "../MethodBadge";
 import { flattenEndpoints, FlatEndpoint, OpenAPIPathItemData } from "../../types/openapi";
-import Navigation, { defineNavSection, ErasedNavSection } from "./Navigation";
-import IconBookOpen from "../../icons/BookOpen";
+import { defineNavSection, ErasedNavSection } from "./Navigation";
+import SpecNavigation from "./SpecNavigation";
+import { infoNavSection, schemasNavSection } from "./sharedSections";
 import IconServer from "../../icons/Server";
 import IconOperation from "../../icons/Operation";
-import IconSchema from "../../icons/Schema";
 
 export type OpenAPINavTab = "endpoints" | "schemas";
 // Servers and Info aren't switchable tabs (they're always on screen, above
-// the tabs) — but they need the same "find it in the sidebar, jump straight
+// the tabs), but they need the same "find it in the sidebar, jump straight
 // to it" path as everything else, so they're sections here without being a
 // OpenAPINavTab.
 export type OpenAPINavSectionId = OpenAPINavTab | "servers" | "info";
@@ -19,7 +19,7 @@ interface OpenAPINavigationProps {
   paths?: Record<string, OpenAPIPathItemData | undefined>;
   schemas?: Record<string, unknown>;
   servers?: string[];
-  /** Whether the Info panel is currently shown — controls only whether its tick appears here, mirroring the Layout's own `show.info` gate. */
+  /** Whether the Info panel is currently shown: controls only whether its tick appears here, mirroring the Layout's own `show.info` gate. */
   hasInfo?: boolean;
   activeTab: OpenAPINavSectionId | null;
   onTabChange: (tab: OpenAPINavTab) => void;
@@ -33,7 +33,7 @@ interface ServerNavItem {
   url: string;
 }
 
-// Stable fallbacks for omitted props — `= {}` / `= []` defaults would mint a
+// Stable fallbacks for omitted props: `= {}` / `= []` defaults would mint a
 // fresh identity every render and invalidate the `sections` memo (and,
 // through it, Navigation's scroll-spy observer) for nothing.
 const EMPTY_PATHS: Record<string, OpenAPIPathItemData | undefined> = {};
@@ -60,19 +60,7 @@ export default function OpenAPINavigation({
   const serverItems: ServerNavItem[] = servers.map((url, index) => ({ key: `server-${index}`, url }));
 
   return [
-    defineNavSection<string>({
-      id: "info",
-      label: "Info",
-      icon: IconBookOpen,
-      isTab: false,
-      // A tick worth having (and worth tracking on scroll), but there's
-      // nothing to expand into beyond "scroll to the top" — no popover entry.
-      showInPopover: false,
-      items: hasInfo ? ["info"] : [],
-      itemKey: () => "info",
-      targetId: () => "info-panel",
-      renderItem: () => <span className="truncate">Overview</span>,
-    }),
+    infoNavSection(hasInfo),
     defineNavSection<ServerNavItem>({
       id: "servers",
       label: "Servers",
@@ -97,32 +85,18 @@ export default function OpenAPINavigation({
         </>
       ),
     }),
-    defineNavSection<string>({
-      id: "schemas",
-      label: "Schemas",
-      icon: IconSchema,
-      items: Object.keys(schemas),
-      itemKey: (name) => name,
-      targetId: (name) => `schema-${name}`,
-      renderItem: (name) => <span className="truncate">{name}</span>,
-    }),
+    schemasNavSection(schemas),
   ];
   }, [endpoints, schemas, servers, hasInfo]);
 
   return (
-    <Navigation
+    <SpecNavigation<OpenAPINavTab>
       sections={sections}
-      activeSection={activeTab}
-      onTabChange={(id) => onTabChange(id as OpenAPINavTab)}
-      onItemSelect={(sectionId, key) => {
-        // Info has nothing to "select" beyond the scroll navigate() already
-        // does — routing it into onItemSelect (which casts to OpenAPINavTab)
-        // would wrongly set activeTab to "info", blanking the tab content.
-        if (sectionId === "info") return;
-        if (sectionId === "servers") onSelectServer?.(key);
-        else onItemSelect?.(sectionId as OpenAPINavTab, key);
-      }}
-      selectedItem={selectedItem ? { section: selectedItem.tab, key: selectedItem.key } : null}
+      activeTab={activeTab}
+      onTabChange={onTabChange}
+      onItemSelect={onItemSelect}
+      onSelectServer={onSelectServer}
+      selectedItem={selectedItem}
     />
   );
 }

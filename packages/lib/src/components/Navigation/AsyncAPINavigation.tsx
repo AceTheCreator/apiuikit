@@ -5,16 +5,16 @@ import { SideBarConfig } from "../../config/config";
 import { ChannelAddress } from "../ChannelAddress";
 import MethodBadge from "../MethodBadge";
 import { Parameter } from "../../types/asyncapi/Parameter";
-import Navigation, { defineNavSection, ErasedNavSection } from "./Navigation";
-import IconBookOpen from "../../icons/BookOpen";
+import { defineNavSection, ErasedNavSection } from "./Navigation";
+import SpecNavigation from "./SpecNavigation";
+import { infoNavSection, schemasNavSection } from "./sharedSections";
 import IconServer from "../../icons/Server";
 import IconOperation from "../../icons/Operation";
 import IconMessage from "../../icons/Message";
-import IconSchema from "../../icons/Schema";
 
 export type NavTab = "operations" | "messages" | "schemas";
 // Servers and Info aren't switchable tabs (they're always on screen, above
-// the tabs) — but they need the same "find it in the sidebar, jump straight
+// the tabs), but they need the same "find it in the sidebar, jump straight
 // to it" path as everything else, so they're sections here without being a
 // NavTab.
 export type NavSectionId = NavTab | "servers" | "info";
@@ -24,9 +24,9 @@ interface AsyncAPINavigationProps {
   messages?: Record<string, MessageObject>;
   schemas?: Record<string, unknown>;
   servers?: Record<string, unknown>;
-  /** Whether the Info panel is currently shown — controls only whether its tick appears here, mirroring the Layout's own `show.info` gate. */
+  /** Whether the Info panel is currently shown: controls only whether its tick appears here, mirroring the Layout's own `show.info` gate. */
   hasInfo?: boolean;
-  /** Which section is currently the user's focus, for header highlighting —
+  /** Which section is currently the user's focus, for header highlighting:
    * a single authoritative value covering all five sections (including
    * Info and Servers) so at most one header is ever highlighted at once.
    * Distinct from `onTabChange`, which only fires for the three switchable tabs. */
@@ -38,7 +38,7 @@ interface AsyncAPINavigationProps {
   sidebarConfig?: SideBarConfig;
 }
 
-// Stable fallback for omitted props — a `= {}` default would mint a fresh
+// Stable fallback for omitted props: a `= {}` default would mint a fresh
 // object every render and invalidate the `sections` memo (and, through it,
 // Navigation's scroll-spy observer) for nothing.
 const EMPTY_RECORD: Record<string, never> = {};
@@ -67,23 +67,11 @@ export default function AsyncAPINavigation({
     return (channel as { address?: string | null; parameters?: Record<string, Parameter> } | null) ?? null;
   };
 
-  // Listed first to match the page's own order (Info → Servers → tabs) — and
-  // because "how do I connect/authenticate" is usually the first thing
-  // someone looks for, not something to bury below the tab catalogs.
+  // Listed first to match the page's own order (Info, then Servers, then the
+  // tabs), and because "how do I connect/authenticate" is usually the first
+  // thing someone looks for, not something to bury below the tab catalogs.
   return [
-    defineNavSection<string>({
-      id: "info",
-      label: "Info",
-      icon: IconBookOpen,
-      isTab: false,
-      // A tick worth having (and worth tracking on scroll), but there's
-      // nothing to expand into beyond "scroll to the top" — no popover entry.
-      showInPopover: false,
-      items: hasInfo ? ["info"] : [],
-      itemKey: () => "info",
-      targetId: () => "info-panel",
-      renderItem: () => <span className="truncate">Overview</span>,
-    }),
+    infoNavSection(hasInfo),
     defineNavSection<string>({
       id: "servers",
       label: "Servers",
@@ -104,9 +92,9 @@ export default function AsyncAPINavigation({
       renderItem: (key) => {
         const channel = resolveChannel(key);
 
-        // Channel address is the preferred identifier when available — shown
-        // alone, no badge. The action badge + operation name is the fallback
-        // for when there's no channel address to show instead.
+        // Channel address is the preferred identifier when available, shown
+        // alone with no badge. The action badge + operation name is the
+        // fallback for when there's no channel address to show instead.
         if (channel?.address) {
           return <ChannelAddress address={channel.address} parameters={channel.parameters} className="text-xs bg-transparent p-0" />;
         }
@@ -128,32 +116,18 @@ export default function AsyncAPINavigation({
       targetId: (key) => `message-${key}`,
       renderItem: (key) => <span className="truncate">{key}</span>,
     }),
-    defineNavSection<string>({
-      id: "schemas",
-      label: "Schemas",
-      icon: IconSchema,
-      items: Object.keys(schemas),
-      itemKey: (key) => key,
-      targetId: (key) => `schema-${key}`,
-      renderItem: (key) => <span className="truncate">{key}</span>,
-    }),
+    schemasNavSection(schemas),
   ];
   }, [operations, messages, schemas, servers, hasInfo, sidebarConfig]);
 
   return (
-    <Navigation
+    <SpecNavigation<NavTab>
       sections={sections}
-      activeSection={activeTab}
-      onTabChange={(id) => onTabChange(id as NavTab)}
-      onItemSelect={(sectionId, key) => {
-        // Info has nothing to "select" beyond the scroll navigate() already
-        // does — routing it into onItemSelect (which casts to NavTab) would
-        // wrongly set activeTab to "info", blanking the tab content.
-        if (sectionId === "info") return;
-        if (sectionId === "servers") onSelectServer?.(key);
-        else onItemSelect?.(sectionId as NavTab, key);
-      }}
-      selectedItem={selectedItem ? { section: selectedItem.tab, key: selectedItem.key } : null}
+      activeTab={activeTab}
+      onTabChange={onTabChange}
+      onItemSelect={onItemSelect}
+      onSelectServer={onSelectServer}
+      selectedItem={selectedItem}
     />
   );
 }
