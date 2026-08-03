@@ -1,0 +1,133 @@
+import { useMemo } from "react";
+import { Operation } from "../../types/asyncapi/Operation";
+import { MessageObject } from "../../types/asyncapi/MessageObject";
+import { SideBarConfig } from "../../config/config";
+import { ChannelAddress } from "../ChannelAddress";
+import MethodBadge from "../MethodBadge";
+import { Parameter } from "../../types/asyncapi/Parameter";
+import { defineNavSection, ErasedNavSection } from "./Navigation";
+import SpecNavigation from "./SpecNavigation";
+import { infoNavSection, schemasNavSection } from "./sharedSections";
+import IconServer from "../../icons/Server";
+import IconOperation from "../../icons/Operation";
+import IconMessage from "../../icons/Message";
+
+export type NavTab = "operations" | "messages" | "schemas";
+// Servers and Info aren't switchable tabs (they're always on screen, above
+// the tabs), but they need the same "find it in the sidebar, jump straight
+// to it" path as everything else, so they're sections here without being a
+// NavTab.
+export type NavSectionId = NavTab | "servers" | "info";
+
+interface AsyncAPINavigationProps {
+  operations?: Record<string, Operation>;
+  messages?: Record<string, MessageObject>;
+  schemas?: Record<string, unknown>;
+  servers?: Record<string, unknown>;
+  /** Whether the Info panel is currently shown: controls only whether its tick appears here, mirroring the Layout's own `show.info` gate. */
+  hasInfo?: boolean;
+  /** Which section is currently the user's focus, for header highlighting:
+   * a single authoritative value covering all five sections (including
+   * Info and Servers) so at most one header is ever highlighted at once.
+   * Distinct from `onTabChange`, which only fires for the three switchable tabs. */
+  activeTab: NavSectionId | null;
+  onTabChange: (tab: NavTab) => void;
+  onItemSelect?: (tab: NavTab, key: string) => void;
+  onSelectServer?: (key: string) => void;
+  selectedItem?: { tab: NavSectionId; key: string } | null;
+  sidebarConfig?: SideBarConfig;
+}
+
+// Stable fallback for omitted props: a `= {}` default would mint a fresh
+// object every render and invalidate the `sections` memo (and, through it,
+// Navigation's scroll-spy observer) for nothing.
+const EMPTY_RECORD: Record<string, never> = {};
+
+export default function AsyncAPINavigation({
+  operations = EMPTY_RECORD,
+  messages = EMPTY_RECORD,
+  schemas = EMPTY_RECORD,
+  servers = EMPTY_RECORD,
+  hasInfo = true,
+  activeTab,
+  onTabChange,
+  onItemSelect,
+  onSelectServer,
+  selectedItem,
+  sidebarConfig,
+}: AsyncAPINavigationProps) {
+  // Memoized so Navigation's scroll-spy observer (keyed on `sections`
+  // identity) and its element memos survive unrelated Layout re-renders
+  // (search typing, selection changes, ...) instead of rebuilding each time.
+  const sections: ErasedNavSection[] = useMemo(() => {
+  const resolveChannel = (key: string): { address?: string | null; parameters?: Record<string, Parameter> } | null => {
+    if (!sidebarConfig?.useChannelAddressAsIdentifier) return null;
+    // op.channel $refs are already inlined by resolveDocument / @asyncapi/parser.
+    const channel: unknown = operations[key]?.channel;
+    return (channel as { address?: string | null; parameters?: Record<string, Parameter> } | null) ?? null;
+  };
+
+  // Listed first to match the page's own order (Info, then Servers, then the
+  // tabs), and because "how do I connect/authenticate" is usually the first
+  // thing someone looks for, not something to bury below the tab catalogs.
+  return [
+    infoNavSection(hasInfo),
+    defineNavSection<string>({
+      id: "servers",
+      label: "Servers",
+      icon: IconServer,
+      isTab: false,
+      items: Object.keys(servers),
+      itemKey: (key) => key,
+      targetId: (key) => `server-${key}`,
+      renderItem: (key) => <span className="truncate">{key}</span>,
+    }),
+    defineNavSection<string>({
+      id: "operations",
+      label: "Operations",
+      icon: IconOperation,
+      items: Object.keys(operations),
+      itemKey: (key) => key,
+      targetId: (key) => `operation-${key}`,
+      renderItem: (key) => {
+        const channel = resolveChannel(key);
+
+        // Channel address is the preferred identifier when available, shown
+        // alone with no badge. The action badge + operation name is the
+        // fallback for when there's no channel address to show instead.
+        if (channel?.address) {
+          return <ChannelAddress address={channel.address} parameters={channel.parameters} className="text-xs bg-transparent p-0" />;
+        }
+
+        return (
+          <>
+            <MethodBadge method={operations[key]?.action} size="xs" className="shrink-0" />
+            <span className="truncate">{key}</span>
+          </>
+        );
+      },
+    }),
+    defineNavSection<string>({
+      id: "messages",
+      label: "Messages",
+      icon: IconMessage,
+      items: Object.keys(messages),
+      itemKey: (key) => key,
+      targetId: (key) => `message-${key}`,
+      renderItem: (key) => <span className="truncate">{key}</span>,
+    }),
+    schemasNavSection(schemas),
+  ];
+  }, [operations, messages, schemas, servers, hasInfo, sidebarConfig]);
+
+  return (
+    <SpecNavigation<NavTab>
+      sections={sections}
+      activeTab={activeTab}
+      onTabChange={onTabChange}
+      onItemSelect={onItemSelect}
+      onSelectServer={onSelectServer}
+      selectedItem={selectedItem}
+    />
+  );
+}

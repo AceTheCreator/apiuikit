@@ -1,12 +1,9 @@
-import { useEffect, useState } from "react";
 import AsyncAPIDocumentProvider from "./AsyncAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
-import Navigation, { NavSectionId } from "../../components/Navigation";
+import { AsyncAPINavigation, NavTab } from "../../components/Navigation";
 import SearchPanel from "../../components/SearchPanel";
 import { useSpecSearch } from "../../hooks/useSpecSearch";
-import { useSearchResultFocus, ActiveHighlight } from "../../hooks/useSearchResultFocus";
-import { SearchEntry } from "../../helpers/searchIndex";
-import { clearSearchHighlight } from "../../helpers/textHighlight";
+import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
 import { ConfigInterface } from "../../config";
 import IconMessage from "../../icons/Message";
@@ -24,7 +21,7 @@ export interface LayoutProps {
   config: ConfigInterface;
 }
 
-type AsyncAPITabKey = "operations" | "messages" | "schemas";
+type AsyncAPITabKey = NavTab;
 
 const isAsyncAPITabKey = (value: string): value is AsyncAPITabKey =>
   value === "operations" || value === "messages" || value === "schemas";
@@ -38,93 +35,55 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
     ...(show.schemas    !== false ? [{ id: "schemas",    name: "Schemas",    icon: IconSchema    }] : []),
   ];
 
-  const firstTab = (tabs[0]?.id ?? "operations") as AsyncAPITabKey;
-  const [activeTab, setActiveTab] = useState<AsyncAPITabKey>(firstTab);
-  const [focusedNavSection, setFocusedNavSection] = useState<NavSectionId | null>(null);
-  const focusTab = (tab: AsyncAPITabKey) => {
-    setActiveTab(tab);
-    setFocusedNavSection(tab);
-  };
-  const [rawSelectedOperationKey, setSelectedOperationKey] = useState<string | null>(null);
-  const [rawSelectedMessageKey, setSelectedMessageKey] = useState<string | null>(null);
-  const [rawSelectedSchemaKey, setSelectedSchemaKey] = useState<string | null>(null);
-  const [rawSelectedServerKey, setSelectedServerKey] = useState<string | null>(null);
-
-  // `activeTab` and the selection keys can go stale when a live config edit hides
-  // their tab (e.g. `show.operations: false` while Operations is active), so clamp
-  // them to the currently visible tabs instead of trusting the stored state.
-  const effectiveTab = tabs.some((tab) => tab.id === activeTab) ? activeTab : firstTab;
-  const selectedOperationKey = show.operations !== false ? rawSelectedOperationKey : null;
-  const selectedMessageKey = show.messages !== false ? rawSelectedMessageKey : null;
-  const selectedSchemaKey = show.schemas !== false ? rawSelectedSchemaKey : null;
-  const selectedServerKey = show.servers !== false ? rawSelectedServerKey : null;
-  const serverNames = asyncapi.servers ? Object.keys(asyncapi.servers) : [];
-
   const { query: searchQuery, setQuery: setSearchQuery, results: searchResults } =
     useSpecSearch(asyncapi, { threshold: 0.3, limit: 20 });
 
-  const [focusSection, setFocusSection] = useState<string | null>(null);
-  const [schemaFocusTarget, setSchemaFocusTarget] = useState<{ tokens: string[]; id: string } | null>(null);
-
-  const [activeHighlight, setActiveHighlight] = useState<ActiveHighlight | null>(null);
-
-  const handleSearchSelect = (entry: SearchEntry) => {
-    if (entry.tab === "operations" || entry.tab === "messages" || entry.tab === "schemas") {
-      focusTab(entry.tab);
-    } else if (entry.tab === "servers") {
-      setFocusedNavSection("servers");
-    }
-    setSelectedOperationKey(entry.tab === "operations" ? entry.key : null);
-    setSelectedMessageKey(entry.tab === "messages" ? entry.key : null);
-    setSelectedSchemaKey(entry.tab === "schemas" ? entry.key : null);
-    setSelectedServerKey(entry.tab === "servers" ? entry.key : null);
-    setFocusSection(entry.focusSection ?? null);
-    setSchemaFocusTarget(
-      entry.tab === "schemas" && entry.schemaFocusTokens
-        ? { tokens: entry.schemaFocusTokens, id: entry.targetId }
-        : null,
-    );
-    if (entry.tab === "schemas") clearSearchHighlight();
-    setActiveHighlight({ targetId: entry.targetId, query: searchQuery, highlight: entry.tab !== "schemas" });
-  };
-
-  useSearchResultFocus(activeHighlight, [
+  const {
     effectiveTab,
-    selectedOperationKey,
-    selectedMessageKey,
-    selectedSchemaKey,
-    selectedServerKey,
+    focusTab,
+    navActiveSection,
+    selected,
+    setSelectedKey,
+    selectedNavItem,
+    handleSearchSelect,
+    handleNavItemSelect,
+    handleNavServerSelect,
+    handleContentTabChange,
     focusSection,
     schemaFocusTarget,
-  ]);
+  } = useSpecLayoutController<AsyncAPITabKey>({
+    tabs,
+    defaultTab: "operations",
+    isTabKey: isAsyncAPITabKey,
+    sections: [
+      { id: "operations", visible: show.operations !== false },
+      { id: "messages", visible: show.messages !== false },
+      { id: "schemas", visible: show.schemas !== false },
+      { id: "servers", visible: show.servers !== false },
+    ],
+    searchQuery,
+  });
 
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setActiveHighlight(null);
-      clearSearchHighlight();
-    }
-  }, [searchQuery]);
-
-  useEffect(() => clearSearchHighlight, []);
+  const serverNames = asyncapi.servers ? Object.keys(asyncapi.servers) : [];
 
   const activeContent =
     effectiveTab === "operations" ? (
       <Operations
         operations={asyncapi.operations ?? {}}
-        selectedKey={selectedOperationKey}
-        onSelectKey={setSelectedOperationKey}
+        selectedKey={selected.operations}
+        onSelectKey={(key) => setSelectedKey("operations", key)}
         focusSection={focusSection}
       />
     ) : effectiveTab === "messages" ? (
       <Messages
         messages={(asyncapi.components?.messages ?? {}) as Record<string, MessageObject>}
-        selectedKey={selectedMessageKey}
+        selectedKey={selected.messages}
         focusSection={focusSection}
       />
     ) : effectiveTab === "schemas" ? (
       <Schemas
         schemas={asyncapi.components?.schemas ?? {}}
-        selectedKey={selectedSchemaKey}
+        selectedKey={selected.schemas}
         focusTarget={schemaFocusTarget}
       />
     ) : null;
@@ -150,27 +109,21 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
           </div>
         )}
         {show.servers !== false && serverNames.length > 0 && (
-          <div id={`server-${selectedServerKey ?? serverNames[0]}`}>
+          <div id={`server-${selected.servers ?? serverNames[0]}`}>
             <Servers
               servers={asyncapi.servers!}
-              selectedServer={selectedServerKey}
-              onSelectServer={setSelectedServerKey}
+              selectedServer={selected.servers}
+              onSelectServer={(key) => setSelectedKey("servers", key)}
               focusSection={focusSection}
             />
           </div>
         )}
         {show.sidebar !== false && (
-          <Navigation
-            info={asyncapi.info}
-            operations={
-              show.operations !== false ? asyncapi.operations : undefined
-            }
+          <AsyncAPINavigation
+            operations={show.operations !== false ? asyncapi.operations : undefined}
             messages={
               show.messages !== false
-                ? (asyncapi.components?.messages as Record<
-                    string,
-                    MessageObject
-                  >)
+                ? (asyncapi.components?.messages as Record<string, MessageObject>)
                 : undefined
             }
             schemas={
@@ -179,48 +132,18 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
                 : undefined
             }
             servers={show.servers !== false ? asyncapi.servers : undefined}
+            hasInfo={show.info !== false}
             sidebarConfig={config.sidebar}
-            activeTab={focusedNavSection}
+            activeTab={navActiveSection}
             onTabChange={focusTab}
-            onItemSelect={(tab, key) => {
-              focusTab(tab);
-              setSelectedOperationKey(tab === "operations" ? key : null);
-              setSelectedMessageKey(tab === "messages" ? key : null);
-              setSelectedSchemaKey(tab === "schemas" ? key : null);
-            }}
-            onSelectServer={(key) => {
-              setFocusedNavSection("servers");
-              setSelectedOperationKey(null);
-              setSelectedMessageKey(null);
-              setSelectedSchemaKey(null);
-              setSelectedServerKey(key);
-            }}
-            selectedItem={
-              selectedOperationKey
-                ? { tab: "operations" as const, key: selectedOperationKey }
-                : selectedMessageKey
-                ? { tab: "messages" as const, key: selectedMessageKey }
-                : selectedSchemaKey
-                ? { tab: "schemas" as const, key: selectedSchemaKey }
-                : selectedServerKey
-                ? { tab: "servers" as const, key: selectedServerKey }
-                : null
-            }
+            onItemSelect={handleNavItemSelect}
+            onSelectServer={handleNavServerSelect}
+            selectedItem={selectedNavItem}
           />
         )}
-        <ContentTab
-          tabs={tabs}
-          current={effectiveTab}
-          onChange={(id) => {
-            if (isAsyncAPITabKey(id)) focusTab(id);
-          }}
-        />
+        <ContentTab tabs={tabs} current={effectiveTab} onChange={handleContentTabChange} />
         {effectiveTab && (
-          <div
-            id={`panel-${effectiveTab}`}
-            role="tabpanel"
-            aria-labelledby={`tab-${effectiveTab}`}
-          >
+          <div id={`panel-${effectiveTab}`} role="tabpanel" aria-labelledby={`tab-${effectiveTab}`}>
             {activeContent}
           </div>
         )}

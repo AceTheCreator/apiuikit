@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
 import OpenAPIDocumentProvider from "./OpenAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
-import OpenAPINavigation, { OpenAPINavSectionId, OpenAPINavTab } from "../../components/OpenAPINavigation";
+import { OpenAPINavigation, OpenAPINavTab } from "../../components/Navigation";
 import SearchPanel from "../../components/SearchPanel";
 import { useOpenAPISearch } from "../../hooks/useOpenAPISearch";
-import { useSearchResultFocus, ActiveHighlight } from "../../hooks/useSearchResultFocus";
-import { SearchEntry } from "../../helpers/searchIndex";
-import { clearSearchHighlight } from "../../helpers/textHighlight";
+import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
 import { ConfigInterface } from "../../config";
+import IconConnection from "../../icons/Connection";
 import IconOperation from "../../icons/Operation";
 import IconSchema from "../../icons/Schema";
 import OpenAPIInformation from "../Information/OpenAPIInformation";
@@ -24,90 +22,78 @@ export interface OpenAPILayoutProps {
 type OpenAPITabKey = OpenAPINavTab;
 
 const isOpenAPITabKey = (value: string): value is OpenAPITabKey =>
-  value === "endpoints" || value === "schemas";
+  value === "endpoints" || value === "webhooks" || value === "schemas";
 
 export default function Layout({ openapi, config }: OpenAPILayoutProps) {
   const show = config.show ?? {};
 
+  // Webhooks are 3.1-only and rare, so unlike the other tabs this one appears
+  // only when the document actually declares some — an always-empty Webhooks
+  // tab on every 3.0 document would be noise.
+  const webhooks = openapi.webhooks ?? {};
+  const hasWebhooks = Object.keys(webhooks).length > 0;
+
   const tabs: ContentTabItem[] = [
     ...(show.endpoints !== false ? [{ id: "endpoints", name: "Endpoints", icon: IconOperation }] : []),
+    ...(hasWebhooks && show.webhooks !== false
+      ? [{ id: "webhooks", name: "Webhooks", icon: IconConnection }]
+      : []),
     ...(show.schemas !== false ? [{ id: "schemas", name: "Schemas", icon: IconSchema }] : []),
   ];
-
-  const firstTab = (tabs[0]?.id ?? "endpoints") as OpenAPITabKey;
-  const [activeTab, setActiveTab] = useState<OpenAPITabKey>(firstTab);
-  const [focusedNavSection, setFocusedNavSection] = useState<OpenAPINavSectionId | null>(null);
-  const focusTab = (tab: OpenAPITabKey) => {
-    setActiveTab(tab);
-    setFocusedNavSection(tab);
-  };
-  const [rawSelectedEndpointKey, setSelectedEndpointKey] = useState<string | null>(null);
-  const [rawSelectedSchemaKey, setSelectedSchemaKey] = useState<string | null>(null);
-  const [rawSelectedServerKey, setSelectedServerKey] = useState<string | null>(null);
-
-  const effectiveTab = tabs.some((tab) => tab.id === activeTab) ? activeTab : firstTab;
-  const selectedEndpointKey = show.endpoints !== false ? rawSelectedEndpointKey : null;
-  const selectedSchemaKey = show.schemas !== false ? rawSelectedSchemaKey : null;
-  const selectedServerKey = show.servers !== false ? rawSelectedServerKey : null;
-  const serverUrls = (openapi.servers ?? []).map((server) => server.url);
 
   const { query: searchQuery, setQuery: setSearchQuery, results: searchResults } =
     useOpenAPISearch(openapi, { threshold: 0.3, limit: 20 });
 
-  const [focusSection, setFocusSection] = useState<string | null>(null);
-  const [schemaFocusTarget, setSchemaFocusTarget] = useState<{ tokens: string[]; id: string } | null>(null);
-
-  const [activeHighlight, setActiveHighlight] = useState<ActiveHighlight | null>(null);
-
-  const handleSearchSelect = (entry: SearchEntry) => {
-    if (entry.tab === "endpoints" || entry.tab === "schemas") {
-      focusTab(entry.tab);
-    } else if (entry.tab === "servers") {
-      setFocusedNavSection("servers");
-    }
-    setSelectedEndpointKey(entry.tab === "endpoints" ? entry.key : null);
-    setSelectedSchemaKey(entry.tab === "schemas" ? entry.key : null);
-    setSelectedServerKey(entry.tab === "servers" ? entry.key : null);
-    setFocusSection(entry.focusSection ?? null);
-    setSchemaFocusTarget(
-      entry.tab === "schemas" && entry.schemaFocusTokens
-        ? { tokens: entry.schemaFocusTokens, id: entry.targetId }
-        : null,
-    );
-    if (entry.tab === "schemas") clearSearchHighlight();
-    setActiveHighlight({ targetId: entry.targetId, query: searchQuery, highlight: entry.tab !== "schemas" });
-  };
-
-  useSearchResultFocus(activeHighlight, [
+  const {
     effectiveTab,
-    selectedEndpointKey,
-    selectedSchemaKey,
-    selectedServerKey,
-    focusSection,
+    focusTab,
+    navActiveSection,
+    selected,
+    setSelectedKey,
+    selectedNavItem,
+    handleSearchSelect,
+    handleNavItemSelect,
+    handleNavServerSelect,
+    handleContentTabChange,
     schemaFocusTarget,
-  ]);
+  } = useSpecLayoutController<OpenAPITabKey>({
+    tabs,
+    defaultTab: "endpoints",
+    isTabKey: isOpenAPITabKey,
+    sections: [
+      { id: "endpoints", visible: show.endpoints !== false },
+      { id: "webhooks", visible: hasWebhooks && show.webhooks !== false },
+      { id: "schemas", visible: show.schemas !== false },
+      { id: "servers", visible: show.servers !== false },
+    ],
+    searchQuery,
+  });
 
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setActiveHighlight(null);
-      clearSearchHighlight();
-    }
-  }, [searchQuery]);
-
-  useEffect(() => clearSearchHighlight, []);
+  const serverUrls = (openapi.servers ?? []).map((server) => server.url);
 
   const activeContent =
     effectiveTab === "endpoints" ? (
       <Paths
         paths={openapi.paths ?? {}}
         security={openapi.security}
-        selectedKey={selectedEndpointKey}
-        onSelectKey={setSelectedEndpointKey}
+        securitySchemes={openapi.components?.securitySchemes}
+        selectedKey={selected.endpoints}
+        onSelectKey={(key) => setSelectedKey("endpoints", key)}
+      />
+    ) : effectiveTab === "webhooks" ? (
+      <Paths
+        paths={webhooks}
+        security={openapi.security}
+        securitySchemes={openapi.components?.securitySchemes}
+        selectedKey={selected.webhooks}
+        onSelectKey={(key) => setSelectedKey("webhooks", key)}
+        columnLabel="Webhook"
+        idPrefix="webhook"
       />
     ) : effectiveTab === "schemas" ? (
       <Schemas
         schemas={openapi.components?.schemas ?? {}}
-        selectedKey={selectedSchemaKey}
+        selectedKey={selected.schemas}
         focusTarget={schemaFocusTarget}
       />
     ) : null;
@@ -133,51 +119,29 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
           </div>
         )}
         {show.servers !== false && serverUrls.length > 0 && (
-          <div id={selectedServerKey ?? "server-0"}>
+          <div id={selected.servers ?? "server-0"}>
             <OpenAPIServers
               servers={openapi.servers!}
-              selectedServer={selectedServerKey}
-              onSelectServer={setSelectedServerKey}
+              selectedServer={selected.servers}
+              onSelectServer={(key) => setSelectedKey("servers", key)}
             />
           </div>
         )}
         {show.sidebar !== false && (
           <OpenAPINavigation
-            info={openapi.info}
             paths={show.endpoints !== false ? openapi.paths : undefined}
+            webhooks={hasWebhooks && show.webhooks !== false ? webhooks : undefined}
             schemas={show.schemas !== false ? openapi.components?.schemas : undefined}
             servers={show.servers !== false ? serverUrls : undefined}
-            activeTab={focusedNavSection}
+            hasInfo={show.info !== false}
+            activeTab={navActiveSection}
             onTabChange={focusTab}
-            onItemSelect={(tab, key) => {
-              focusTab(tab);
-              setSelectedEndpointKey(tab === "endpoints" ? key : null);
-              setSelectedSchemaKey(tab === "schemas" ? key : null);
-            }}
-            onSelectServer={(key) => {
-              setFocusedNavSection("servers");
-              setSelectedEndpointKey(null);
-              setSelectedSchemaKey(null);
-              setSelectedServerKey(key);
-            }}
-            selectedItem={
-              selectedEndpointKey
-                ? { tab: "endpoints" as const, key: selectedEndpointKey }
-                : selectedSchemaKey
-                ? { tab: "schemas" as const, key: selectedSchemaKey }
-                : selectedServerKey
-                ? { tab: "servers" as const, key: selectedServerKey }
-                : null
-            }
+            onItemSelect={handleNavItemSelect}
+            onSelectServer={handleNavServerSelect}
+            selectedItem={selectedNavItem}
           />
         )}
-        <ContentTab
-          tabs={tabs}
-          current={effectiveTab}
-          onChange={(id) => {
-            if (isOpenAPITabKey(id)) focusTab(id);
-          }}
-        />
+        <ContentTab tabs={tabs} current={effectiveTab} onChange={handleContentTabChange} />
         {effectiveTab && (
           <div id={`panel-${effectiveTab}`} role="tabpanel" aria-labelledby={`tab-${effectiveTab}`}>
             {activeContent}

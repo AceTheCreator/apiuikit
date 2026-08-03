@@ -1,9 +1,8 @@
-import { useEffect, useId, useState } from "react";
+import { useId } from "react";
 import { OperationBindingsObject } from "../../types/asyncapi/OperationBindingsObject";
 import Authorization from "../../components/Authorization";
 import Bindings from "../../components/Bindings";
-import IconArrowRight from "../../icons/ArrowRight";
-import IconDownRight from "../../icons/ArrowDown";
+import CollapsiblePanel from "../../components/CollapsiblePanel";
 import IconExternalLink from "../../icons/ExternalLink";
 import { ExternalDocs } from "../../types/asyncapi/ExternalDocs";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
@@ -23,14 +22,7 @@ interface OperationProps {
 }
 
 export default function Operation({ op, id, focusSection = null }: OperationProps) {
-  const [authExpanded, setAuthExpanded] = useState(false);
   const authHeadingId = useId();
-  const authPanelId = useId();
-  // Matches Server's own auto-expand: collapsed by default, only forced open
-  // when search navigates here specifically for the Authorization content.
-  useEffect(() => {
-    if (focusSection === "security") setAuthExpanded(true);
-  }, [focusSection]);
   const messages = (op.messages ?? []) as unknown as MessageObject[];
   const tags = (op.tags ?? []) as unknown as Tag[];
   const bindings = op.bindings as unknown as OperationBindingsObject | undefined;
@@ -92,41 +84,25 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
           <p id={authHeadingId} className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
             Operation Authorization
           </p>
-          <div className="rounded-lg border border-border overflow-hidden">
-            <button
-              type="button"
-              aria-expanded={authExpanded}
-              aria-controls={authPanelId}
-              aria-labelledby={authHeadingId}
-              onClick={() => setAuthExpanded((v) => !v)}
-              className="flex w-full items-center justify-between px-4 py-3 bg-neutral-50 text-left hover:bg-neutral-100 transition-colors"
-            >
+          <CollapsiblePanel
+            ariaLabelledBy={authHeadingId}
+            forceExpanded={focusSection === "security"}
+            trigger={
               <span className="text-xs font-normal text-foreground-muted bg-neutral-100 border border-border rounded-full px-2 py-0.5">
                 {security.length}
               </span>
-              {authExpanded ? (
-                <IconDownRight className="w-4 h-4 text-foreground-muted shrink-0" />
-              ) : (
-                <IconArrowRight className="w-4 h-4 text-foreground-muted shrink-0" />
-              )}
-            </button>
-            <div
-              id={authPanelId}
-              className={`grid transition-all duration-200 ease-in-out ${authExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
-            >
-              <div className="overflow-hidden">
-                <div className="px-4 py-2 border-t border-border">
-                  <Authorization
-                    securities={
-                      security as Parameters<
-                        typeof Authorization
-                      >[0]["securities"]
-                    }
-                  />
-                </div>
-              </div>
+            }
+          >
+            <div className="px-4 py-2 border-t border-border">
+              <Authorization
+                securities={
+                  security as Parameters<
+                    typeof Authorization
+                  >[0]["securities"]
+                }
+              />
             </div>
-          </div>
+          </CollapsiblePanel>
         </div>
       )}
 

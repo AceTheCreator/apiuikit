@@ -34,9 +34,7 @@ export default function OpenAPIServers({ servers, selectedServer, onSelectServer
     onSelectServer?.(serverKey);
   };
 
-  const content = currentServer ? (
-    <OpenAPIServer {...currentServer} serverKey={current} />
-  ) : null;
+  const content = currentServer ? <OpenAPIServer {...currentServer} /> : null;
 
   return (
     <div className="flex justify-center w-full">

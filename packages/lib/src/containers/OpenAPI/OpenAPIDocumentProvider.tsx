@@ -19,7 +19,7 @@ export function OpenAPIDocumentProvider({
   className = "",
   children,
 }: OpenAPIDocumentProviderProps) {
-  const { contextValue, themeVars, setPortalHost, setRootElement } = useDocumentProviderValue(openapi, config);
+  const { contextValue, themeVars, setPortalHost, setRootElement } = useDocumentProviderValue("openapi", openapi, config);
 
   return (
     <DocumentContext.Provider value={contextValue}>
