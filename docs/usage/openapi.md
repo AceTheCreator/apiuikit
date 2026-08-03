@@ -24,9 +24,9 @@ export default function App() {
 |-----------|------------------------|----------|-------------------------------------------------------|
 | `openapi` | `OpenAPIDocumentData`  | Yes      | A pre-resolved OpenAPI 3.0/3.1 document object         |
 | `config`  | `ConfigInterface`      | No       | UI configuration (theme, show flags, sidebar, etc.)    |
-| `kind`    | `"resolved"`           | No       | Informational hint that `$ref`s are already inlined    |
+| `kind`    | `"resolved"`           | No       | Promise that `$ref`s are already inlined (verified)    |
 
-As with `AsyncAPI`, `$ref`s are verified rather than trusted: a `kind="resolved"` document that still contains `$ref`s gets resolved anyway.
+As with `AsyncAPI`, `$ref`s are verified rather than trusted: a `kind="resolved"` document that still contains `$ref`s gets resolved anyway, with a console warning that the promise was false.
 
 ## `OpenAPIRenderer` component (with parser)
 

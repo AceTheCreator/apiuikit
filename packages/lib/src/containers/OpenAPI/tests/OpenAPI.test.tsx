@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import OpenAPI from "../OpenAPI";
 import type { OpenAPIDocumentData } from "../../../types/openapi";
 import exampleDoc from "../../../config/examples/openapi-petstore.json";
@@ -97,11 +97,35 @@ describe("OpenAPI", () => {
     expect(screen.queryByRole("link", { name: /@PetstoreAPI on X/i })).not.toBeInTheDocument();
   });
 
-  it('self-heals when kind="resolved" is passed a document that still has $refs', () => {
-    render(<OpenAPI kind="resolved" openapi={asDoc(exampleDoc)} />);
+  it('self-heals when kind="resolved" is passed a document that still has $refs, and warns about the false promise', () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      render(<OpenAPI kind="resolved" openapi={asDoc(exampleDoc)} />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Schemas" }));
-    const bodyText = document.body.textContent ?? "";
-    expect(bodyText).not.toContain("$ref");
+      fireEvent.click(screen.getByRole("tab", { name: "Schemas" }));
+      const bodyText = document.body.textContent ?? "";
+      expect(bodyText).not.toContain("$ref");
+      expect(warn).toHaveBeenCalledWith(expect.stringMatching(/kind="resolved".*still contains \$ref/));
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('does not warn for kind="resolved" parser output whose only quirk is object cycles', () => {
+    const schema: Record<string, unknown> = { type: "object" };
+    schema.properties = { self: schema };
+    const doc = {
+      openapi: "3.0.0",
+      info: { title: "Cyclic API", version: "1.0.0" },
+      components: { schemas: { schema } },
+    };
+
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      render(<OpenAPI kind="resolved" openapi={asDoc(doc)} />);
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

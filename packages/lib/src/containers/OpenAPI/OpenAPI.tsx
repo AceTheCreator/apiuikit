@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { ConfigInterface, defaultConfig } from "../../config";
-import { resolveDocument } from "../../helpers/resolveDocument";
+import { containsRefs, resolveDocument } from "../../helpers/resolveDocument";
 import { OpenAPIDocumentData } from "../../types/openapi";
 import Layout from "./Layout";
 
@@ -9,7 +9,7 @@ export interface IOpenAPIProps {
   openapi: OpenAPIDocumentData;
   /** UI configuration: theme, which sections to show, sidebar options, and more. */
   config?: ConfigInterface;
-  /** Informational hint that `openapi` has already been fully dereferenced upstream, not a contract: `$ref`s left in place are still resolved either way. */
+  /** Promise that `openapi` is already fully dereferenced upstream. Verified rather than trusted: `$ref`s left in place are still resolved either way, with a console warning that the promise was false. */
   kind?: "resolved";
 }
 
@@ -28,6 +28,21 @@ const OpenAPI = (props: IOpenAPIProps) => {
   // output with real object cycles (recursive schemas) gets those cycles cut
   // back into `$ref` nodes.
   const openapi = useMemo(() => resolveDocument(raw), [raw]);
+
+  // kind="resolved" is a verified promise, not a fast path. Normalization
+  // alone (openapi !== raw) is not proof it was false: parser output
+  // legitimately gets its recursive-schema cycles cut here too, so only
+  // leftover $ref nodes count as a broken promise worth reporting.
+  const kind = props.kind;
+  useEffect(() => {
+    if (kind === "resolved" && openapi !== raw && containsRefs(raw)) {
+      console.warn(
+        '[apiuikit] <OpenAPI kind="resolved"> received a document that still contains $ref nodes. ' +
+          "They were resolved anyway; fix the upstream resolution or drop the kind prop.",
+      );
+    }
+  }, [kind, raw, openapi]);
+
   const config = props.config ?? defaultConfig;
   return <Layout openapi={openapi} config={config} />;
 };

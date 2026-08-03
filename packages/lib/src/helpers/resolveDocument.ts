@@ -41,6 +41,22 @@ const refNameFromPath = (ref: string) =>
   ref.replace(/^#\//, "").split("/").pop() ?? ref;
 
 /**
+ * Read-only scan for `$ref` nodes only (not cycles). Used to verify a
+ * caller's `kind="resolved"` promise: leftover refs mean their upstream
+ * resolution isn't doing what they think, while object cycles are a normal
+ * property of parser output and no broken promise. Terminates on cyclic
+ * input via the visited set.
+ */
+export const containsRefs = (value: unknown, visited = new Set<object>()): boolean => {
+  if (typeof value !== "object" || value === null) return false;
+  if (visited.has(value)) return false;
+  visited.add(value);
+  if (hasRef(value)) return true;
+  const children = Array.isArray(value) ? value : Object.values(value);
+  return children.some((child) => containsRefs(child, visited));
+};
+
+/**
  * Cheap read-only scan for anything that needs normalizing: a `$ref` node, or
  * a real object cycle (a node reachable from itself, as in parser output for
  * recursive schemas). No copies, early exit on the first hit. Lets
