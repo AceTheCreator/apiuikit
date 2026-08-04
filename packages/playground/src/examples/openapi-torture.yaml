@@ -293,6 +293,8 @@ paths:
 
       callbacks:
 
+        # Two URL expressions under one callback name, so a single callback
+        # carries more than one operation.
         orderStatusChanged:
           "{$request.body#/callbackUrl}":
 
@@ -310,8 +312,93 @@ paths:
                 "200":
                   description: Callback accepted
 
+                  headers:
+                    X-Callback-Ack:
+                      description: Echo the delivery id you received
+                      schema:
+                        type: string
+
                 "204":
                   description: Callback accepted with no response
+
+          "{$request.body#/backupCallbackUrl}":
+
+            post:
+              summary: Order status callback (backup endpoint)
+              description: |
+                Delivered only when the primary endpoint fails.
+
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/OrderEvent"
+
+              responses:
+                "200":
+                  description: Callback accepted
+
+        # One URL, several media types on the request body, so the callback's
+        # body renders with the media type switcher.
+        orderShipped:
+          "{$request.body#/callbackUrl}":
+
+            post:
+              summary: Shipment notification
+
+              requestBody:
+                required: true
+
+                content:
+
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/Order"
+
+                  application/xml:
+                    schema:
+                      $ref: "#/components/schemas/Order"
+
+              responses:
+                "200":
+                  description: Notification accepted
+
+                "429":
+                  description: Slow down
+
+        # One URL, two methods, so a single Path Item yields two operations.
+        orderRefunded:
+          "{$request.body#/callbackUrl}":
+
+            post:
+              summary: Refund issued
+
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/OrderEvent"
+
+              responses:
+                "200":
+                  description: Accepted
+
+            put:
+              summary: Refund correction replay
+              deprecated: true
+
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/OrderEvent"
+
+              responses:
+                "200":
+                  description: Replay accepted
 
   /orders/{orderId}:
     parameters:

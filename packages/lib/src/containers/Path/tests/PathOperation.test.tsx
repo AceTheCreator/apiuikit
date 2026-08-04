@@ -129,8 +129,8 @@ describe("PathOperation responses", () => {
   it("shows the first response's content by default, as a tab per status", () => {
     render(withContext(<PathOperation method="get" path="/pets" op={opWithResponses} id="get /pets" />));
 
-    expect(screen.getByRole("button", { name: "200" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "404" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "200" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "404" })).toBeInTheDocument();
     expect(screen.getByText("A list of pets")).toBeInTheDocument();
     expect(screen.queryByText("No pets found")).not.toBeInTheDocument();
   });
@@ -138,7 +138,7 @@ describe("PathOperation responses", () => {
   it("switches to the other status's content when its tab is clicked", () => {
     render(withContext(<PathOperation method="get" path="/pets" op={opWithResponses} id="get /pets" />));
 
-    fireEvent.click(screen.getByRole("button", { name: "404" }));
+    fireEvent.click(screen.getByRole("tab", { name: "404" }));
 
     expect(screen.getByText("No pets found")).toBeInTheDocument();
     expect(screen.queryByText("A list of pets")).not.toBeInTheDocument();
@@ -153,6 +153,185 @@ describe("PathOperation responses", () => {
     // stacked-card copy of either elsewhere in the tree.
     expect(within(container).getAllByText("200")).toHaveLength(1);
     expect(within(container).getAllByText("404")).toHaveLength(1);
+  });
+});
+
+describe("PathOperation callbacks", () => {
+  // Mirrors the torture example's /orders POST.
+  const opWithCallbacks: OpenAPIOperationData = {
+    summary: "Create an order",
+    responses: { "202": { description: "Accepted" } },
+    callbacks: {
+      orderStatusChanged: {
+        "{$request.body#/callbackUrl}": {
+          post: {
+            summary: "Order status callback",
+            requestBody: {
+              content: { "application/json": { schema: { type: "object" } } },
+            },
+            responses: { "200": { description: "Callback accepted" } },
+          },
+        },
+      },
+    },
+  };
+
+  it("joins the exchange strip as its own tab, framed as a request the API sends out", () => {
+    render(withContext(<PathOperation method="post" path="/orders" op={opWithCallbacks} id="post /orders" />));
+
+    fireEvent.click(screen.getByRole("tab", { name: "callbacks" }));
+
+    // The tab label carries the heading, so the panel only adds the part a
+    // reader can't infer: which way the request travels.
+    expect(screen.getByText(/Requests the API sends to you/)).toBeInTheDocument();
+    expect(screen.getByText("orderStatusChanged")).toBeInTheDocument();
+    // The URL template's embedded expression reads as a plain path.
+    expect(screen.getByText("{request.body.callbackUrl}")).toBeInTheDocument();
+  });
+
+  it("renders the callback's own operation through the full operation view once expanded", () => {
+    render(withContext(<PathOperation method="post" path="/orders" op={opWithCallbacks} id="post /orders" />));
+
+    fireEvent.click(screen.getByRole("tab", { name: "callbacks" }));
+    // Each callback is collapsed within the tab, so expand it too.
+    fireEvent.click(screen.getByRole("button", { expanded: false }));
+
+    expect(screen.getByText("Order status callback")).toBeInTheDocument();
+
+    // The nested operation gets the full view, its own Request/Response strip
+    // included. It opens on Request (it has a body), so its responses are one
+    // click away, under the last Response tab in the tree.
+    const responseTabs = screen.getAllByRole("tab", { name: "response" });
+    fireEvent.click(responseTabs[responseTabs.length - 1]);
+    expect(screen.getByText("Callback accepted")).toBeInTheDocument();
+  });
+
+  it("gives the nested operation its own anchor id, distinct from the parent's", () => {
+    render(withContext(<PathOperation method="post" path="/orders" op={opWithCallbacks} id="post /orders" />));
+    fireEvent.click(screen.getByRole("tab", { name: "callbacks" }));
+    fireEvent.click(screen.getByRole("button", { expanded: false }));
+
+    expect(
+      // The URL's position is in the id too, so one callback name with
+      // several destinations doesn't produce colliding anchors.
+      document.getElementById("callback-post /orders-orderStatusChanged-0-post-detail"),
+    ).not.toBeNull();
+  });
+
+  it("stops expanding a callback that declares callbacks of its own", () => {
+    const nested: OpenAPIOperationData = {
+      responses: {},
+      callbacks: {
+        outer: {
+          "{$request.body#/url}": {
+            post: {
+              summary: "Outer callback",
+              responses: {},
+              callbacks: {
+                inner: {
+                  "{$request.body#/url}": { post: { summary: "Inner callback", responses: {} } },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    render(withContext(<PathOperation method="post" path="/x" op={nested} id="post /x" />));
+    fireEvent.click(screen.getByRole("button", { expanded: false }));
+
+    expect(screen.getByText("Outer callback")).toBeInTheDocument();
+    // The nested operation renders, but its own callbacks section does not.
+    expect(screen.queryByText("inner")).not.toBeInTheDocument();
+  });
+
+  it("lists one card per callback operation, titled with its method, name and destination", () => {
+    // A callback name maps to many URL expressions, and each is a Path Item
+    // that can carry several methods, so one callback can carry several
+    // request bodies even though a single operation only ever has one. The
+    // spec's two-level nesting is flattened so each gets its own card.
+    const multi: OpenAPIOperationData = {
+      responses: {},
+      callbacks: {
+        orderEvents: {
+          "{$request.body#/primaryUrl}": {
+            post: {
+              summary: "Primary callback",
+              requestBody: { content: { "application/json": { schema: { type: "object" } } } },
+              responses: {},
+            },
+            put: {
+              summary: "Primary replay",
+              requestBody: { content: { "application/json": { schema: { type: "object" } } } },
+              responses: {},
+            },
+          },
+          "{$request.body#/backupUrl}": {
+            post: {
+              summary: "Backup callback",
+              requestBody: { content: { "application/json": { schema: { type: "object" } } } },
+              responses: {},
+            },
+          },
+        },
+      },
+    };
+
+    render(withContext(<PathOperation method="post" path="/orders" op={multi} id="post /orders" />));
+
+    const cards = screen.getAllByRole("button", { expanded: false });
+    expect(cards).toHaveLength(3);
+    // Methods come in HTTP_METHODS order (the spec's own Path Item field
+    // order), so put precedes post. MethodBadge uppercases via CSS, so the
+    // text nodes themselves stay lowercase.
+    expect(cards[0]).toHaveTextContent(/put.*orderEvents.*\{request\.body\.primaryUrl\}/);
+    expect(cards[1]).toHaveTextContent(/post.*orderEvents.*\{request\.body\.primaryUrl\}/);
+    expect(cards[2]).toHaveTextContent(/post.*orderEvents.*\{request\.body\.backupUrl\}/);
+  });
+
+  it("gives two methods on one destination a card each, opened independently", () => {
+    // Two methods on one URL means two request bodies. Each gets its own
+    // titled card, so neither runs into the other.
+    const twoMethods: OpenAPIOperationData = {
+      responses: {},
+      callbacks: {
+        orderRefunded: {
+          "{$request.body#/callbackUrl}": {
+            post: {
+              summary: "Refund issued",
+              requestBody: { content: { "application/json": { schema: { type: "object" } } } },
+              responses: {},
+            },
+            put: {
+              summary: "Refund correction replay",
+              requestBody: { content: { "application/json": { schema: { type: "object" } } } },
+              responses: {},
+            },
+          },
+        },
+      },
+    };
+
+    render(withContext(<PathOperation method="post" path="/orders" op={twoMethods} id="post /orders" />));
+
+    const cards = screen.getAllByRole("button", { expanded: false });
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toHaveTextContent(/put.*orderRefunded.*\{request\.body\.callbackUrl\}/);
+    expect(cards[1]).toHaveTextContent(/post.*orderRefunded.*\{request\.body\.callbackUrl\}/);
+
+    // Opening one leaves the other closed.
+    fireEvent.click(cards[1]);
+    expect(cards[0]).toHaveAttribute("aria-expanded", "false");
+    expect(cards[1]).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("renders no Callbacks section for an operation without any", () => {
+    const op: OpenAPIOperationData = { summary: "Plain", responses: {} };
+
+    render(withContext(<PathOperation method="get" path="/x" op={op} id="get /x" />));
+
+    expect(screen.queryByText("Callbacks")).not.toBeInTheDocument();
   });
 });
 
@@ -260,6 +439,58 @@ describe("PathOperation response links", () => {
   });
 });
 
+describe("PathOperation request/response tabs", () => {
+  const opWithBoth: OpenAPIOperationData = {
+    summary: "Create a pet",
+    requestBody: { content: { "application/json": { schema: { type: "object" } } } },
+    responses: {
+      "201": { description: "Created", content: { "application/json": { schema: { type: "object" } } } },
+    },
+  };
+
+  it("puts the two sides of the exchange on one strip, opening on Request", () => {
+    render(withContext(<PathOperation method="post" path="/pets" op={opWithBoth} id="post /pets" />));
+
+    expect(screen.getByRole("tab", { name: "request" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "response" })).toBeInTheDocument();
+    // Content shows straight away: the tab is the disclosure, so there is no
+    // second Show more inside it.
+    expect(screen.getByText(/expects the following request body/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Show more/ })).not.toBeInTheDocument();
+  });
+
+  it("swaps the shared panel when the other side is picked", () => {
+    render(withContext(<PathOperation method="post" path="/pets" op={opWithBoth} id="post /pets" />));
+
+    fireEvent.click(screen.getByRole("tab", { name: "response" }));
+
+    expect(screen.getByText("Created")).toBeInTheDocument();
+    expect(screen.queryByText(/expects the following request body/)).not.toBeInTheDocument();
+  });
+
+  it("offers only Response for an operation with nothing to send", () => {
+    const responseOnly: OpenAPIOperationData = {
+      responses: { "200": { description: "A list of pets" } },
+    };
+
+    render(withContext(<PathOperation method="get" path="/pets" op={responseOnly} id="get /pets" />));
+
+    expect(screen.queryByRole("tab", { name: "request" })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "response" })).toBeInTheDocument();
+    expect(screen.getByText("A list of pets")).toBeInTheDocument();
+  });
+
+  it("says so plainly for a status with neither a body nor headers", () => {
+    const bare: OpenAPIOperationData = {
+      responses: { "204": { description: "No content" } },
+    };
+
+    render(withContext(<PathOperation method="delete" path="/pets/{id}" op={bare} id="delete /pets/{id}" />));
+
+    expect(screen.getByText("No response body.")).toBeInTheDocument();
+  });
+});
+
 describe("PathOperation response headers", () => {
   // Mirrors the Petstore spec's /user/login 200, which declares both.
   const opWithHeaders: OpenAPIOperationData = {
@@ -285,6 +516,7 @@ describe("PathOperation response headers", () => {
   it("offers a Headers tab beside Body and renders each header as a schema row", () => {
     render(withContext(<PathOperation method="get" path="/user/login" op={opWithHeaders} id="get /user/login" />));
 
+    // No request half here, so the panel opens straight on Response.
     fireEvent.click(screen.getByRole("tab", { name: "Headers" }));
 
     // Opens straight on Schema (not the faked Example): a header's value is

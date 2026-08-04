@@ -2,9 +2,8 @@
 
 React component library for rendering API specifications. Point it at an AsyncAPI or OpenAPI document and get a full interactive UI, which includes: servers, channels/endpoints, operations, messages, schemas, with no manual mapping required.
 
-> **Status:** AsyncAPI 3.x and OpenAPI 3.0/3.1 are both supported. For OpenAPI,
-> `callbacks` are parsed without error but not yet rendered, see
-> [Coverage](./docs/usage/openapi.md#coverage) for the full breakdown.
+> **Status:** AsyncAPI 3.x and OpenAPI 3.0/3.1 are both fully supported, see
+> [Coverage](./docs/usage/openapi.md#coverage) for the OpenAPI breakdown.
 
 ## Install
 

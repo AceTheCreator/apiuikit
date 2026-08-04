@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import IconInfo from "../../icons/Info";
+import { readableExpression } from "../../helpers/runtimeExpression";
 import { OpenAPILinkData } from "../../types/openapi";
 
 /**
@@ -29,17 +30,6 @@ function linkTarget(link: OpenAPILinkData): string | null {
 
 /** Trailing punctuation would collide with the rest of the sentence. */
 const asLeadIn = (description: string) => description.trim().replace(/[.:;]+$/, "");
-
-/**
- * Runtime expressions are specified as `$response.body#/id`, where `#/...` is
- * a JSON Pointer into the body. Read as a plain path (`response.body.id`)
- * that's far easier to follow in prose. Literal values are left alone.
- */
-function readableExpression(value: unknown): string {
-  if (typeof value !== "string") return JSON.stringify(value);
-  if (!value.startsWith("$")) return value;
-  return value.slice(1).replace(/#\//g, ".").replace(/\//g, ".");
-}
 
 const Code = ({ children }: { children: string }) => (
   <code className="font-mono text-foreground-secondary">{children}</code>

@@ -42,7 +42,16 @@ export interface OpenAPIOperationData extends Record<string, unknown> {
   security?: Array<Record<string, string[]>>;
   deprecated?: boolean;
   externalDocs?: OpenAPIExternalDocsData;
+  /**
+   * Out-of-band requests the API sends *to the caller* after this operation.
+   * Keyed by callback name, then by a URL-template expression naming where the
+   * request goes, whose value is a Path Item Object like any other.
+   */
+  callbacks?: Record<string, OpenAPICallbackData>;
 }
+
+/** One callback's URL-expression map. Each value is a Path Item Object, so it renders like any other operation. */
+export type OpenAPICallbackData = Record<string, OpenAPIPathItemData>;
 
 export type OpenAPIPathItemData = Partial<Record<HttpMethod, OpenAPIOperationData>> & {
   summary?: string;

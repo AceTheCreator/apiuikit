@@ -6,11 +6,12 @@ import Authorization from "../../components/Authorization";
 import CollapsiblePanel from "../../components/CollapsiblePanel";
 import IconExternalLink from "../../icons/ExternalLink";
 import IconShieldCheck from "../../icons/ShieldCheck";
-import IconArrowDown from "../../icons/ArrowDown";
 import { PARAMETER_GROUPS } from "../../contants";
 import ResponseLinks from "./ResponseLinks";
+import OperationCallbacks from "./OperationCallbacks";
 import {
   HttpMethod,
+  OpenAPICallbackData,
   OpenAPIHeaderData,
   OpenAPILinkData,
   OpenAPIMediaTypeData,
@@ -126,6 +127,9 @@ function ResponseTabs({
   const currentSection = availableSections.some((s) => s.id === section)
     ? section
     : availableSections[0]?.id;
+  // Nothing to collapse when a status declares neither a body nor headers
+  // (a bare 204, say), so it says so plainly instead of offering an empty toggle.
+  const hasDetail = availableSections.length > 0;
 
   // Different statuses can declare entirely different content types (and may
   // have no headers or links at all), so neither selection carries over on a
@@ -138,74 +142,81 @@ function ResponseTabs({
 
   return (
     <div>
-      <div className="flex items-end gap-0.5 -ml-2 flex-wrap">
+      {/* Statuses read as a row of their own badges rather than a second set
+          of folder tabs: those belong to the Request/Response strip above, and
+          nesting one inside the other reads as the same control twice. */}
+      <div className="flex items-center gap-1.5 flex-wrap mb-3" role="tablist" aria-label="Response status">
         {statuses.map((s) => (
           <button
             key={s}
+            role="tab"
+            aria-selected={status === s}
             onClick={() => setStatus(s)}
-            className={`px-3 py-1.5 rounded-t-md transition-colors ${
+            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-mono transition-all ${statusBadgeClassName(s)} ${
               status === s
-                ? "bg-neutral-100 border border-b-0 border-border"
-                : "hover:bg-neutral-50"
+                ? "ring-1 ring-inset ring-foreground-muted/40"
+                : "opacity-50 hover:opacity-80"
             }`}
           >
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-mono ${statusBadgeClassName(s)}`}>
-              {s}
-            </span>
+            {s}
           </button>
         ))}
       </div>
 
-      <div className="-mx-5 px-5 py-4 bg-neutral-100 border-t border-border min-h-32">
-        {response?.description && (
-          <p className="text-sm text-foreground-secondary mb-3">{response.description}</p>
-        )}
-        {showSectionTabs && (
-          <Tabs
-            tabs={availableSections}
-            current={currentSection!}
-            onChange={(id) => setSection(id as ResponseSection)}
-          />
-        )}
-        <div className={showSectionTabs ? "mt-4" : undefined}>
-          {/* Keyed per section: without distinct keys React reuses one
-              SchemaTab across the swap and keeps its selected view, so the
-              section's own `defaultView` would never apply after a switch. */}
-          {currentSection === "headers" ? (
-            <SchemaTab
-              key="headers"
-              schema={headersToSchema(headers)}
-              label="Headers"
-              rootName="Headers"
-              defaultView="schema"
+      {response?.description && (
+        <p className="text-sm text-foreground-secondary mb-3">{response.description}</p>
+      )}
+
+      {hasDetail ? (
+        <>
+          {showSectionTabs && (
+            <Tabs
+              tabs={availableSections}
+              current={currentSection!}
+              onChange={(id) => setSection(id as ResponseSection)}
             />
-          ) : hasBody ? (
-            <SchemaTab
-              key="body"
-              schema={activeMedia.schema ?? {}}
-              label={
-                <MediaTypeLabel
-                  prefix="Body"
-                  mediaTypes={mediaTypes}
-                  selected={selectedMediaType}
-                  onChange={setSelectedMediaType}
-                />
-              }
-              rootName="Body"
-              example={resolveMediaExample(activeMedia)}
-            />
-          ) : (
-            <p className="text-xs text-foreground-muted italic">No response body.</p>
           )}
-        </div>
-        {hasLinks && (
-          <ResponseLinks
-            links={links}
-            onFollowOperation={onFollowOperation}
-            isOperationKnown={isOperationKnown}
-          />
-        )}
-      </div>
+          <div className={showSectionTabs ? "mt-4" : undefined}>
+            {/* Keyed per section: without distinct keys React reuses one
+                SchemaTab across the swap and keeps its selected view, so the
+                section's own `defaultView` would never apply after a switch. */}
+            {currentSection === "headers" ? (
+              <SchemaTab
+                key="headers"
+                schema={headersToSchema(headers)}
+                label="Headers"
+                rootName="Headers"
+                defaultView="schema"
+              />
+            ) : (
+              <SchemaTab
+                key="body"
+                schema={activeMedia?.schema ?? {}}
+                label={
+                  <MediaTypeLabel
+                    prefix="Body"
+                    mediaTypes={mediaTypes}
+                    selected={selectedMediaType}
+                    onChange={setSelectedMediaType}
+                  />
+                }
+                rootName="Body"
+                example={resolveMediaExample(activeMedia)}
+              />
+            )}
+          </div>
+        </>
+      ) : (
+        <p className="text-xs text-foreground-muted italic">No response body.</p>
+      )}
+
+      {hasLinks && (
+        <ResponseLinks
+          links={links}
+          onFollowOperation={onFollowOperation}
+          isOperationKnown={isOperationKnown}
+        />
+      )}
     </div>
   );
 }
@@ -279,85 +290,76 @@ function ParameterGroups({ parameters }: { parameters: OpenAPIParameterData[] })
   );
 }
 
-// Mirrors MessageDetails: Parameters and Request Body are grouped into one
-// block (tab-switched between the two, same rule as Payload/Headers — only
-// shown when both are present) and hidden behind a Show more/Show less
-// toggle, collapsed by default, instead of always being fully rendered.
-function OperationDetails({
+// The Request half of the Request/Response strip: a lead-in naming which
+// parts the request actually has, then Parameters/Request Body switched by
+// the same rule as MessageDetails' Payload/Headers (a tab strip only when
+// both are present, a lone one rendering on its own).
+function RequestPanel({
+  label,
   parameters,
   requestBodyContent,
   requestBodyDescription,
-  expanded,
-  onToggleExpanded,
 }: {
+  label: string;
   parameters: OpenAPIParameterData[];
   requestBodyContent: Record<string, OpenAPIMediaTypeData>;
   requestBodyDescription?: string;
-  expanded: boolean;
-  onToggleExpanded: () => void;
 }) {
   const hasParameters = parameters.length > 0;
   const mediaTypes = Object.keys(requestBodyContent);
   const hasBody = mediaTypes.length > 0;
-  const hasMore = hasParameters || hasBody;
   const [tab, setTab] = useState<"parameters" | "body">(hasParameters ? "parameters" : "body");
   const [selectedMediaType, setSelectedMediaType] = useState(mediaTypes[0]);
   const activeMedia = selectedMediaType ? requestBodyContent[selectedMediaType] : undefined;
 
-  if (!hasMore) return null;
+  if (!hasParameters && !hasBody) {
+    return <p className="text-xs text-foreground-muted italic">No request body or parameters.</p>;
+  }
+
+  const parts = [
+    hasBody ? "request body" : null,
+    parameters.some((param) => param.in === "header") ? "headers" : null,
+    parameters.some((param) => param.in === "cookie") ? "cookie" : null,
+  ].filter((part): part is string => !!part);
 
   return (
-    <>
-      <div
-        className={`grid transition-all duration-200 ease-in-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
-      >
-        <div className="overflow-hidden">
-          <div className="px-4 pb-4 space-y-4 border-t border-border pt-3">
-            {hasParameters && hasBody && (
-              <Tabs
-                tabs={[
-                  { id: "parameters", name: "Parameters" },
-                  { id: "body", name: "Request Body" },
-                ]}
-                current={tab}
-                onChange={(id) => setTab(id as "parameters" | "body")}
-              />
-            )}
-            <div className={hasParameters && hasBody ? "mt-4" : undefined}>
-              {(tab === "parameters" || !hasBody) && hasParameters && (
-                <ParameterGroups parameters={parameters} />
-              )}
-              {(tab === "body" || !hasParameters) && hasBody && activeMedia && (
-                <SchemaTab
-                  schema={activeMedia.schema ?? {}}
-                  label={
-                    <MediaTypeLabel
-                      prefix="Request Body"
-                      mediaTypes={mediaTypes}
-                      selected={selectedMediaType}
-                      onChange={setSelectedMediaType}
-                    />
-                  }
-                  rootName="Body "
-                  description={requestBodyDescription}
-                  example={resolveMediaExample(activeMedia)}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+    <div>
+      <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-3">
+        <span className="font-bold">{label}</span> expects the following {describeRequestParts(parts)}:
+      </p>
 
-      <button
-        onClick={onToggleExpanded}
-        className="w-full flex items-center justify-center gap-1.5 py-2 border-t border-border bg-neutral-50 hover:bg-neutral-100 transition-colors text-xs text-foreground-muted hover:text-foreground-secondary"
-      >
-        <span>{expanded ? "Show less" : "Show more"}</span>
-        <IconArrowDown
-          className={`w-3 h-3 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+      {hasParameters && hasBody && (
+        <Tabs
+          tabs={[
+            { id: "parameters", name: "Parameters" },
+            { id: "body", name: "Request Body" },
+          ]}
+          current={tab}
+          onChange={(id) => setTab(id as "parameters" | "body")}
         />
-      </button>
-    </>
+      )}
+      <div className={hasParameters && hasBody ? "mt-4" : undefined}>
+        {(tab === "parameters" || !hasBody) && hasParameters && (
+          <ParameterGroups parameters={parameters} />
+        )}
+        {(tab === "body" || !hasParameters) && hasBody && activeMedia && (
+          <SchemaTab
+            schema={activeMedia.schema ?? {}}
+            label={
+              <MediaTypeLabel
+                prefix="Request Body"
+                mediaTypes={mediaTypes}
+                selected={selectedMediaType}
+                onChange={setSelectedMediaType}
+              />
+            }
+            rootName="Body "
+            description={requestBodyDescription}
+            example={resolveMediaExample(activeMedia)}
+          />
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -370,49 +372,112 @@ function describeRequestParts(parts: string[]): string {
   return `${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}`;
 }
 
-// Mirrors Message's own card: an always-visible header sitting above the
-// collapsible Parameters/Request Body detail. The lead-in sentence (naming
-// whichever of request body/headers/cookie are present) lives inside the
-// card itself so its top is never blank — the request-body media type
-// selector, when there's more than one, lives inline in the SchemaTab's own
-// heading instead (see MediaTypeLabel/OperationDetails).
-function RequestCard({
+type ExchangeSide = "request" | "response" | "callbacks";
+
+/**
+ * Everything the operation exchanges, as one folder-tab strip over a shared
+ * panel: the same shape AsyncAPI's Reply uses for request/reply, since HTTP's
+ * request/response is the same idea. Callbacks join the strip because they're
+ * part of the operation's contract too, ordered last since that's when they
+ * happen; the panel itself explains that their direction is inverted.
+ *
+ * Only a side with something to show gets a tab, so a GET with no parameters
+ * opens straight on Response.
+ */
+function ExchangeTabs({
   label,
   parameters,
   requestBodyContent,
   requestBodyDescription,
+  responses,
+  callbacks,
+  id,
+  depth,
+  fillHeight = false,
+  onFollowOperation,
+  isOperationKnown,
 }: {
   label: string;
   parameters: OpenAPIParameterData[];
   requestBodyContent: Record<string, OpenAPIMediaTypeData>;
   requestBodyDescription?: string;
+  responses: Record<string, OpenAPIResponseData>;
+  callbacks?: Record<string, OpenAPICallbackData>;
+  id: string | null;
+  depth: number;
+  /** Grows the panel to the bottom of the side panel so its surface doesn't stop short under thin content. Off when nested in a callback card, which sizes to its own content. */
+  fillHeight?: boolean;
+  onFollowOperation?: (operationId: string) => void;
+  isOperationKnown?: (operationId: string) => boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const mediaTypes = Object.keys(requestBodyContent);
+  const hasRequest = parameters.length > 0 || Object.keys(requestBodyContent).length > 0;
+  const hasResponse = Object.keys(responses).length > 0;
+  // Past the depth cap a callback's own callbacks stop expanding, so the tab
+  // that would hold them isn't offered either.
+  const hasCallbacks = !!callbacks && Object.keys(callbacks).length > 0 && depth < MAX_CALLBACK_DEPTH;
 
-  if (parameters.length === 0 && mediaTypes.length === 0) return null;
+  const sides: ExchangeSide[] = [
+    ...(hasRequest ? (["request"] as const) : []),
+    ...(hasResponse ? (["response"] as const) : []),
+    ...(hasCallbacks ? (["callbacks"] as const) : []),
+  ];
+  const [side, setSide] = useState<ExchangeSide>(sides[0] ?? "request");
 
-  const parts = [
-    mediaTypes.length > 0 ? "request body" : null,
-    parameters.some((param) => param.in === "header") ? "headers" : null,
-    parameters.some((param) => param.in === "cookie") ? "cookie" : null,
-  ].filter((part): part is string => !!part);
+  if (sides.length === 0) return null;
+
+  const current = sides.includes(side) ? side : sides[0];
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
-      <div className="px-4 py-3">
-        <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">
-          <span className="font-bold">{label}</span> expects the following {describeRequestParts(parts)}:
-        </p>
+    <div className={fillHeight ? "flex-1 flex flex-col min-h-0" : undefined}>
+      <div className="flex items-end gap-0.5 -ml-2" role="tablist" aria-label="Operation exchange">
+        {sides.map((s) => (
+          <button
+            key={s}
+            role="tab"
+            aria-selected={current === s}
+            onClick={() => setSide(s)}
+            className={`px-3 py-1.5 text-sm font-medium rounded-t-md transition-colors capitalize ${
+              current === s
+                ? "bg-neutral-100 text-foreground border border-b-0 border-border"
+                : "text-foreground-muted hover:text-foreground-secondary"
+            }`}
+          >
+            {s}
+          </button>
+        ))}
       </div>
 
-      <OperationDetails
-        parameters={parameters}
-        requestBodyContent={requestBodyContent}
-        requestBodyDescription={requestBodyDescription}
-        expanded={expanded}
-        onToggleExpanded={() => setExpanded((v) => !v)}
-      />
+      {/* `-mb-4` cancels the side panel's own bottom padding so the surface
+          reaches the panel's edge rather than stopping an inch short. */}
+      <div
+        className={`-mx-5 px-5 py-4 bg-neutral-100 border-t border-border min-h-32 ${
+          fillHeight ? "flex-1 -mb-4" : ""
+        }`}
+      >
+        {current === "request" && (
+          <RequestPanel
+            label={label}
+            parameters={parameters}
+            requestBodyContent={requestBodyContent}
+            requestBodyDescription={requestBodyDescription}
+          />
+        )}
+        {current === "response" && (
+          <ResponseTabs
+            responses={responses}
+            onFollowOperation={onFollowOperation}
+            isOperationKnown={isOperationKnown}
+          />
+        )}
+        {current === "callbacks" && callbacks && (
+          <OperationCallbacks
+            callbacks={callbacks}
+            id={id}
+            depth={depth}
+            renderOperation={PathOperation}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -432,7 +497,12 @@ interface PathOperationProps {
   onFollowOperation?: (operationId: string) => void;
   /** Whether an `operationId` resolves to an operation in the same list, so a response link can be navigable rather than plain text. */
   isOperationKnown?: (operationId: string) => boolean;
+  /** Nesting level. A callback's operation may declare callbacks of its own, so past the first level they stop expanding rather than recursing without end. */
+  depth?: number;
 }
+
+/** How deep callbacks keep expanding. One level covers every real document while staying terminating on a cyclic one. */
+const MAX_CALLBACK_DEPTH = 1;
 
 export default function PathOperation({
   method,
@@ -444,6 +514,7 @@ export default function PathOperation({
   securitySchemes,
   onFollowOperation,
   isOperationKnown,
+  depth = 0,
 }: PathOperationProps) {
   // Path and query parameters are already surfaced via the address bar's
   // tooltip (see Paths.tsx) — only header/cookie parameters still need their
@@ -478,8 +549,17 @@ export default function PathOperation({
     })
     .filter((scheme): scheme is OpenAPISecuritySchemeData => !!scheme);
 
+  // A flex column (rather than `space-y-6`) so the exchange panel can take the
+  // height left over below the badges, summary and Authorization. `min-h-full`
+  // only at the top level: nested in a callback card there's no leftover height
+  // to take, and stretching there would be wrong.
+  const isRoot = depth === 0;
+
   return (
-    <div className="space-y-6" id={`${idPrefix}-${id}-detail`}>
+    <div
+      className={`flex flex-col gap-6 ${isRoot ? "min-h-full" : ""}`}
+      id={`${idPrefix}-${id}-detail`}
+    >
       <div className="flex items-center gap-2">
         {op.deprecated && (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
@@ -530,26 +610,19 @@ export default function PathOperation({
         </div>
       )}
 
-      <RequestCard
+      <ExchangeTabs
         label={label}
         parameters={parameters}
         requestBodyContent={requestBodyContent}
         requestBodyDescription={op.requestBody?.description}
+        responses={responses}
+        callbacks={op.callbacks}
+        id={id}
+        depth={depth}
+        fillHeight={isRoot}
+        onFollowOperation={onFollowOperation}
+        isOperationKnown={isOperationKnown}
       />
-
-      {Object.keys(responses).length > 0 && (
-        <div>
-          <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
-            <span className="font-bold">{label}</span> expects{" "}
-            {Object.keys(responses).length > 1 ? "one of the following responses" : "the following response"}:
-          </p>
-          <ResponseTabs
-            responses={responses}
-            onFollowOperation={onFollowOperation}
-            isOperationKnown={isOperationKnown}
-          />
-        </div>
-      )}
     </div>
   );
 }
