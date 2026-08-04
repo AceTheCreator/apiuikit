@@ -18,7 +18,7 @@ Pass a plain JavaScript object that matches the AsyncAPI 3.0 document shape.
 ### TypeScript
 
 ```tsx
-import AsyncAPI from "apiuikit";
+import { AsyncAPI } from "apiuikit";
 import type { ConfigInterface } from "apiuikit";
 import doc from "./asyncapi.json";
 
@@ -35,7 +35,7 @@ export default function App() {
 ### JavaScript
 
 ```jsx
-import AsyncAPI from "apiuikit";
+import { AsyncAPI } from "apiuikit";
 import doc from "./asyncapi.json";
 
 export default function App() {
@@ -48,7 +48,7 @@ export default function App() {
 If you run the AsyncAPI parser yourself upstream (e.g. in a build script or server), you can signal to the component that all `$ref`s have already been resolved:
 
 ```tsx
-import AsyncAPI from "apiuikit";
+import { AsyncAPI } from "apiuikit";
 import type { AsyncAPIDocumentData } from "apiuikit";
 
 // document was fully dereferenced upstream
@@ -61,7 +61,7 @@ export default function App() {
 
 The `kind: "resolved"` variant uses the same `AsyncAPI` component, it is just a different prop shape that conveys the pre-resolved state.
 
-Either way, the component verifies rather than trusts: documents are checked for `$ref`s with a cheap read-only scan, and a fully resolved document passes through untouched (no copy). If a document handed in as resolved still contains `$ref`s, they are resolved anyway — the flag is a hint, not a contract you can break the UI with.
+Either way, the component verifies rather than trusts: documents are checked for `$ref`s with a cheap read-only scan, and a fully resolved document passes through untouched (no copy). If a document handed in as `kind="resolved"` still contains `$ref`s, they are resolved anyway and a console warning tells you the promise was false, so a broken upstream resolution step can't break the UI, but it also doesn't stay invisible.
 
 ## Multi-format schemas
 

@@ -3,17 +3,20 @@ import { describe, expect, it } from "vitest";
 import { RenderExtensions } from "../RenderExtensions";
 import { AsyncAPIDocumentContext } from "../../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../schema/depthColors";
+import type { AsyncAPIDocumentData } from "../../types/schema";
 
 function withContext(showExtensions: boolean, children: React.ReactNode) {
   return (
     <AsyncAPIDocumentContext.Provider
       value={{
-        document: {},
+        specType: "asyncapi",
+        document: {} as AsyncAPIDocumentData,
         deref: () => undefined,
         portalHost: null,
         rootElement: null,
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions,
+        showCodeSamples: true,
       }}
     >
       {children}

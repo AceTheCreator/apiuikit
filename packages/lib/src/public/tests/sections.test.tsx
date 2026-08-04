@@ -1,7 +1,9 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AsyncAPIDocumentData } from "../../types/schema";
+import type { OpenAPIDocumentData } from "../../types/openapi";
 import { AsyncAPIProvider, Operations, Servers, Messages, Info } from "../sections";
+import { OpenAPIEndpoints, OpenAPIProvider, OpenAPIWebhooks } from "../openapiSections";
 
 const asDoc = (doc: unknown) => doc as AsyncAPIDocumentData;
 
@@ -61,5 +63,75 @@ describe("standalone section components", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() => render(<Operations />)).toThrow(/needs a `document` prop/);
     spy.mockRestore();
+  });
+});
+
+describe("standalone OpenAPI webhooks section", () => {
+  const webhookDoc = {
+    openapi: "3.1.0",
+    info: { title: "Petstore", version: "1.0.0" },
+    webhooks: {
+      newPet: { post: { summary: "New pet added", responses: { "200": { description: "OK" } } } },
+    },
+  } as unknown as OpenAPIDocumentData;
+
+  it("renders on its own from a document prop", () => {
+    render(<OpenAPIWebhooks document={webhookDoc} />);
+
+    expect(screen.getByText("Webhook")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "POST newPet" })).toBeInTheDocument();
+  });
+
+  it("composes under OpenAPIProvider without its own document prop", () => {
+    render(
+      <OpenAPIProvider document={webhookDoc}>
+        <OpenAPIWebhooks />
+      </OpenAPIProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: "POST newPet" })).toBeInTheDocument();
+  });
+
+  it("renders nothing for a document that declares no webhooks", () => {
+    const { container } = render(
+      <OpenAPIWebhooks
+        document={{ openapi: "3.0.0", info: { title: "X", version: "1" } } as unknown as OpenAPIDocumentData}
+      />,
+    );
+
+    expect(container.textContent).toBe("");
+  });
+});
+
+describe("mismatched providers", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const openapiDoc = {
+    openapi: "3.0.0",
+    info: { title: "Petstore", version: "1.0.0" },
+    paths: {
+      "/pets": { get: { summary: "List pets", responses: { "200": { description: "OK" } } } },
+    },
+  } as unknown as OpenAPIDocumentData;
+
+  it("warns when an OpenAPI section is composed under an AsyncAPI provider, and doesn't crash", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(
+      <AsyncAPIProvider document={asDoc(doc)}>
+        <OpenAPIEndpoints />
+      </AsyncAPIProvider>,
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/OpenAPI section.*asyncapi document provider/));
+  });
+
+  it("falls back to the section's own document prop under a mismatched provider", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(
+      <AsyncAPIProvider document={asDoc(doc)}>
+        <OpenAPIEndpoints document={openapiDoc} />
+      </AsyncAPIProvider>,
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/own `document` prop instead/));
+    expect(document.body.textContent).toContain("/pets");
   });
 });

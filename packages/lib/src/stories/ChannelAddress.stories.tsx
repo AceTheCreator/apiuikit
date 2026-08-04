@@ -4,6 +4,7 @@ import { ChannelAddress } from "../components/ChannelAddress";
 import { AsyncAPIDocumentContext } from "../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../components/schema/depthColors";
 import type { Parameter } from "../types/asyncapi/Parameter";
+import type { AsyncAPIDocumentData } from "../types/schema";
 
 // ChannelAddress renders a channel address, coloring each {parameter} segment
 // and showing a hover/focus tooltip for parameters that have details
@@ -14,13 +15,15 @@ const withPortalHost = (Story: ComponentType) => {
   return (
     <AsyncAPIDocumentContext.Provider
       value={{
-        document: {},
+        specType: "asyncapi",
+        document: {} as AsyncAPIDocumentData,
         deref: () => undefined,
         // Tooltip portals need a real host; the canvas body works here.
         portalHost: typeof document !== "undefined" ? document.body : null,
         rootElement: null,
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
+        showCodeSamples: true,
       }}
     >
       <div className="mx-auto w-full max-w-2xl p-8">

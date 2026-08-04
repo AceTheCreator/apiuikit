@@ -1,0 +1,1847 @@
+openapi: 3.1.0
+
+info:
+  title: Renderer Torture API
+  version: 42.7.13-beta.4
+  summary: An intentionally complicated OpenAPI specification
+  description: |
+    # Renderer Torture API
+
+    This API exists specifically to stress-test OpenAPI renderers.
+
+    It contains:
+
+    - deeply nested schemas
+    - recursive references
+    - `oneOf`, `anyOf`, `allOf`, and `not`
+    - discriminators
+    - nullable values using JSON Schema 2020-12
+    - tuples and arrays
+    - maps and `patternProperties`
+    - callbacks and webhooks
+    - links
+    - multipart uploads
+    - multiple request/response content types
+    - custom headers
+    - deprecated operations
+    - unusual parameter serialization
+    - multiple security schemes
+    - examples containing unusual data
+
+    > **Warning**
+    >
+    > This API should probably never exist in production.
+
+  termsOfService: https://example.com/terms
+
+  contact:
+    name: Torture API Team
+    url: https://example.com
+    email: torture@example.com
+
+  license:
+    name: MIT
+    identifier: MIT
+
+servers:
+  - url: https://{region}.api.example.com/{version}
+    description: Production
+    variables:
+      region:
+        default: us-east-1
+        enum:
+          - us-east-1
+          - eu-west-1
+          - ap-south-1
+      version:
+        default: v1
+
+  - url: http://localhost:{port}
+    description: Local development
+    variables:
+      port:
+        default: "8080"
+
+tags:
+  - name: Users
+    description: User management
+
+  - name: Orders
+    description: Complex order operations
+
+  - name: Files
+    description: File upload tests
+
+  - name: Events
+    description: Async callback tests
+
+security:
+  - OAuth2:
+      - users:read
+  - ApiKey: []
+
+paths:
+
+  /users/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/UserId"
+
+    get:
+      tags:
+        - Users
+      operationId: getUser
+      summary: Get an extremely complicated user
+      description: |
+        Returns a polymorphic user object.
+
+        The response can represent either a **human**, **bot**, or
+        **service account**.
+
+      parameters:
+
+        - name: include
+          in: query
+          description: Fields to include
+          required: false
+          style: form
+          explode: false
+          schema:
+            type: array
+            uniqueItems: true
+            items:
+              type: string
+              enum:
+                - profile
+                - permissions
+                - metadata
+                - relationships
+
+        - name: filters
+          in: query
+          description: Deep object filter
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            properties:
+              active:
+                type: boolean
+              minAge:
+                type: integer
+                minimum: 0
+              roles:
+                type: array
+                items:
+                  type: string
+
+        - name: X-Debug-Mode
+          in: header
+          schema:
+            type:
+              - boolean
+              - "null"
+            default: false
+
+      responses:
+
+        "200":
+          description: User found
+
+          headers:
+            X-RateLimit-Limit:
+              description: Maximum requests
+              schema:
+                type: integer
+                example: 1000
+
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+                minimum: 0
+
+            X-Request-ID:
+              schema:
+                type: string
+                format: uuid
+
+          content:
+
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+              examples:
+
+                human:
+                  summary: Human user
+                  value:
+                    id: usr_123
+                    type: human
+                    name: Ada Lovelace
+                    age: 36
+                    status: active
+
+                bot:
+                  summary: Bot user
+                  value:
+                    id: bot_123
+                    type: bot
+                    name: Build Bot
+                    status: active
+
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/User"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /users:
+    post:
+      tags:
+        - Users
+      operationId: createUser
+      summary: Create a polymorphic user
+
+      requestBody:
+        required: true
+        content:
+
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+
+      responses:
+
+        "201":
+          description: User created
+
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+          links:
+            GetCreatedUser:
+              operationId: getUser
+              parameters:
+                userId: $response.body#/id
+              description: Fetch the newly created user
+
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /orders:
+    post:
+      tags:
+        - Orders
+      operationId: createOrder
+      summary: Create a complicated order
+
+      security:
+        - OAuth2:
+            - orders:write
+
+      requestBody:
+        required: true
+        description: Order creation payload
+
+        content:
+
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrder"
+
+          application/vnd.torture.order+json:
+            schema:
+              $ref: "#/components/schemas/CreateOrder"
+
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/CreateOrder"
+
+      responses:
+
+        "202":
+          description: Order accepted for asynchronous processing
+
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+
+                  - type: object
+                    required:
+                      - data
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Order"
+
+          links:
+            GetOrder:
+              operationId: getOrder
+              parameters:
+                orderId: $response.body#/data/id
+
+      callbacks:
+
+        # Two URL expressions under one callback name, so a single callback
+        # carries more than one operation.
+        orderStatusChanged:
+          "{$request.body#/callbackUrl}":
+
+            post:
+              summary: Order status callback
+
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/OrderEvent"
+
+              responses:
+                "200":
+                  description: Callback accepted
+
+                  headers:
+                    X-Callback-Ack:
+                      description: Echo the delivery id you received
+                      schema:
+                        type: string
+
+                "204":
+                  description: Callback accepted with no response
+
+          "{$request.body#/backupCallbackUrl}":
+
+            post:
+              summary: Order status callback (backup endpoint)
+              description: |
+                Delivered only when the primary endpoint fails.
+
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/OrderEvent"
+
+              responses:
+                "200":
+                  description: Callback accepted
+
+        # One URL, several media types on the request body, so the callback's
+        # body renders with the media type switcher.
+        orderShipped:
+          "{$request.body#/callbackUrl}":
+
+            post:
+              summary: Shipment notification
+
+              requestBody:
+                required: true
+
+                content:
+
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/Order"
+
+                  application/xml:
+                    schema:
+                      $ref: "#/components/schemas/Order"
+
+              responses:
+                "200":
+                  description: Notification accepted
+
+                "429":
+                  description: Slow down
+
+        # One URL, two methods, so a single Path Item yields two operations.
+        orderRefunded:
+          "{$request.body#/callbackUrl}":
+
+            post:
+              summary: Refund issued
+
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/OrderEvent"
+
+              responses:
+                "200":
+                  description: Accepted
+
+            put:
+              summary: Refund correction replay
+              deprecated: true
+
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      $ref: "#/components/schemas/OrderEvent"
+
+              responses:
+                "200":
+                  description: Replay accepted
+
+  /orders/{orderId}:
+    parameters:
+      - $ref: "#/components/parameters/OrderId"
+
+    get:
+      tags:
+        - Orders
+      operationId: getOrder
+      summary: Retrieve an order
+
+      parameters:
+
+        - name: fields
+          in: query
+          style: spaceDelimited
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+
+      responses:
+
+        "200":
+          description: Order
+
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags:
+        - Orders
+      operationId: patchOrder
+      summary: Update an order
+
+      requestBody:
+        required: true
+        content:
+
+          application/json-patch+json:
+            schema:
+              type: array
+              minItems: 1
+              items:
+                $ref: "#/components/schemas/JsonPatchOperation"
+
+          application/merge-patch+json:
+            schema:
+              type: object
+              additionalProperties: true
+
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+    delete:
+      tags:
+        - Orders
+      operationId: deleteOrder
+      summary: Delete order
+      deprecated: true
+
+      responses:
+        "204":
+          description: Deleted
+
+  /search:
+    get:
+      operationId: search
+      summary: Serialization torture test
+
+      parameters:
+
+        - name: coordinates
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            prefixItems:
+              - type: number
+                minimum: -90
+                maximum: 90
+              - type: number
+                minimum: -180
+                maximum: 180
+            minItems: 2
+            maxItems: 2
+
+        - name: matrix
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            additionalProperties:
+              type: array
+              items:
+                type: number
+
+        - name: X-Experimental
+          in: header
+          required: false
+          schema:
+            type: string
+            const: enabled
+
+        - name: preferences
+          in: cookie
+          required: false
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  anyOf:
+                    - $ref: "#/components/schemas/HumanUser"
+                    - $ref: "#/components/schemas/Order"
+                    - $ref: "#/components/schemas/FileResource"
+
+  /files:
+    post:
+      tags:
+        - Files
+      operationId: uploadFile
+      summary: Multipart upload torture test
+
+      requestBody:
+        required: true
+
+        content:
+
+          multipart/form-data:
+            schema:
+              type: object
+
+              required:
+                - file
+                - metadata
+
+              properties:
+
+                file:
+                  type: string
+                  format: binary
+
+                thumbnail:
+                  type:
+                    - string
+                    - "null"
+                  format: binary
+
+                metadata:
+                  $ref: "#/components/schemas/FileMetadata"
+
+                tags:
+                  type: array
+                  items:
+                    type: string
+
+            encoding:
+
+              metadata:
+                contentType: application/json
+
+              tags:
+                style: form
+                explode: true
+
+      responses:
+
+        "201":
+          description: File uploaded
+
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResource"
+
+        "413":
+          description: File too large
+
+  /stream:
+    get:
+      tags:
+        - Events
+      operationId: streamEvents
+      summary: Server sent event stream
+
+      responses:
+
+        "200":
+          description: Infinite event stream
+
+          content:
+
+            text/event-stream:
+              schema:
+                type: string
+
+            application/x-ndjson:
+              schema:
+                type: string
+
+  /empty:
+    post:
+      operationId: emptyResponse
+      summary: Endpoint with basically nothing
+
+      responses:
+        "204":
+          description: Nothing here
+
+webhooks:
+
+  userCreated:
+
+    post:
+      summary: User-created webhook
+
+      requestBody:
+        required: true
+
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+
+      responses:
+        "200":
+          description: Webhook received
+
+components:
+
+  securitySchemes:
+
+    ApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+    BasicAuth:
+      type: http
+      scheme: basic
+
+    OAuth2:
+      type: oauth2
+
+      flows:
+
+        authorizationCode:
+          authorizationUrl: https://auth.example.com/oauth/authorize
+          tokenUrl: https://auth.example.com/oauth/token
+
+          scopes:
+            users:read: Read users
+            users:write: Modify users
+            orders:read: Read orders
+            orders:write: Modify orders
+
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth/token
+          scopes:
+            internal: Internal access
+
+    OpenId:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.example.com/.well-known/openid-configuration
+
+  parameters:
+
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: User identifier
+      schema:
+        type: string
+        pattern: "^usr_[A-Za-z0-9]+$"
+      example: usr_abc123
+
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^ord_[A-Za-z0-9_-]{8,64}$"
+
+  responses:
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    RateLimited:
+      description: Rate limit exceeded
+
+      headers:
+
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
+
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    ValidationError:
+      description: Validation failure
+
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/Problem"
+
+              - type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ValidationIssue"
+
+  schemas:
+
+    ApiResponse:
+      type: object
+
+      required:
+        - success
+        - meta
+
+      properties:
+
+        success:
+          type: boolean
+
+        meta:
+          type: object
+          required:
+            - requestId
+            - timestamp
+
+          properties:
+
+            requestId:
+              type: string
+              format: uuid
+
+            timestamp:
+              type: string
+              format: date-time
+
+            durationMs:
+              type: number
+              minimum: 0
+              multipleOf: 0.001
+
+    User:
+      oneOf:
+        - $ref: "#/components/schemas/HumanUser"
+        - $ref: "#/components/schemas/BotUser"
+        - $ref: "#/components/schemas/ServiceAccount"
+
+      discriminator:
+        propertyName: type
+        mapping:
+          human: "#/components/schemas/HumanUser"
+          bot: "#/components/schemas/BotUser"
+          service: "#/components/schemas/ServiceAccount"
+
+    UserBase:
+      type: object
+
+      required:
+        - id
+        - type
+        - name
+        - status
+
+      properties:
+
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+
+        type:
+          type: string
+
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+
+        status:
+          type: string
+          enum:
+            - active
+            - suspended
+            - deleted
+
+        nickname:
+          type:
+            - string
+            - "null"
+
+        email:
+          type:
+            - string
+            - "null"
+          format: email
+
+        website:
+          type:
+            - string
+            - "null"
+          format: uri
+
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+
+        secretNote:
+          type: string
+          writeOnly: true
+
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+
+    HumanUser:
+      allOf:
+
+        - $ref: "#/components/schemas/UserBase"
+
+        - type: object
+
+          required:
+            - age
+            - profile
+
+          properties:
+
+            type:
+              const: human
+
+            age:
+              type: integer
+              minimum: 0
+              maximum: 150
+
+            profile:
+              type: object
+
+              properties:
+
+                birthday:
+                  type:
+                    - string
+                    - "null"
+                  format: date
+
+                gender:
+                  anyOf:
+                    - type: string
+                      enum:
+                        - male
+                        - female
+                        - non-binary
+                        - undisclosed
+                    - type: "null"
+
+                address:
+                  $ref: "#/components/schemas/Address"
+
+                preferences:
+                  type: object
+
+                  properties:
+
+                    notifications:
+                      type: object
+
+                      properties:
+
+                        email:
+                          type: boolean
+                          default: true
+
+                        sms:
+                          type: boolean
+                          default: false
+
+                        push:
+                          type: boolean
+                          default: true
+
+                    appearance:
+                      type: object
+
+                      properties:
+
+                        theme:
+                          type: string
+                          enum:
+                            - light
+                            - dark
+                            - system
+
+                        density:
+                          type: string
+                          enum:
+                            - compact
+                            - comfortable
+                            - spacious
+
+                  additionalProperties: false
+
+    BotUser:
+      allOf:
+
+        - $ref: "#/components/schemas/UserBase"
+
+        - type: object
+
+          required:
+            - owner
+            - capabilities
+
+          properties:
+
+            type:
+              const: bot
+
+            owner:
+              $ref: "#/components/schemas/HumanUserReference"
+
+            capabilities:
+              type: array
+              minItems: 1
+
+              items:
+                oneOf:
+
+                  - type: object
+                    required:
+                      - type
+                      - languages
+
+                    properties:
+                      type:
+                        const: chat
+
+                      languages:
+                        type: array
+                        items:
+                          type: string
+
+                  - type: object
+                    required:
+                      - type
+                      - formats
+
+                    properties:
+                      type:
+                        const: image-generation
+
+                      formats:
+                        type: array
+                        items:
+                          enum:
+                            - png
+                            - jpeg
+                            - webp
+
+    ServiceAccount:
+      allOf:
+
+        - $ref: "#/components/schemas/UserBase"
+
+        - type: object
+
+          properties:
+
+            type:
+              const: service
+
+            scopes:
+              type: array
+              uniqueItems: true
+              items:
+                type: string
+
+            expiresAt:
+              type:
+                - string
+                - "null"
+              format: date-time
+
+    HumanUserReference:
+      type: object
+      required:
+        - id
+        - name
+
+      properties:
+
+        id:
+          type: string
+
+        name:
+          type: string
+
+    UserCreate:
+      oneOf:
+
+        - type: object
+          title: Create Human
+
+          required:
+            - type
+            - name
+            - age
+
+          properties:
+
+            type:
+              const: human
+
+            name:
+              type: string
+
+            age:
+              type: integer
+
+        - type: object
+          title: Create Bot
+
+          required:
+            - type
+            - name
+            - ownerId
+
+          properties:
+
+            type:
+              const: bot
+
+            name:
+              type: string
+
+            ownerId:
+              type: string
+
+    Address:
+      type: object
+
+      properties:
+
+        line1:
+          type: string
+
+        line2:
+          type:
+            - string
+            - "null"
+
+        city:
+          type: string
+
+        postalCode:
+          type: string
+
+        country:
+          type: string
+          pattern: "^[A-Z]{2}$"
+
+        coordinates:
+          type:
+            - array
+            - "null"
+
+          prefixItems:
+
+            - type: number
+              description: Latitude
+              minimum: -90
+              maximum: 90
+
+            - type: number
+              description: Longitude
+              minimum: -180
+              maximum: 180
+
+          minItems: 2
+          maxItems: 2
+
+      dependentRequired:
+        postalCode:
+          - country
+
+    Metadata:
+      type: object
+
+      description: |
+        Arbitrary metadata demonstrating patternProperties
+        and JSON Schema property constraints.
+
+      properties:
+
+        source:
+          type: string
+
+      patternProperties:
+
+        "^x-":
+          type:
+            - string
+            - number
+            - boolean
+
+        "^internal_[a-z]+$":
+          type: object
+          additionalProperties: true
+
+      propertyNames:
+        pattern: "^[A-Za-z0-9_-]+$"
+
+      additionalProperties: false
+
+    CreateOrder:
+      type: object
+
+      required:
+        - customer
+        - items
+        - payment
+        - callbackUrl
+
+      properties:
+
+        customer:
+          oneOf:
+
+            - $ref: "#/components/schemas/HumanUserReference"
+
+            - type: object
+              title: Guest Customer
+
+              required:
+                - email
+
+              properties:
+                email:
+                  type: string
+                  format: email
+
+                name:
+                  type: string
+
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+
+          items:
+            $ref: "#/components/schemas/OrderItem"
+
+        payment:
+          $ref: "#/components/schemas/PaymentMethod"
+
+        shippingAddress:
+          $ref: "#/components/schemas/Address"
+
+        callbackUrl:
+          type: string
+          format: uri
+
+        coupon:
+          type:
+            - string
+            - "null"
+
+        notes:
+          type: array
+
+          items:
+            anyOf:
+              - type: string
+              - type: number
+              - type: boolean
+              - type: "null"
+
+    Order:
+      type: object
+
+      required:
+        - id
+        - status
+        - items
+        - totals
+
+      properties:
+
+        id:
+          type: string
+
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - shipped
+            - delivered
+            - cancelled
+            - refunded
+
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+
+        totals:
+          type: object
+
+          required:
+            - subtotal
+            - tax
+            - shipping
+            - total
+
+          properties:
+
+            subtotal:
+              $ref: "#/components/schemas/Money"
+
+            tax:
+              $ref: "#/components/schemas/Money"
+
+            shipping:
+              $ref: "#/components/schemas/Money"
+
+            discount:
+              $ref: "#/components/schemas/Money"
+
+            total:
+              $ref: "#/components/schemas/Money"
+
+        timeline:
+          $ref: "#/components/schemas/TimelineNode"
+
+        attributes:
+          type: object
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+              - type: array
+                items:
+                  type: string
+
+    OrderItem:
+      type: object
+
+      required:
+        - productId
+        - quantity
+        - price
+
+      properties:
+
+        productId:
+          type: string
+
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99999
+
+        price:
+          $ref: "#/components/schemas/Money"
+
+        dimensions:
+          type: array
+          description: Width, height and depth
+
+          prefixItems:
+
+            - type: number
+              minimum: 0
+
+            - type: number
+              minimum: 0
+
+            - type: number
+              minimum: 0
+
+          minItems: 3
+          maxItems: 3
+
+        customizations:
+          type: object
+
+          additionalProperties:
+            anyOf:
+              - type: string
+              - type: number
+              - type: boolean
+              - type: "null"
+
+    Money:
+      type: object
+
+      required:
+        - amount
+        - currency
+
+      properties:
+
+        amount:
+          type: string
+          pattern: "^-?[0-9]+(\\.[0-9]{1,8})?$"
+          examples:
+            - "12.99"
+            - "0.00000001"
+            - "-500.25"
+
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          examples:
+            - USD
+            - EUR
+            - INR
+
+    PaymentMethod:
+      oneOf:
+
+        - $ref: "#/components/schemas/CardPayment"
+
+        - $ref: "#/components/schemas/BankPayment"
+
+        - $ref: "#/components/schemas/CryptoPayment"
+
+      discriminator:
+        propertyName: type
+
+    CardPayment:
+      type: object
+
+      required:
+        - type
+        - cardToken
+
+      properties:
+
+        type:
+          const: card
+
+        cardToken:
+          type: string
+          writeOnly: true
+
+        saveCard:
+          type: boolean
+          default: false
+
+    BankPayment:
+      type: object
+
+      required:
+        - type
+        - bankAccountId
+
+      properties:
+
+        type:
+          const: bank
+
+        bankAccountId:
+          type: string
+
+    CryptoPayment:
+      type: object
+
+      required:
+        - type
+        - network
+        - asset
+
+      properties:
+
+        type:
+          const: crypto
+
+        network:
+          type: string
+          enum:
+            - ethereum
+            - base
+            - bitcoin
+            - solana
+
+        asset:
+          type: string
+
+        wallet:
+          oneOf:
+
+            - type: string
+              pattern: "^0x[a-fA-F0-9]{40}$"
+
+            - type: string
+              pattern: "^(bc1|[13])[A-Za-z0-9]+$"
+
+    TimelineNode:
+      type:
+        - object
+        - "null"
+
+      description: |
+        Recursive schema.
+
+        Every timeline node may contain another timeline node.
+
+      properties:
+
+        id:
+          type: string
+
+        message:
+          type: string
+
+        timestamp:
+          type: string
+          format: date-time
+
+        previous:
+          $ref: "#/components/schemas/TimelineNode"
+
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineNode"
+
+    OrderEvent:
+      oneOf:
+
+        - type: object
+          title: Order Created
+
+          required:
+            - type
+            - order
+
+          properties:
+
+            type:
+              const: order.created
+
+            order:
+              $ref: "#/components/schemas/Order"
+
+        - type: object
+          title: Order Status Changed
+
+          required:
+            - type
+            - orderId
+            - previousStatus
+            - status
+
+          properties:
+
+            type:
+              const: order.status_changed
+
+            orderId:
+              type: string
+
+            previousStatus:
+              type: string
+
+            status:
+              type: string
+
+        - type: object
+          title: Order Deleted
+
+          required:
+            - type
+            - orderId
+
+          properties:
+
+            type:
+              const: order.deleted
+
+            orderId:
+              type: string
+
+    FileMetadata:
+      type: object
+
+      required:
+        - filename
+
+      properties:
+
+        filename:
+          type: string
+
+        description:
+          type:
+            - string
+            - "null"
+
+        checksum:
+          type: string
+          pattern: "^[a-fA-F0-9]{64}$"
+
+        custom:
+          type: object
+          additionalProperties: true
+
+    FileResource:
+      type: object
+
+      required:
+        - id
+        - url
+        - size
+
+      properties:
+
+        id:
+          type: string
+
+        url:
+          type: string
+          format: uri
+
+        size:
+          type: integer
+          minimum: 0
+
+        mimeType:
+          type: string
+
+        metadata:
+          $ref: "#/components/schemas/FileMetadata"
+
+    JsonPatchOperation:
+      oneOf:
+
+        - type: object
+          title: Add
+
+          required:
+            - op
+            - path
+            - value
+
+          properties:
+            op:
+              const: add
+
+            path:
+              type: string
+
+            value: {}
+
+        - type: object
+          title: Remove
+
+          required:
+            - op
+            - path
+
+          properties:
+            op:
+              const: remove
+
+            path:
+              type: string
+
+        - type: object
+          title: Replace
+
+          required:
+            - op
+            - path
+            - value
+
+          properties:
+            op:
+              const: replace
+
+            path:
+              type: string
+
+            value: {}
+
+        - type: object
+          title: Move
+
+          required:
+            - op
+            - from
+            - path
+
+          properties:
+            op:
+              const: move
+
+            from:
+              type: string
+
+            path:
+              type: string
+
+        - type: object
+          title: Copy
+
+          required:
+            - op
+            - from
+            - path
+
+          properties:
+            op:
+              const: copy
+
+            from:
+              type: string
+
+            path:
+              type: string
+
+        - type: object
+          title: Test
+
+          required:
+            - op
+            - path
+            - value
+
+          properties:
+            op:
+              const: test
+
+            path:
+              type: string
+
+            value: {}
+
+    ValidationIssue:
+      type: object
+
+      required:
+        - path
+        - message
+
+      properties:
+
+        path:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: integer
+
+        message:
+          type: string
+
+        code:
+          type: string
+
+        expected:
+          description: Expected value or schema
+          type:
+            - string
+            - number
+            - integer
+            - boolean
+            - array
+            - object
+            - "null"
+
+    Problem:
+      type: object
+
+      required:
+        - type
+        - title
+        - status
+
+      properties:
+
+        type:
+          type: string
+          format: uri
+
+        title:
+          type: string
+
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+
+        detail:
+          type: string
+
+        instance:
+          type: string
+          format: uri
+
+        context:
+          type: object
+          additionalProperties: true
+
+    ImpossibleSchema:
+      description: |
+        Intentionally awkward JSON Schema designed to test
+        rendering of conditional schemas.
+
+      allOf:
+
+        - type: object
+
+          properties:
+
+            mode:
+              enum:
+                - simple
+                - advanced
+
+            value:
+              type: number
+
+          required:
+            - mode
+            - value
+
+        - if:
+            properties:
+              mode:
+                const: advanced
+
+          then:
+            properties:
+              value:
+                minimum: 100
+
+              advancedOptions:
+                type: object
+                required:
+                  - strategy
+
+                properties:
+                  strategy:
+                    enum:
+                      - aggressive
+                      - conservative
+
+            required:
+              - advancedOptions
+
+          else:
+            properties:
+              value:
+                maximum: 99
+
+        - not:
+            properties:
+              value:
+                const: 42
+
+    DictionaryOfArraysOfPolymorphicThings:
+      type: object
+
+      additionalProperties:
+
+        type: array
+
+        items:
+
+          oneOf:
+
+            - type: string
+
+            - type: number
+
+            - type: boolean
+
+            - type: "null"
+
+            - type: object
+              properties:
+
+                nested:
+                  type: array
+
+                  items:
+                    anyOf:
+
+                      - $ref: "#/components/schemas/HumanUserReference"
+
+                      - type: object
+                        additionalProperties:
+                          type: array
+                          items:
+                            type: object
+                            additionalProperties: true

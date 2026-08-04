@@ -1,5 +1,17 @@
 # apiuikit
 
+## 1.0.1
+
+### Patch Changes
+
+- 5454e21: fix for post v1 patches
+
+## 1.0.0
+
+### Major Changes
+
+- 8da2291: apiuikit support for asyncapi/openapi document
+
 ## 0.5.0
 
 ### Minor Changes

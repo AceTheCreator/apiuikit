@@ -1,3 +1,6 @@
+import { HttpMethod, OpenAPIParameterData } from "./types/openapi";
+import { OperationAction } from "./types/asyncapi/OperationAction";
+
 export const CONTACT_TEXT = "Contact";
 export const NAM_TEXT = "Name";
 export const URL_TEXT = "Url";
@@ -69,4 +72,27 @@ export const PROTOCOL_META: Record<string, { label: string; color: string }> = {
     color: "bg-pink-100 text-pink-700 border-pink-200",
   },
   nats: { label: "NATS", color: "bg-teal-100 text-teal-700 border-teal-200" },
+};
+
+export const PARAMETER_GROUPS: Array<{ location: OpenAPIParameterData["in"]; label: string }> = [
+  { location: "path", label: "Path Parameters" },
+  { location: "query", label: "Query Parameters" },
+  { location: "header", label: "Header Parameters" },
+  { location: "cookie", label: "Cookie Parameters" },
+];
+
+// HttpMethod (OpenAPI) and OperationAction (AsyncAPI) are disjoint string
+// literal sets ("get"|"post"|... vs "send"|"receive"), so one color map
+// keyed by their union covers both without any ambiguity.
+export const METHOD_BADGE_COLOR_CLASSNAME: Record<HttpMethod | OperationAction, string> = {
+  get: "bg-blue-100 text-blue-800",
+  post: "bg-green-100 text-green-800",
+  put: "bg-yellow-100 text-yellow-800",
+  patch: "bg-orange-100 text-orange-800",
+  delete: "bg-red-100 text-red-800",
+  options: "bg-neutral-100 text-foreground-secondary",
+  head: "bg-neutral-100 text-foreground-secondary",
+  trace: "bg-neutral-100 text-foreground-secondary",
+  [OperationAction.SEND]: "bg-green-100 text-green-800",
+  [OperationAction.RECEIVE]: "bg-blue-100 text-blue-800",
 };

@@ -1,7 +1,8 @@
+import { useId } from "react";
 import Markdown from "../../components/Markdown";
-import IconLink from "../../icons/Link";
 import IconShieldCheck from "../../icons/ShieldCheck";
-import { ChannelAddress } from "../../components/ChannelAddress";
+import ServerAddressBanner from "../../components/ServerAddressBanner";
+import CollapsiblePanel from "../../components/CollapsiblePanel";
 import { Server as ServerInterface } from "../../types/asyncapi/Server";
 import { ServerVariable } from "../../types/asyncapi/ServerVariable";
 import { Tag as TagType } from "../../types/asyncapi/Tag";
@@ -33,14 +34,11 @@ export default function Server({
   // `variables` is typed as a Map (a codegen artifact from the AsyncAPI JSON schema),
   // but parsed documents are always plain objects at runtime — never real Map instances.
   const variableEntries = variables as unknown as Record<string, ServerVariable> | undefined;
+  const authHeadingId = useId();
 
   return (
     <div>
-      <div className="font-bold text-foreground-secondary mt-8 mb-4 bg-neutral-200 border border-neutral-500 p-4 rounded-lg">
-        <div className="border border-dotted border-black p-2 rounded-lg bg-surface">
-          <IconLink className="inline-block mr-1 -mt-1 h-6 text-foreground-muted" />
-          {host && <ChannelAddress address={host} parameters={variableEntries} className="font-bold leading-tight tracking-tight px-0" />}
-        </div>
+      <ServerAddressBanner address={host} variables={variableEntries}>
         <div className="mt-2">
           {tags &&
             tags.map((tag, index) => {
@@ -61,7 +59,7 @@ export default function Server({
               );
             })}
         </div>
-      </div>
+      </ServerAddressBanner>
       <Markdown>{description}</Markdown>
       {security && security.length > 0 && (
         <div id={serverKey ? `server-${serverKey}-security` : undefined}>
@@ -72,9 +70,20 @@ export default function Server({
           <p className="prose text-foreground-muted mt-4">
             This server accepts the following authorization mechanism{security.length > 1 ? "s" : ""}:
           </p>
-          <div className="mt-4">
-            <Authorization securities={security} />
-          </div>
+          <CollapsiblePanel
+            className="mt-4"
+            ariaLabelledBy={authHeadingId}
+            forceExpanded={focusSection === "security"}
+            trigger={
+              <span className="text-xs font-normal text-foreground-muted bg-neutral-100 border border-border rounded-full px-2 py-0.5">
+                {security.length}
+              </span>
+            }
+          >
+            <div className="px-4 py-2 border-t border-border">
+              <Authorization securities={security} />
+            </div>
+          </CollapsiblePanel>
         </div>
       )}
       {(() => {

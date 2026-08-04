@@ -14,10 +14,10 @@ interface SearchPanelProps {
   onSelectResult: (entry: SearchEntry) => void;
 }
 
-// The sidebar toggle sits at left:12px and is 40px wide (see .panel-toggle-btn
-// in index.css) — offsetting by 12 + 40 + 8px gap puts this button right next
-// to it instead of overlapping.
-const SEARCH_TOGGLE_LEFT = 60;
+// The nav's own toggle used to sit at left:12px (see .panel-toggle-btn in
+// index.css) before it moved to a viewport-centered spine — this now takes
+// over that vacated top-left spot instead of sitting beside it.
+const SEARCH_TOGGLE_LEFT = 12;
 
 export default function SearchPanel({
   query,
@@ -230,9 +230,9 @@ export default function SearchPanel({
       {isModalOpen &&
         portalHost &&
         createPortal(
-          // z-[60] — above both toggle buttons (panel-toggle-btn is z-51) and
-          // the nav SidePanel (z-50), so the backdrop dims them along with the
-          // rest of the page instead of leaving them floating on top of it.
+          // z-[60] — above this search toggle, the nav spine (z-51), and the
+          // nav popover (z-52), so the backdrop dims them along with the rest
+          // of the page instead of leaving them floating on top of it.
           <div className="fixed inset-0 z-[60] flex justify-center px-4 pt-24">
             <div className="absolute inset-0 bg-black/30" />
             <div

@@ -41,23 +41,27 @@ export const UI_PALETTES: Record<UiMode, UiPalette> = {
     scrollbarThumb: '#30363d',
     scrollbarThumbHover: '#6e7681',
   },
+  // Tailwind Slate — kept in sync with `defaultConfig.theme.light` in
+  // packages/lib/src/config/default.ts, the same way `dark` above tracks
+  // `theme.dark`, so the chrome and the rendered spec read as one theme
+  // rather than the chrome sitting a shade brighter than the preview.
   light: {
-    chromeBg: '#ffffff',
-    chromeBorder: '#e5e7eb',
-    textPrimary: '#111827',
-    textMuted: '#6b7280',
-    hoverText: '#111827',
-    activeIndicator: '#e5e7eb',
+    chromeBg: '#f8fafc',
+    chromeBorder: '#e2e8f0',
+    textPrimary: '#1e293b',
+    textMuted: '#64748b',
+    hoverText: '#1e293b',
+    activeIndicator: '#e2e8f0',
     focusRing: '#3b82f6',
     errorBg: '#fef2f2',
     errorBorder: '#fecaca',
     errorText: '#dc2626',
     warningText: '#b45309',
-    handleBg: '#e5e7eb',
-    handleBgHover: '#d1d5db',
-    scrollbarTrack: '#f9fafb',
-    scrollbarThumb: '#d1d5db',
-    scrollbarThumbHover: '#9ca3af',
+    handleBg: '#e2e8f0',
+    handleBgHover: '#cbd5e1',
+    scrollbarTrack: '#f8fafc',
+    scrollbarThumb: '#cbd5e1',
+    scrollbarThumbHover: '#94a3b8',
   },
 }
 

@@ -599,6 +599,9 @@ export default function SchemaNode({
       isTuple || hasItem || hasContainsSchema ||
       hasNotSchema(schema) || hasIfThenElse(schema) || hasAllOfConditionals(schema);
     const arrayPath = `${path}[]`;
+    // When the array's own row is suppressed (SchemaTree rootName), children are
+    // the first visible rows — drop the `[]` so paths read `Body.id` not `Body[].id`.
+    const itemPathBase = suppressRow ? path : arrayPath;
 
     // The resolved-but-unflattened item source keeps a stable identity across
     // unrolls of a recursive schema (flattening copies, resolution doesn't) —
@@ -688,7 +691,7 @@ export default function SchemaNode({
           hasItem &&
           (itemCircular ? (
             <SchemaTreeRow
-              path={arrayPath}
+              path={itemPathBase}
               depth={childDepth}
               typeLabelOverride={`↩ ${
                 itemSchema.$ref ?? schemaIdLabel(itemSource!) ?? "circular"
@@ -708,7 +711,7 @@ export default function SchemaNode({
                   <SchemaNode
                     key={name}
                     schema={prop}
-                    path={`${path}[].${name}`}
+                    path={`${itemPathBase}.${name}`}
                     depth={childDepth}
                     required={itemRequired.has(name)}
                     refStack={refStack}
@@ -724,7 +727,7 @@ export default function SchemaNode({
             : (
                 <SchemaNode
                   schema={itemSchema!}
-                  path={arrayPath}
+                  path={itemPathBase}
                   depth={childDepth}
                   refStack={refStack}
                   deref={deref}

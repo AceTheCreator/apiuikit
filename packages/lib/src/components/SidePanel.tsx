@@ -11,11 +11,13 @@ export interface ISidePanelProps {
   side: SidePanelSide;
   onClose: () => void;
   title?: string | React.ReactNode;
+  /** Rendered in the header row between the title and the close button (e.g. a copy button). */
+  headerActions?: React.ReactNode;
   children?: React.ReactNode;
   width?: string;
 }
 
-export const SidePanel = forwardRef<HTMLDivElement, ISidePanelProps>(function SidePanel({ isOpen, side, onClose, title, children, width = "w-[50rem]" }, ref) {
+export const SidePanel = forwardRef<HTMLDivElement, ISidePanelProps>(function SidePanel({ isOpen, side, onClose, title, headerActions, children, width = "w-[50rem]" }, ref) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -79,6 +81,7 @@ export const SidePanel = forwardRef<HTMLDivElement, ISidePanelProps>(function Si
                 title
               )}
             </div>
+            {headerActions}
             <button
               onClick={onClose}
               className="ml-4 p-1 rounded hover:bg-neutral-100 text-foreground-muted hover:text-foreground-secondary transition-colors"
