@@ -17,6 +17,8 @@ interface DocumentContextBase {
   depthColors: string[];
   /** Whether to render known x-* spec extensions (see the `x-tensions` catalog). Defaults to true. */
   showExtensions: boolean;
+  /** OpenAPI only: whether to render per-operation code samples (cURL/JS/Python). Defaults to true. */
+  showCodeSamples: boolean;
 }
 
 export interface AsyncAPIDocumentContextValue extends DocumentContextBase {

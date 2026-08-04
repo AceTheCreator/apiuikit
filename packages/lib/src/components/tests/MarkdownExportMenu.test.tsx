@@ -17,6 +17,7 @@ function Providers({ children }: { children: ReactNode }) {
         rootElement: null,
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
+        showCodeSamples: true,
       }}
     >
       {children}

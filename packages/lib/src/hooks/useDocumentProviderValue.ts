@@ -59,10 +59,11 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
     ? config.theme.depthColors
     : DEFAULT_DEPTH_COLORS;
   const showExtensions = config.show?.extensions !== false;
+  const showCodeSamples = config.show?.codeSamples !== false;
 
   const contextValue = useMemo(
-    () => ({ specType, document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions }),
-    [specType, document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions],
+    () => ({ specType, document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples }),
+    [specType, document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples],
   );
 
   const themeVars = config.theme ? buildThemeVars(config.theme) : {};
