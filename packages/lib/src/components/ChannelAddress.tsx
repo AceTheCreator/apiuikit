@@ -51,7 +51,7 @@ interface ChannelAddressProps {
   padded?: boolean;
 }
 
-export function ChannelAddress({ address, parameters, className = "text-[2px]", truncate = false, padded = true }: ChannelAddressProps) {
+export function ChannelAddress({ address, parameters, className = "text-xs", truncate = false, padded = true }: ChannelAddressProps) {
   const { portalHost } = useAsyncAPIDocument();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [coords, setCoords] = useState({ top: 0, left: 0, placement: "top" as "top" | "bottom" });
