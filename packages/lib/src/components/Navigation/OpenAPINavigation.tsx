@@ -86,7 +86,14 @@ export default function OpenAPINavigation({
       renderItem: (endpoint) => (
         <>
           <MethodBadge method={endpoint.method} size="xs" className="shrink-0" />
-          <ChannelAddress address={endpoint.path} className="text-xs bg-transparent p-0" />
+          {/* truncate + padded={false} so a long path stays one line at the
+              same height as a Servers row, instead of wrapping via break-all. */}
+          <ChannelAddress
+            address={endpoint.path}
+            truncate
+            padded={false}
+            className="text-xs bg-transparent"
+          />
         </>
       ),
     }),

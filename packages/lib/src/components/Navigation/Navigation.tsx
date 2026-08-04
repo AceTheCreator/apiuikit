@@ -3,6 +3,7 @@ import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useAsyncAPIDocument } from "../../contexts";
 import { useElementRect } from "../../utils/useElementRect";
+import { allocateSpineTicks, spineTickBudget } from "./spineTicks";
 
 export interface NavItemState {
   isSelected: boolean;
@@ -403,37 +404,60 @@ export default function Navigation({
     );
   }), [popoverSections, effectiveActiveSection, effectiveSelectedItem, isCompact, navigate, onItemSelect, selectExplicitly]);
 
+  // The spine is centered on the viewport, so a document with hundreds of
+  // operations would run off both ends. Rather than clip it (which would hide
+  // whichever end holds the active tick) the item ticks are downsampled to fit:
+  // a shorter rail that still spans every section beats a full-length one whose
+  // ends are off screen.
+  const tickBudget = spineTickBudget(viewportHeight, spineSections.length);
+
   // Same reasoning as `sectionList`: keep the tick elements stable across the
   // scroll-driven repositioning re-renders.
-  const spineTicks = useMemo(() => spineSections.map((section) => {
-    const isActive = effectiveActiveSection === section.id;
+  const spineTicks = useMemo(() => {
+    const tickCounts = allocateSpineTicks(
+      spineSections.map((section) => section.items.length),
+      tickBudget,
+    );
 
-    return (
-      <div key={section.id} className="flex flex-col items-start gap-1">
-        <span
-          className={`block h-[2px] rounded-full transition-all duration-150 ${
-            isActive ? "w-6 bg-foreground-secondary" : "w-4 bg-neutral-300 group-hover:bg-neutral-400"
-          }`}
-        />
-        <div className="flex flex-col items-start gap-1">
-          {section.items.map((item) => {
-            const key = section.itemKey(item);
-            const isItemActive =
-              effectiveSelectedItem?.section === section.id && effectiveSelectedItem?.key === key;
+    return spineSections.map((section, sectionIndex) => {
+      const isActive = effectiveActiveSection === section.id;
+      const itemCount = section.items.length;
+      const tickCount = tickCounts[sectionIndex];
 
-            return (
+      // Once downsampled, each tick stands for a contiguous run of items, so
+      // the highlight lands on the run holding the active item rather than on
+      // an item-for-tick match that no longer exists.
+      let activeTick = -1;
+      if (effectiveSelectedItem?.section === section.id) {
+        const itemIndex = section.items.findIndex(
+          (item) => section.itemKey(item) === effectiveSelectedItem.key,
+        );
+        if (itemIndex >= 0) {
+          activeTick = Math.min(tickCount - 1, Math.floor((itemIndex * tickCount) / itemCount));
+        }
+      }
+
+      return (
+        <div key={section.id} className="flex flex-col items-start gap-1">
+          <span
+            className={`block h-[2px] rounded-full transition-all duration-150 ${
+              isActive ? "w-6 bg-foreground-secondary" : "w-4 bg-neutral-300 group-hover:bg-neutral-400"
+            }`}
+          />
+          <div className="flex flex-col items-start gap-1">
+            {Array.from({ length: tickCount }, (_, tickIndex) => (
               <span
-                key={key}
+                key={tickIndex}
                 className={`block h-[2px] w-3 rounded-full transition-colors duration-150 ${
-                  isItemActive ? "bg-neutral-500" : "bg-neutral-200 group-hover:bg-neutral-300"
+                  tickIndex === activeTick ? "bg-neutral-500" : "bg-neutral-200 group-hover:bg-neutral-300"
                 }`}
               />
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
-    );
-  }), [spineSections, effectiveActiveSection, effectiveSelectedItem]);
+      );
+    });
+  }, [spineSections, effectiveActiveSection, effectiveSelectedItem, tickBudget]);
 
   return (
     <>
