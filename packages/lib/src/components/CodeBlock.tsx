@@ -66,6 +66,7 @@ export function CodeBlock({
   const resetTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [expanded, setExpanded] = useState(false);
   const [canExpand, setCanExpand] = useState(false);
+  const [contentHeight, setContentHeight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const preId = useId();
@@ -79,8 +80,10 @@ export function CodeBlock({
     const el = preRef.current;
     if (!el) return;
 
-    const checkOverflow = () =>
+    const checkOverflow = () => {
+      setContentHeight(el.scrollHeight);
       setCanExpand(el.scrollHeight > collapsedMaxHeight + OVERFLOW_SLACK_PX);
+    };
     checkOverflow();
 
     const observer = new ResizeObserver(checkOverflow);
@@ -137,8 +140,8 @@ export function CodeBlock({
         <pre
           ref={preRef}
           id={preId}
-          style={clipped ? { maxHeight: collapsedMaxHeight } : undefined}
-          className={`text-xs rounded overflow-x-auto ${clipped ? 'overflow-y-hidden' : ''}`}
+          style={canExpand ? { maxHeight: expanded ? contentHeight : collapsedMaxHeight } : undefined}
+          className={`text-xs rounded overflow-x-auto transition-[max-height] duration-300 ease-in-out ${canExpand ? 'overflow-y-hidden' : ''}`}
         >
           {highlighted !== null ? (
             <code
@@ -149,10 +152,10 @@ export function CodeBlock({
             <code className="hljs">{code}</code>
           )}
         </pre>
-        {clipped && (
+        {canExpand && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-16 rounded-b"
+            className={`pointer-events-none absolute inset-x-0 bottom-0 h-16 rounded-b transition-opacity duration-300 ease-in-out ${clipped ? 'opacity-100' : 'opacity-0'}`}
             style={{ background: `linear-gradient(to bottom, transparent, ${CODE_BACKGROUND})` }}
           />
         )}

@@ -46,14 +46,15 @@ describe("CodeBlock height cap", () => {
     expect(document.querySelector("pre")).toHaveStyle({ maxHeight: "320px" });
   });
 
-  it("removes the cap once expanded and restores it on collapse", () => {
+  it("animates to the content height once expanded and restores the cap on collapse", () => {
     stubScrollHeight(900);
     render(<CodeBlock code={code} collapsedMaxHeight={320} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Show all 40 lines" }));
     const expandedToggle = screen.getByRole("button", { name: "Show less" });
     expect(expandedToggle).toHaveAttribute("aria-expanded", "true");
-    expect(document.querySelector("pre")).not.toHaveStyle({ maxHeight: "320px" });
+    expect(document.querySelector("pre")).toHaveStyle({ maxHeight: "900px" });
+    expect(document.querySelector("pre")).toHaveClass("transition-[max-height]", "duration-300");
 
     fireEvent.click(expandedToggle);
     expect(screen.getByRole("button", { name: "Show all 40 lines" })).toBeInTheDocument();

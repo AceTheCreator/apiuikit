@@ -86,7 +86,7 @@ export default function OpenAPINavigation({
       renderItem: (endpoint) => (
         <>
           <MethodBadge method={endpoint.method} size="xs" className="shrink-0" />
-          <ChannelAddress address={endpoint.path} className="text-xs bg-transparent p-0" />
+          <ChannelAddress address={endpoint.path} className="text-[10px] bg-transparent p-0" />
         </>
       ),
     }),

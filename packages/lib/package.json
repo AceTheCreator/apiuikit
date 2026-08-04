@@ -1,12 +1,16 @@
 {
   "name": "apiuikit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A React UI library for rendering your API specifications",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AceTheCreator/apiuikit/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/AceTheCreator/apiuikit"
   },
+  "homepage": "https://apiuikit.com",
   "type": "module",
   "sideEffects": [
     "*.css"
