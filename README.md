@@ -25,7 +25,7 @@ npm install @scalar/openapi-parser # for OpenAPI documents
 The quickest path to use the kit for AsyncAPI is to pass a pre-resolved AsyncAPI document object (e.g. imported from a JSON file, or fetched from your own backend):
 
 ```tsx
-import AsyncAPI from "apiuikit";
+import { AsyncAPI } from "apiuikit";
 import "apiuikit/style.css";
 import doc from "./asyncapi.json";
 
