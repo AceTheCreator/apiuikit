@@ -10,17 +10,15 @@ Rendered today:
 
 - `info` (including `x-logo` and the known `x-*` extension catalog), `tags`, `externalDocs`
 - `servers`, with `{variable}` segments showing their description, default, and allowed values on hover
-- `paths`: operations by method, with summary/description, deprecation badges, parameters (path and query on the address bar, header and cookie in the request card), `requestBody` with a media-type switcher, and per-status `responses` covering both body and response `headers`
+- `paths`: operations by method, with summary/description, deprecation badges, parameters (path and query on the address bar, header and cookie in the request card), `requestBody` with a media-type switcher, and per-status `responses` covering body, response `headers`, and `links`
 - `webhooks` (3.1), in their own tab, using the same detail panel as endpoints
+- `callbacks`, as a collapsible section on the operation that declares them, each rendered through the same operation view
 - Security: document-level and operation-level `security` resolved against `components.securitySchemes`, rendered as an Authorization card (API key, HTTP, OAuth2 flows and scopes, OpenID Connect)
 - `components.schemas`, plus `$ref` resolution throughout
 
-Parsed without error but not rendered, so don't expect them in the UI:
-
-- `callbacks`
-- `links`
-
-Documents using those still render; only the unsupported parts are omitted.
+Every keyword the renderer models is now rendered. Callbacks nested inside a
+callback are the one deliberate stop: they render one level deep, since deeper
+nesting is vanishingly rare and a cyclic `$ref` would otherwise not terminate.
 
 ## `OpenAPI` component (without parser)
 

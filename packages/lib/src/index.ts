@@ -41,6 +41,7 @@ export {
   OpenAPIProvider,
   OpenAPIServers,
   OpenAPIEndpoints,
+  OpenAPIWebhooks,
   OpenAPISchemas,
   OpenAPIInfo,
 } from './public/openapiSections';

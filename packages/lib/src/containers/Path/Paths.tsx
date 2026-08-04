@@ -73,6 +73,20 @@ export default function Paths({
 
   const endpoints = useMemo(() => flattenEndpoints(paths), [paths]);
 
+  // Response `links` name their target by operationId; map those to this
+  // list's own row keys so following one just moves the panel's selection.
+  // Targets outside this list (an operationId that lives in another tab, or
+  // in no operation at all) are absent, and ResponseLinks renders them as
+  // plain text rather than a dead link.
+  const keyByOperationId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const { key, method, path } of endpoints) {
+      const operationId = paths[path]?.[method]?.operationId;
+      if (operationId) map.set(operationId, key);
+    }
+    return map;
+  }, [endpoints, paths]);
+
   if (endpoints.length === 0) {
     return null;
   }
@@ -178,6 +192,11 @@ export default function Paths({
             idPrefix={idPrefix}
             globalSecurity={security}
             securitySchemes={securitySchemes}
+            isOperationKnown={(operationId) => keyByOperationId.has(operationId)}
+            onFollowOperation={(operationId) => {
+              const key = keyByOperationId.get(operationId);
+              if (key) setSelectedKey(key);
+            }}
           />
         )}
       </SidePanel>
