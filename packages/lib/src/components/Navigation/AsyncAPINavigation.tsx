@@ -96,7 +96,16 @@ export default function AsyncAPINavigation({
         // alone with no badge. The action badge + operation name is the
         // fallback for when there's no channel address to show instead.
         if (channel?.address) {
-          return <ChannelAddress address={channel.address} parameters={channel.parameters} className="text-xs bg-transparent p-0" />;
+          // Same one-line sizing as the OpenAPI nav's endpoints: see the note there.
+          return (
+            <ChannelAddress
+              address={channel.address}
+              parameters={channel.parameters}
+              truncate
+              padded={false}
+              className="text-xs bg-transparent"
+            />
+          );
         }
 
         return (

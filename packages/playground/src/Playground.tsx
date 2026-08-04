@@ -2,7 +2,7 @@ import { AsyncAPIRenderer, OpenAPIRenderer, defaultConfig } from 'apiuikit'
 import type { ConfigInterface } from 'apiuikit'
 import 'apiuikit/style.css'
 import { useMemo, useState } from 'react'
-import openapiPetstoreExample from './examples/openapi-petstore.json'
+import openapiNetlifyExample from './examples/openapi-netlify.json'
 import { DiagnosticsPanel } from './components/DiagnosticsPanel'
 import type { ParserDiagnostic } from './components/DiagnosticsPanel'
 import { EditorPane } from './components/EditorPane'
@@ -18,8 +18,21 @@ import { useJsonEditor } from './hooks/useJsonEditor'
 import { useResizableSplit } from './hooks/useResizableSplit'
 import { scrollbarStyle, UI_PALETTES } from './theme'
 import type { UiMode } from './theme'
+import { netlifyTheme } from './themes/netlify'
 
-const DEFAULT_DOC_TEXT = JSON.stringify(openapiPetstoreExample, null, 2)
+const DEFAULT_DOC_TEXT = JSON.stringify(openapiNetlifyExample, null, 2)
+
+/**
+ * The playground boots on the Netlify theme rather than the library's own
+ * defaults. Spread over `defaultConfig.theme` rather than replacing it so
+ * non-color theme settings (currently `depthColors`) still come from the
+ * library. Only the playground is affected — `defaultConfig` itself is
+ * untouched, so consumers of the package get the shipped default look.
+ */
+const DEFAULT_CONFIG: ConfigInterface = {
+  ...defaultConfig,
+  theme: { ...defaultConfig.theme, ...netlifyTheme },
+}
 
 export interface PlaygroundProps {
   /** Initial AsyncAPI document text (JSON or YAML). Uncontrolled — only read on mount. */
@@ -71,7 +84,7 @@ export function Playground({
 
   // Uncontrolled prop: capture the mount-time value so a re-rendering parent
   // passing a fresh object literal doesn't reset the editor.
-  const [configSeed] = useState(() => initialConfig ?? defaultConfig)
+  const [configSeed] = useState(() => initialConfig ?? DEFAULT_CONFIG)
   const config = useJsonEditor<ConfigInterface>(JSON.stringify(configSeed, null, 2), configSeed, {
     emptyValue: configSeed,
   })

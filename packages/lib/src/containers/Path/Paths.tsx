@@ -1,9 +1,11 @@
-import { useMemo } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Section from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
 import { ChannelAddress, ChannelAddressParameterDetail } from "../../components/ChannelAddress";
 import CopyMarkdownButton from "../../components/CopyMarkdownButton";
 import MethodBadge from "../../components/MethodBadge";
+import IconArrowRight from "../../icons/ArrowRight";
+import IconArrowDown from "../../icons/ArrowDown";
 import { useAsyncAPIDocument } from "../../contexts";
 import {
   flattenEndpoints,
@@ -73,6 +75,36 @@ export default function Paths({
 
   const endpoints = useMemo(() => flattenEndpoints(paths), [paths]);
 
+  // Tags are OpenAPI's native operation grouping mechanism. Use the first
+  // tag as the operation's primary group so an operation with several tags
+  // still appears only once in the table.
+  const endpointGroups = useMemo(() => {
+    const groups = new Map<string, typeof endpoints>();
+    for (const endpoint of endpoints) {
+      const label = paths[endpoint.path]?.[endpoint.method]?.tags?.[0] || "Other";
+      const group = groups.get(label) ?? [];
+      group.push(endpoint);
+      groups.set(label, group);
+    }
+    return Array.from(groups, ([label, items]) => ({ label, items }));
+  }, [endpoints, paths]);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
+  const allExpanded = collapsedGroups.size === 0;
+
+  // Sidebar/search navigation can select an endpoint while its group is
+  // closed. Reveal it automatically so the selected row is never hidden.
+  useEffect(() => {
+    if (!selectedKey) return;
+    const selectedGroup = endpointGroups.find(({ items }) => items.some(({ key }) => key === selectedKey));
+    if (!selectedGroup) return;
+    setCollapsedGroups((current) => {
+      if (!current.has(selectedGroup.label)) return current;
+      const next = new Set(current);
+      next.delete(selectedGroup.label);
+      return next;
+    });
+  }, [endpointGroups, selectedKey]);
+
   // Response `links` name their target by operationId; map those to this
   // list's own row keys so following one just moves the panel's selection.
   // Targets outside this list (an operationId that lives in another tab, or
@@ -94,7 +126,7 @@ export default function Paths({
   const selected = selectedKey ? endpoints.find((e) => e.key === selectedKey) : null;
   const selectedOp = selected ? paths[selected.path]?.[selected.method] : null;
 
-  const rows = endpoints.map(({ key, method, path }) => {
+  const renderEndpointRow = ({ key, method, path }: (typeof endpoints)[number], isVisible: boolean) => {
     const isSelected = selectedKey === key;
     const rowParameters = resolveOperationParameters(paths[path], paths[path]?.[method]);
     return (
@@ -103,7 +135,8 @@ export default function Paths({
         id={`${idPrefix}-${key}`}
         onClick={() => setSelectedKey(key)}
         role="button"
-        tabIndex={0}
+        tabIndex={isVisible ? 0 : -1}
+        aria-hidden={!isVisible}
         aria-label={`${method.toUpperCase()} ${path}`}
         aria-current={isSelected ? "true" : undefined}
         onKeyDown={(event) => {
@@ -111,20 +144,77 @@ export default function Paths({
           event.preventDefault();
           setSelectedKey(key);
         }}
-        className={`group cursor-pointer ${isSelected ? "bg-neutral-50" : ""}`}
+        className={`group transition-[opacity,visibility] duration-300 ease-in-out ${
+          isVisible ? `cursor-pointer opacity-100 visible ${isSelected ? "bg-neutral-50" : ""}` : "pointer-events-none invisible opacity-0"
+        }`}
       >
-        <td className="px-6 py-2 max-w-0 w-full group-hover:bg-neutral-50">
-          <ChannelAddress
-            address={path}
-            parameters={toChannelAddressParameters(rowParameters)}
-            truncate
-            className="text-xs"
-          />
+        <td className={`px-6 max-w-0 w-full group-hover:bg-neutral-50 transition-[padding] duration-300 ease-in-out ${isVisible ? "py-2" : "py-0"}`}>
+          <div className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${isVisible ? "max-h-12" : "max-h-0"}`}>
+            <ChannelAddress
+              address={path}
+              parameters={toChannelAddressParameters(rowParameters)}
+              truncate
+              className="text-xs"
+            />
+          </div>
         </td>
-        <td className="px-6 py-2 w-28 group-hover:bg-neutral-50">
-          <MethodBadge method={method} className="w-20" />
+        <td className={`px-6 w-28 group-hover:bg-neutral-50 transition-[padding] duration-300 ease-in-out ${isVisible ? "py-2" : "py-0"}`}>
+          <div className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${isVisible ? "max-h-12" : "max-h-0"}`}>
+            <MethodBadge method={method} className="w-20" />
+          </div>
         </td>
       </tr>
+    );
+  };
+
+  const rows = endpointGroups.map(({ label, items }, groupIndex) => {
+    const isExpanded = !collapsedGroups.has(label);
+    const groupId = `${idPrefix}-group-${groupIndex}-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+    return (
+      <Fragment key={label}>
+        <tbody className="border-y border-border first:border-t-0">
+          <tr className="bg-neutral-50/70">
+            <th colSpan={2} scope="rowgroup" className="p-0 text-left">
+              <button
+                type="button"
+                aria-label={`${label} endpoints (${items.length})`}
+                aria-expanded={isExpanded}
+                aria-controls={groupId}
+                onClick={() =>
+                  setCollapsedGroups((current) => {
+                    const next = new Set(current);
+                    if (isExpanded) next.add(label);
+                    else next.delete(label);
+                    return next;
+                  })
+                }
+                className="group/header flex w-full items-center gap-3 px-6 py-3.5 text-left hover:bg-neutral-100/80 transition-colors"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-foreground-muted shadow-sm transition-colors group-hover/header:border-neutral-300 group-hover/header:text-foreground-secondary">
+                  {isExpanded ? (
+                    <IconArrowDown className="h-2.5 w-2.5" />
+                  ) : (
+                    <IconArrowRight className="h-2.5 w-2.5" />
+                  )}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-wide text-foreground-secondary">
+                  {label}
+                </span>
+                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-neutral-200/70 px-2 py-0.5 text-xs font-medium tabular-nums text-foreground-muted">
+                  {items.length}
+                </span>
+              </button>
+            </th>
+          </tr>
+        </tbody>
+        <tbody
+          id={groupId}
+          aria-hidden={!isExpanded}
+          className={`bg-surface ${isExpanded ? "divide-y divide-border" : ""}`}
+        >
+          {items.map((item) => renderEndpointRow(item, isExpanded))}
+        </tbody>
+      </Fragment>
     );
   });
 
@@ -146,20 +236,44 @@ export default function Paths({
   );
 
   const content = (
-    <div className="bg-surface rounded-lg border border-border overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-neutral-100 w-full">
-          <tr>
-            <th className="px-6 py-5 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
-              {columnLabel}
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
-              Method
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-surface divide-y divide-border">{rows}</tbody>
-      </table>
+    <div>
+      <div className="mb-3 flex justify-end">
+        <label className="flex cursor-pointer items-center gap-2 text-xs text-foreground-secondary">
+          <input
+            type="checkbox"
+                    checked={allExpanded}
+                    onChange={(event) =>
+                      setCollapsedGroups(
+                        event.target.checked ? new Set() : new Set(endpointGroups.map(({ label }) => label)),
+                      )
+                    }
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      event.preventDefault();
+                      setCollapsedGroups(
+                        allExpanded ? new Set(endpointGroups.map(({ label }) => label)) : new Set(),
+                      );
+                    }}
+                    className="h-3.5 w-3.5 cursor-pointer rounded border-border"
+          />
+          <span>Expand all</span>
+        </label>
+      </div>
+      <div className="bg-surface rounded-lg border border-border overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-neutral-100 w-full">
+            <tr>
+              <th className="px-6 py-5 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
+                {columnLabel}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
+                Method
+              </th>
+            </tr>
+          </thead>
+          {rows}
+        </table>
+      </div>
     </div>
   );
 

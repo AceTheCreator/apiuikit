@@ -25,7 +25,7 @@ npm install @scalar/openapi-parser # for OpenAPI documents
 The quickest path to use the kit for AsyncAPI is to pass a pre-resolved AsyncAPI document object (e.g. imported from a JSON file, or fetched from your own backend):
 
 ```tsx
-import AsyncAPI from "apiuikit";
+import { AsyncAPI } from "apiuikit";
 import "apiuikit/style.css";
 import doc from "./asyncapi.json";
 
@@ -97,6 +97,32 @@ See the full usage docs for props, configuration options, and more:
 - [Avro schemas](./docs/usage/avro.md)
 - [Protobuf schemas](./docs/usage/protobuf.md)
 - [OpenAPI](./docs/usage/openapi.md) (`OpenAPI`, `OpenAPIRenderer`, composable sections, web components)
+
+## Usage with Web Components
+
+For Vue, Angular, Svelte, plain HTML, or any other environment that supports custom elements, use the framework-agnostic web-component package. React and the document parsers are bundled, so consumers do not need to install them separately.
+
+```bash
+npm install @apiuikit/web-component
+```
+
+Load the custom elements and stylesheet once, then pass a raw AsyncAPI or OpenAPI document to the corresponding renderer:
+
+```html
+<aui-asyncapi-renderer id="api-doc"></aui-asyncapi-renderer>
+```
+
+```js
+import "@apiuikit/web-component";
+import "@apiuikit/web-component/style.css";
+
+const apiDoc = document.querySelector("#api-doc");
+apiDoc.spec = rawYamlOrJsonString;
+```
+
+Use `<aui-openapi-renderer>` for raw OpenAPI documents. If the document is already parsed, use `<aui-asyncapi>` or `<aui-openapi>` and assign the object to its `spec` property.
+
+See [Web Components](./docs/usage/with-webcomponents.md) for CDN usage, configuration, diagnostics, and framework integration.
 
 ## Development
 
