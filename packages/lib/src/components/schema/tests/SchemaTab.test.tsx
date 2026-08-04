@@ -4,19 +4,22 @@ import { describe, expect, it } from "vitest";
 import SchemaTabs from "../SchemaTab";
 import { AsyncAPIDocumentContext } from "../../../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../depthColors";
+import type { AsyncAPIDocumentData } from "../../../types/schema";
 
 /** SchemaTree (the Schema tab body) reads deref/expand state from the document context. */
 function Providers({ children }: { children: ReactNode }) {
   return (
     <AsyncAPIDocumentContext.Provider
       value={{
-        document: {},
+        specType: "asyncapi",
+        document: {} as AsyncAPIDocumentData,
         deref: () => undefined,
         portalHost: null,
         rootElement: null,
         defaultSchemaExpanded: true,
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
+        showCodeSamples: true,
       }}
     >
       {children}
@@ -60,6 +63,16 @@ describe("SchemaTabs", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Schema" }));
     expect(screen.getByText("name")).toBeInTheDocument();
     expect(document.querySelector("pre")).not.toBeInTheDocument();
+  });
+
+  it('opens on the schema tree when defaultView is "schema", keeping Example available', () => {
+    // For groups whose values are generated at runtime (request parameters,
+    // response headers) a faked example is noise; the documented shape isn't.
+    renderTabs({ schema: jsonSchema, label: "Headers", defaultView: "schema" });
+
+    expect(screen.getByRole("tab", { name: "Schema" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Example" })).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByText("name")).toBeInTheDocument();
   });
 
   it("colors the first visible schema row with the first depth color, not the second", () => {

@@ -19,8 +19,16 @@ export interface ShowConfig {
   messageExamples?: boolean;
   schemas?: boolean;
   errors?: boolean;
+  /** OpenAPI only: the Endpoints tab (paths/operations). */
+  endpoints?: boolean;
+  /** OpenAPI 3.1 only: the Webhooks tab. The tab appears only when the document declares `webhooks`. */
+  webhooks?: boolean;
   /** Whether to render known x-* spec extensions (see the `x-tensions` catalog). Defaults to true. */
   extensions?: boolean;
+  /** OpenAPI only: per-operation cURL/JavaScript/Python request examples. Defaults to true. */
+  codeSamples?: boolean;
+  /** The "Copy for LLM" / "View as Markdown" floating button. Defaults to true. */
+  copyMarkdown?: boolean;
 }
 
 export interface ExpandConfig {

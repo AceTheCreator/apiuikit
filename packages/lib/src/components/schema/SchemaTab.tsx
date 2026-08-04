@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { SchemaViewer } from "../../containers/Schema/SchemaViewer";
 import SchemaTree from "./SchemaTree";
 import TabToggle from "../TabToggle";
@@ -12,16 +12,24 @@ import {
 function SchemaTabs({
   schema,
   label,
+  rootName,
   description,
   schemaFormat,
   originalSchema,
   conversionError,
   pendingConversion,
+  example,
+  defaultView = "example",
 }: {
   /** JSON Schema to render in the Schema/Example tabs. */
   schema: unknown;
-  /** Heading shown above the tab toggle, e.g. "Payload" or "Headers". */
-  label: string;
+  /** Heading shown above the tab toggle, e.g. "Payload" or "Headers" — can embed interactive content, e.g. a media type selector. */
+  label: ReactNode;
+  /**
+   * Path prefix for schema tree rows. Defaults to `label`. Use when the heading
+   * should include extra context (e.g. media type) that must not appear in paths.
+   */
+  rootName?: string;
   description?: string;
   /** Declared multi-format wrapper (e.g. Avro, Protobuf) this schema was converted from, if any. */
   schemaFormat?: string;
@@ -31,10 +39,22 @@ function SchemaTabs({
   conversionError?: string;
   /** True while a Protobuf converter is still loading, see lazyProtoToJsonSchema.ts. */
   pendingConversion?: boolean;
+  /** A real example value declared in the spec (OpenAPI media type `example`/`examples`, or an AsyncAPI message example) — shown as-is on the Example tab instead of auto-generating one. */
+  example?: unknown;
+  /**
+   * Which view opens first. Defaults to "example", the right call for a body
+   * or payload, where a sample value is the most useful thing to see. Pass
+   * "schema" for groups whose values are generated at runtime and so can only
+   * ever be faked here (request parameters, response headers), where the
+   * documented name/type/description is what the reader actually wants.
+   */
+  defaultView?: "schema" | "example";
 }) {
   const formatBadge = schemaFormatBadge(schemaFormat);
   const showExample = !pendingConversion && supportsGeneratedExamples(schemaFormat, conversionError);
-  const [tab, setTab] = useState<"schema" | "json" | "example">(showExample ? "example" : "schema");
+  const [tab, setTab] = useState<"schema" | "json" | "example">(
+    showExample && defaultView === "example" ? "example" : "schema",
+  );
 
   // If the Example tab disappears (conversion failed / non-JSON-Schema format)
   // while it was selected, fall back so the panel is not blank.
@@ -88,12 +108,14 @@ function SchemaTabs({
         <p className="text-xs text-foreground-muted">Loading Protobuf definition…</p>
       ) : (
         <>
-          {tab === "schema" && <SchemaTree schema={schema} rootName={label} />}
+          {tab === "schema" && (
+            <SchemaTree schema={schema} rootName={rootName ?? (typeof label === "string" ? label : undefined)} />
+          )}
           {tab === "json" && (
             <SchemaViewer schema={originalSchema ?? schema} />
           )}
           {tab === "example" && showExample && (
-            <Examples schema={schema as Record<string, unknown>} />
+            <Examples schema={schema as Record<string, unknown>} providedExample={example} />
           )}
         </>
       )}

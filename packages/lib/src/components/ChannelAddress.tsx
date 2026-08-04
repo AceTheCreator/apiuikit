@@ -3,7 +3,17 @@ import { createPortal } from "react-dom";
 import { chunkColors } from "../contants";
 import { useAsyncAPIDocument } from "../contexts";
 import formatEnumDescription from "../helpers/formatEnumDescription";
-import { Parameter } from "../types/asyncapi/Parameter";
+
+// Structurally compatible with AsyncAPI's own Parameter type (a superset of
+// this) as well as an OpenAPI parameter's schema fields, so both specs can
+// pass their own parameter data here without casting.
+export interface ChannelAddressParameterDetail {
+  description?: string;
+  type?: string;
+  default?: string;
+  enum?: string[];
+  examples?: string[];
+}
 
 type AddressPart = { type: "text"; value: string } | { type: "param"; value: string };
 
@@ -27,7 +37,7 @@ function parseAddress(address: string): AddressPart[] {
 
 interface ChannelAddressProps {
   address: string;
-  parameters?: Record<string, Parameter>;
+  parameters?: Record<string, ChannelAddressParameterDetail>;
   className?: string;
   /** Clip to a single line with an ellipsis instead of wrapping. Useful in fixed-width contexts like table rows. */
   truncate?: boolean;
@@ -77,7 +87,7 @@ export function ChannelAddress({ address, parameters, className = "text-xs", tru
     const isHovered = hoveredIndex === i;
     const hasDetails =
       !!parameter &&
-      (parameter.description || parameter.default || (parameter.enum && parameter.enum.length > 0) ||
+      (parameter.description || parameter.type || parameter.default || (parameter.enum && parameter.enum.length > 0) ||
         (parameter.examples && parameter.examples.length > 0));
     const tooltipId = `channel-address-tooltip-${i}`;
     const describedBy = hasDetails && isHovered ? tooltipId : undefined;
@@ -122,6 +132,11 @@ export function ChannelAddress({ address, parameters, className = "text-xs", tru
               style={{ top: coords.top, left: coords.left }}
             >
               {parameter.description && <div>{parameter.description}</div>}
+              {parameter.type && (
+                <div className="mt-1">
+                  <code>{parameter.type}</code>
+                </div>
+              )}
               {parameter.default && (
                 <div className="mt-1">
                   <span className="font-semibold text-foreground-secondary">Default:</span>{" "}

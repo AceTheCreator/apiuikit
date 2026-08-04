@@ -1,6 +1,6 @@
-import { useContext, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { AsyncAPIDocumentContext, useAsyncAPIDocument } from "../contexts";
+import { useAsyncAPIDocument } from "../contexts";
 import { AsyncAPIDocumentProvider } from "../containers/AsyncAPI/AsyncAPIDocumentProvider";
 import { resolveDocument } from "../helpers/resolveDocument";
 import { ConfigInterface } from "../config";
@@ -11,6 +11,7 @@ import OperationsContainer from "../containers/Operation/Operations";
 import MessagesContainer from "../containers/Messages/Messages";
 import SchemasContainer from "../containers/Schema/Schemas";
 import Information from "../containers/Information/Information";
+import { createSectionRoot } from "./createSectionRoot";
 
 /**
  * Standalone, composable section components. Each renders one part of an
@@ -66,40 +67,20 @@ export function AsyncAPIProvider({
 /**
  * Renders `children` inside the ambient document context if there is one
  * (composed mode), otherwise resolves the `document` prop and sets up its own
- * provider (standalone mode). Hooks run unconditionally; the mode is decided
- * in the returned tree.
+ * provider (standalone mode). Shared with public/openapiSections.tsx via
+ * createSectionRoot — see that file's doc for the details.
  */
-function SectionRoot({
-  document,
-  config,
-  children,
-}: SectionProps & { children: ReactNode }) {
-  const ambient = useContext(AsyncAPIDocumentContext);
-  const resolved = useMemo(
-    () => (document ? resolveDocument(document) : null),
-    [document],
-  );
+const SectionRoot = createSectionRoot(AsyncAPIDocumentProvider, "AsyncAPI", "asyncapi");
 
-  if (ambient) return <>{children}</>;
-
-  if (!resolved) {
-    throw new Error(
-      "This AsyncAPI section needs a `document` prop unless it is rendered " +
-        "inside <AsyncAPIProvider> or <AsyncAPI>.",
-    );
-  }
-
-  return (
-    <AsyncAPIDocumentProvider document={resolved} config={config}>
-      {children}
-    </AsyncAPIDocumentProvider>
-  );
-}
-
-/** The context's `document` is typed loosely (Record<string, unknown>); the
- * sections need the structured shape, exactly as Layout casts it. */
 function useDocument(): AsyncAPIDocumentData {
-  return useAsyncAPIDocument().document as AsyncAPIDocumentData;
+  const context = useAsyncAPIDocument();
+  // The specType check narrows `document` to the AsyncAPI shape. The cast on
+  // the other branch covers only the mis-nested case (an AsyncAPI section
+  // under an OpenAPI provider, already warned about by SectionRoot), where
+  // returning the wrong-shaped document renders empty instead of crashing.
+  return context.specType === "asyncapi"
+    ? context.document
+    : (context.document as unknown as AsyncAPIDocumentData);
 }
 
 // --- Servers ---------------------------------------------------------------

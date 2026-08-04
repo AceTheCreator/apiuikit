@@ -1,6 +1,8 @@
+import { useId } from "react";
 import { OperationBindingsObject } from "../../types/asyncapi/OperationBindingsObject";
 import Authorization from "../../components/Authorization";
 import Bindings from "../../components/Bindings";
+import CollapsiblePanel from "../../components/CollapsiblePanel";
 import IconExternalLink from "../../icons/ExternalLink";
 import { ExternalDocs } from "../../types/asyncapi/ExternalDocs";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
@@ -20,6 +22,7 @@ interface OperationProps {
 }
 
 export default function Operation({ op, id, focusSection = null }: OperationProps) {
+  const authHeadingId = useId();
   const messages = (op.messages ?? []) as unknown as MessageObject[];
   const tags = (op.tags ?? []) as unknown as Tag[];
   const bindings = op.bindings as unknown as OperationBindingsObject | undefined;
@@ -81,11 +84,25 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
           <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
             Operation Authorization
           </p>
-          <Authorization
-            securities={
-              security as Parameters<typeof Authorization>[0]["securities"]
+          <CollapsiblePanel
+            ariaLabelledBy={authHeadingId}
+            forceExpanded={focusSection === "security"}
+            trigger={
+              <span className="text-xs font-normal text-foreground-muted bg-neutral-100 border border-border rounded-full px-2 py-0.5">
+                {security.length}
+              </span>
             }
-          />
+          >
+            <div className="px-4 py-2 border-t border-border">
+              <Authorization
+                securities={
+                  security as Parameters<
+                    typeof Authorization
+                  >[0]["securities"]
+                }
+              />
+            </div>
+          </CollapsiblePanel>
         </div>
       )}
 

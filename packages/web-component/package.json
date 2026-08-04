@@ -1,7 +1,7 @@
 {
   "name": "@apiuikit/web-component",
   "version": "0.1.0",
-  "description": "Framework-agnostic web components for apiuikit — <aui-asyncapi> and <aui-asyncapi-renderer> custom elements",
+  "description": "Framework-agnostic web components for apiuikit — <aui-asyncapi>, <aui-asyncapi-renderer>, <aui-openapi>, and <aui-openapi-renderer> custom elements",
   "license": "MIT",
   "repository": {
     "type": "git",
