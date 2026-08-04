@@ -5,6 +5,7 @@ import Tabs from "../../components/Tabs";
 import Authorization from "../../components/Authorization";
 import CollapsiblePanel from "../../components/CollapsiblePanel";
 import IconExternalLink from "../../icons/ExternalLink";
+import { CodeSamples } from "../../components/CodeSamples";
 import IconShieldCheck from "../../icons/ShieldCheck";
 import { PARAMETER_GROUPS } from "../../contants";
 import ResponseLinks from "./ResponseLinks";
@@ -582,6 +583,15 @@ export default function PathOperation({
 
       {op.summary && <p className="text-sm text-foreground-secondary">{op.summary}</p>}
       {op.description && <Markdown>{op.description}</Markdown>}
+
+      <CodeSamples
+        method={method}
+        path={path}
+        parameters={parameters}
+        requestBody={op.requestBody}
+        security={security}
+        id={id}
+      />
 
       {security.length > 0 && (
         <div id={`${idPrefix}-${id}-security`}>

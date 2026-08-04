@@ -7,6 +7,7 @@ import IconCheck from '../icons/Check';
 interface CodeBlockProps {
   code: string;
   className?: string;
+  language?: string;
 }
 
 const RESET_DELAY_MS = 1500;
@@ -41,7 +42,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-export function CodeBlock({ code, className }: CodeBlockProps) {
+export function CodeBlock({ code, className, language = 'json' }: CodeBlockProps) {
   const [status, setStatus] = useState<CopyStatus>('idle');
   const resetTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -55,7 +56,14 @@ export function CodeBlock({ code, className }: CodeBlockProps) {
     });
   };
 
-  const highlighted = hljs.highlight(code, { language: 'json' }).value;
+  // A caller (e.g. CodeSamples' dropdown) can pass a language whose grammar
+  // is still being lazy-loaded, or one with no highlight.js grammar at all
+  // (httpsnippet's "agent" prompt target). hljs.highlight() throws on an
+  // unregistered language, so fall back to plain, React-escaped text rather
+  // than crash — no dangerouslySetInnerHTML needed in that branch since
+  // there's no generated markup to sanitize.
+  const registered = hljs.getLanguage(language);
+  const highlighted = registered ? hljs.highlight(code, { language }).value : null;
   const label = status === 'copied' ? 'Copied' : status === 'error' ? 'Copy failed' : 'Copy to clipboard';
 
   return (
@@ -74,10 +82,14 @@ export function CodeBlock({ code, className }: CodeBlockProps) {
         )}
       </button>
       <pre className="text-xs rounded overflow-x-auto">
-        <code
-          className="hljs language-json"
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlighted) }}
-        />
+        {highlighted !== null ? (
+          <code
+            className={`hljs language-${language}`}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlighted) }}
+          />
+        ) : (
+          <code className="hljs">{code}</code>
+        )}
       </pre>
     </div>
   );

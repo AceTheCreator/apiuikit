@@ -122,11 +122,12 @@ See [Web Components](./with-webcomponents.md) for the full attribute reference â
 
 ## Config
 
-`ConfigInterface.show` gains two OpenAPI-specific flags, `endpoints` and `webhooks`, alongside the existing `sidebar` / `info` / `servers` / `search` / `schemas` flags (all default to shown):
+`ConfigInterface.show` gains three OpenAPI-specific flags, `endpoints`, `webhooks`, and `codeSamples`, alongside the existing `sidebar` / `info` / `servers` / `search` / `schemas` flags (all default to shown):
 
 ```tsx
 const config: ConfigInterface = {
   show: { endpoints: false }, // hide the Endpoints tab, e.g. for a schema-only reference page
+  // show: { codeSamples: false }, // hide the per-operation "Example Request" panel (cURL/JS/Python)
 };
 ```
 

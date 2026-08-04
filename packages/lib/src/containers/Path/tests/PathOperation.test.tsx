@@ -24,6 +24,7 @@ function withContext(children: React.ReactNode) {
         rootElement: null,
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
+        showCodeSamples: true,
       }}
     >
       {children}
