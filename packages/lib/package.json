@@ -2,7 +2,7 @@
   "name": "apiuikit",
   "version": "1.0.1",
   "description": "A React UI library for rendering your API specifications",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/AceTheCreator/apiuikit/issues"
   },

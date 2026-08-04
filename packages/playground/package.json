@@ -2,7 +2,7 @@
   "name": "playground",
   "version": "0.1.0",
   "description": "Embeddable editor playground for the aui AsyncAPI and OpenAPI renderers",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "private": true,
   "type": "module",
   "main": "./dist/playground.cjs.js",
