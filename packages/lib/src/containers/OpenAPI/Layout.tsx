@@ -2,8 +2,10 @@ import OpenAPIDocumentProvider from "./OpenAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
 import { OpenAPINavigation, OpenAPINavTab } from "../../components/Navigation";
 import SearchPanel from "../../components/SearchPanel";
+import MarkdownExportMenu from "../../components/MarkdownExportMenu";
 import { useOpenAPISearch } from "../../hooks/useOpenAPISearch";
 import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
+import { openApiToMarkdown } from "../../helpers/toMarkdown";
 import { ConfigInterface } from "../../config";
 import IconConnection from "../../icons/Connection";
 import IconOperation from "../../icons/Operation";
@@ -79,6 +81,7 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
         securitySchemes={openapi.components?.securitySchemes}
         selectedKey={selected.endpoints}
         onSelectKey={(key) => setSelectedKey("endpoints", key)}
+        showCopyMarkdown={show.copyMarkdown !== false}
       />
     ) : effectiveTab === "webhooks" ? (
       <Paths
@@ -89,6 +92,7 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
         onSelectKey={(key) => setSelectedKey("webhooks", key)}
         columnLabel="Webhook"
         idPrefix="webhook"
+        showCopyMarkdown={show.copyMarkdown !== false}
       />
     ) : effectiveTab === "schemas" ? (
       <Schemas
@@ -111,6 +115,14 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
             onQueryChange={setSearchQuery}
             results={searchResults}
             onSelectResult={handleSearchSelect}
+          />
+        )}
+        {show.copyMarkdown !== false && (
+          <MarkdownExportMenu
+            serialize={(deref) => openApiToMarkdown(openapi, deref)}
+            // Search toggle is at 12px; sit immediately to its right when it's shown
+            // (12 + 40 width + 8 gap), else take the vacated first slot.
+            leftOffset={show.search !== false ? 60 : 12}
           />
         )}
         {show.info !== false && (
