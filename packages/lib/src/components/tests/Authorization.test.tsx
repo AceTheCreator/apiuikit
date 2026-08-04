@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import Authorization from "../Authorization";
 
@@ -12,7 +12,7 @@ describe("Authorization", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the tab bar when there's more than one mechanism", () => {
+  it("shows the tab bar with no method selected when there's more than one mechanism", () => {
     render(
       <Authorization
         securities={[{ type: "X509" } as never, { type: "gssapi" } as never]}
@@ -20,6 +20,33 @@ describe("Authorization", () => {
     );
 
     expect(screen.getByRole("tablist")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/download the certificate file/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/authenticate using Kerberos/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("expands method details on tab click and collapses them when the same tab is clicked again", () => {
+    render(
+      <Authorization
+        securities={[{ type: "X509" } as never, { type: "gssapi" } as never]}
+      />,
+    );
+
+    const tab = screen.getByRole("tab", { name: /X\.509 certificate/i });
+    fireEvent.click(tab);
+
+    expect(
+      screen.getByText(/download the certificate file/i),
+    ).toBeInTheDocument();
+
+    fireEvent.click(tab);
+
+    expect(
+      screen.queryByText(/download the certificate file/i),
+    ).not.toBeInTheDocument();
   });
 
   describe("OpenAPI security schemes", () => {

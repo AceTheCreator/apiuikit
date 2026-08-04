@@ -81,7 +81,7 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
       {/* Security */}
       {security && security.length > 0 && (
         <div id={`operation-${id}-security`}>
-          <p id={authHeadingId} className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
+          <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
             Operation Authorization
           </p>
           <CollapsiblePanel

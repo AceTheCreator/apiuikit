@@ -63,7 +63,7 @@ export default function Server({
       <Markdown>{description}</Markdown>
       {security && security.length > 0 && (
         <div id={serverKey ? `server-${serverKey}-security` : undefined}>
-          <h3 id={authHeadingId} className="font-bold text-foreground-secondary mt-8">
+          <h3 className="font-bold text-foreground-secondary mt-8">
             <IconShieldCheck className="inline-block mr-2 -mt-1 h-6 text-foreground-muted" />
             Authorization
           </h3>

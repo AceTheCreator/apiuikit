@@ -99,14 +99,25 @@ export default function Authorization({ securities }: Props) {
       securities?.some((security) => tabIdFor(security).toLowerCase() === tab.id.toLowerCase()),
     );
   }, [securities]);
-  const [authTab, setAuthTab] = useState(
-    filteredTabs.length > 0 ? filteredTabs[0].id : null
+  const isMultiMethod = filteredTabs.length > 1;
+  // Single method: show content immediately. Multiple: nothing selected until
+  // the user picks a tab — then they can close the panel back up.
+  const [authTab, setAuthTab] = useState<string | null>(
+    isMultiMethod ? null : filteredTabs[0]?.id ?? null
   );
 
   useEffect(() => {
-    if (filteredTabs.length > 0) {
-      setAuthTab(filteredTabs[0].id);
+    if (filteredTabs.length === 0) {
+      setAuthTab(null);
+      return;
     }
+    if (filteredTabs.length === 1) {
+      setAuthTab(filteredTabs[0].id);
+      return;
+    }
+    setAuthTab((current) =>
+      current && filteredTabs.some((tab) => tab.id === current) ? current : null
+    );
   }, [filteredTabs]);
 
   function filteredType<T extends SecuritySchemeData>(tabId: string): T {
@@ -117,8 +128,15 @@ export default function Authorization({ securities }: Props) {
 
   return (
     <div>
-      {filteredTabs.length > 1 && (
-        <Tabs tabs={filteredTabs} current={authTab} onChange={setAuthTab} />
+      {isMultiMethod && (
+        <Tabs
+          tabs={filteredTabs}
+          current={authTab}
+          onChange={(id) =>
+            setAuthTab((current) => (id && current === id ? null : id || null))
+          }
+          placeholder="Select an authorization method"
+        />
       )}
       <div className="py-4 prose text-foreground-muted">
         {authTab === "userPassword" && (

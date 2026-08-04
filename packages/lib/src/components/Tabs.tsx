@@ -15,6 +15,8 @@ interface TabsProps {
   onChange?: (id: string) => void;
   ariaLabel?: string;
   selectLabel?: string;
+  /** When set, the mobile `<select>` includes an empty option for no selection. */
+  placeholder?: string;
 }
 
 export default function Tabs({
@@ -23,11 +25,17 @@ export default function Tabs({
   onChange = () => {},
   ariaLabel = "Tabs",
   selectLabel = "Select a tab",
+  placeholder,
 }: TabsProps) {
   const selectId = useId();
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const selectValue = current ?? tabs[0]?.id ?? "";
+  // With a placeholder, empty means "none selected". Without one, fall back to
+  // the first tab so uncontrolled-looking selects stay valid HTML.
+  const selectValue = current ?? (placeholder ? "" : tabs[0]?.id ?? "");
   const hasIcons = tabs.some((tab) => Boolean(tab.icon));
+  const activeIndex = current ? tabs.findIndex((tab) => tab.id === current) : -1;
+  // Keep one tab focusable when nothing is selected so keyboard users can enter the list.
+  const focusableIndex = activeIndex >= 0 ? activeIndex : 0;
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, tabIndex: number) => {
     if (tabs.length === 0) return;
@@ -78,6 +86,11 @@ export default function Tabs({
             hasIcons ? "mt-0" : "mt-4"
           )}
         >
+          {placeholder && (
+            <option value="">
+              {placeholder}
+            </option>
+          )}
           {tabs.map((tab) => (
             <option key={tab.id} value={tab.id}>
               {tab.name}
@@ -105,13 +118,13 @@ export default function Tabs({
                     id={`tab-${tab.id}`}
                     type="button"
                     role="tab"
-                    tabIndex={isActive ? 0 : -1}
+                    tabIndex={tabIndex === focusableIndex ? 0 : -1}
                     aria-selected={isActive}
                     aria-controls={`panel-${tab.id}`}
                     onClick={() => onChange(tab.id)}
                     onKeyDown={(event) => handleTabKeyDown(event, tabIndex)}
                     className={classNames(
-                      "border-b-2 px-1 py-3 text-sm font-semibold transition-colors",
+                      "cursor-pointer border-b-2 px-1 py-3 text-sm font-semibold transition-colors",
                       isActive
                         ? "border-primary-500 text-primary-600"
                         : "border-transparent text-foreground-muted hover:text-foreground"
@@ -141,7 +154,7 @@ export default function Tabs({
                   id={`tab-${tab.id}`}
                   type="button"
                   role="tab"
-                  tabIndex={isActive ? 0 : -1}
+                  tabIndex={tabIdx === focusableIndex ? 0 : -1}
                   aria-selected={isActive}
                   aria-controls={`panel-${tab.id}`}
                   onClick={() => onChange(tab.id)}
@@ -152,7 +165,7 @@ export default function Tabs({
                       : "text-foreground-muted hover:text-foreground-secondary",
                     tabIdx === 0 ? "rounded-l-lg" : "",
                     tabIdx === tabs.length - 1 ? "rounded-r-lg" : "",
-                    "group relative min-w-0 flex-1 overflow-hidden bg-surface px-4 py-4 text-center text-sm font-medium hover:bg-neutral-50 focus:z-10"
+                    "group relative min-w-0 flex-1 cursor-pointer overflow-hidden bg-surface px-4 py-4 text-center text-sm font-medium hover:bg-neutral-50 focus:z-10"
                   )}
                 >
                   <span>{tab.name}</span>
