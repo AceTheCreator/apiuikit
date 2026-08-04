@@ -98,6 +98,17 @@ a {
   color: #334155;
 }
 
+/* Labelled variant: same floating placement and height as the square toggles
+   it sits beside, but sized to its own text rather than to a 40px box. */
+.panel-toggle-btn--labeled {
+  width: auto;
+  gap: 8px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 ::highlight(search-match) {
   background-color: yellow;
   color: black;

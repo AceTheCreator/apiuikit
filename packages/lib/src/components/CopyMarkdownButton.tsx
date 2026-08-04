@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import IconClipboard from "../icons/Clipboard";
+import IconCopy from "../icons/Copy";
 import IconCheck from "../icons/Check";
 
 interface CopyMarkdownButtonProps {
@@ -45,7 +45,7 @@ export default function CopyMarkdownButton({ getMarkdown, label }: CopyMarkdownB
       aria-label={label}
       className="ml-2 p-1 rounded hover:bg-neutral-100 text-foreground-muted hover:text-foreground-secondary transition-colors"
     >
-      {copied ? <IconCheck className="w-4 h-4 text-green-600" /> : <IconClipboard className="w-4 h-4" />}
+      {copied ? <IconCheck className="w-4 h-4 text-green-600" /> : <IconCopy className="w-4 h-4" />}
     </button>
   );
 }

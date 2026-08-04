@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import IconClipboard from "../icons/Clipboard";
+import IconCopy from "../icons/Copy";
 import IconCheck from "../icons/Check";
 import IconExternalLink from "../icons/ExternalLink";
+import IconArrowDown from "../icons/ArrowDown";
 import { useAsyncAPIDocument } from "../contexts";
 import { useAutoHideOnScroll } from "../utils/useAutoHideOnScroll";
 import { useElementRect } from "../utils/useElementRect";
@@ -118,13 +119,24 @@ export default function MarkdownExportMenu({ serialize, leftOffset }: MarkdownEx
         type="button"
         onClick={() => setIsOpen((v) => !v)}
         title="Copy as Markdown"
+        // Kept even though the button now has visible text: the label stays
+        // put while the text swaps to "Copied!", so the accessible name
+        // doesn't change out from under anyone mid-interaction.
         aria-label="Copy as Markdown"
         aria-haspopup="menu"
         aria-expanded={isOpen}
-        className="panel-toggle-btn bg-neutral-100"
+        className="panel-toggle-btn panel-toggle-btn--labeled bg-neutral-100 hover:bg-neutral-200"
         style={toggleStyle}
       >
-        {copied ? <IconCheck className="w-4 h-4 text-green-600" /> : <IconClipboard className="w-4 h-4" />}
+        {copied ? (
+          <IconCheck className="w-4 h-4 shrink-0 text-green-600" />
+        ) : (
+          <IconCopy className="w-4 h-4 shrink-0" />
+        )}
+        <span>{copied ? "Copied!" : "Copy as Markdown"}</span>
+        <IconArrowDown
+          className={`w-3 h-3 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+        />
       </button>
 
       {isOpen &&
