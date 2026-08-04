@@ -4,6 +4,7 @@ import { expect, within } from "@storybook/test";
 import SchemaTree from "../components/schema/SchemaTree";
 import { AsyncAPIDocumentContext } from "../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../components/schema/depthColors";
+import type { AsyncAPIDocumentData } from "../types/schema";
 import example1 from "../config/examples/example1.json";
 import example2 from "../config/examples/example2.json";
 
@@ -36,9 +37,9 @@ const deref = (refPath: string): unknown => {
 
 const withSchemaContext = (Story: ComponentType) => (
   <AsyncAPIDocumentContext.Provider
-    value={{ document: mockDocument, deref, portalHost: null, rootElement: null, depthColors: DEFAULT_DEPTH_COLORS }}
+    value={{ specType: "asyncapi", document: mockDocument as unknown as AsyncAPIDocumentData, deref, portalHost: null, rootElement: null, depthColors: DEFAULT_DEPTH_COLORS, showExtensions: true, showCodeSamples: true }}
   >
-    <div className="max-w-3xl p-4">
+    <div className="mx-auto w-full max-w-3xl p-4">
       <Story />
     </div>
   </AsyncAPIDocumentContext.Provider>
@@ -48,6 +49,7 @@ const meta = {
   title: "Components/SchemaTree",
   component: SchemaTree,
   decorators: [withSchemaContext],
+  tags: ["autodocs"],
 } satisfies Meta<typeof SchemaTree>;
 
 export default meta;

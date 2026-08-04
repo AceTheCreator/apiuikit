@@ -1,0 +1,83 @@
+import { Meta } from "@storybook/blocks";
+
+<Meta title="Introduction" />
+
+# APIUIKIT
+
+React components for building API documentation UIs: drop in the whole
+documentation widget, or compose individual sections into your own layout.
+Currently supports AsyncAPI specs, with more (like OpenAPI) planned.
+
+## Three ways to use it
+
+### 1. The whole widget
+
+The fastest path: hand it a document, get a full documentation page (sidebar
+navigation, search, servers, operations, messages, schemas).
+
+```tsx
+import { AsyncAPI } from "apiuikit";
+
+<AsyncAPI asyncapi={document} config={config} />
+```
+
+### 2. One section, standalone
+
+Each section component can render on its own: pass it a `document`, and it
+resolves the document and sets up its own context internally. Use this to drop
+a single section into a page you're already building.
+
+```tsx
+import { Operations } from "apiuikit";
+
+<Operations document={document} />
+```
+
+`Servers`, `Operations`, `Messages`, `Schemas`, and `Info` all work this way.
+
+### 3. Several sections, composed
+
+To arrange multiple sections in a custom layout, reordering them or
+interleaving your own components between them, wrap them in
+`AsyncAPIProvider` instead. It resolves the document once and shares it with
+every section underneath, rather than each one resolving independently.
+
+```tsx
+import { AsyncAPIProvider, Servers, Operations, Schemas } from "apiuikit";
+
+<AsyncAPIProvider document={document}>
+  <MyPageHeader />
+  <Servers />
+  <Operations />
+  <MyCustomSidebar />
+  <Schemas />
+</AsyncAPIProvider>
+```
+
+## Finding components in this Storybook
+
+The sidebar is split into two groups:
+
+- **Components**: `AsyncAPI`, `AsyncAPIRenderer`, `Servers`, `Operations`,
+  `Messages`, `SchemaTree`, and `SchemaTab` each have stories here.
+  `AsyncAPIProvider`, `Schemas`, and `Info` are exported the same way but don't
+  have dedicated stories yet. Everything exported from `apiuikit` is safe to
+  import and depend on directly.
+- **Internal**: the building blocks these are made of (`Authorization`,
+  `Bindings`, `ChannelAddress`, `Tabs`, and others). They're shown here for
+  development and visual regression testing, but **aren't exported** from the
+  package, so their props and behavior can change without notice. If you need
+  one of these standalone, ask for it to be promoted to the public Components rather
+  than reaching into the library's internals.
+
+## Schema-only usage
+
+If you just need to render a JSON Schema, not a full AsyncAPI document, use
+`SchemaTree` (the expandable tree view) or `SchemaTab` (adds the
+Schema/Example/JSON toggle) directly; neither needs a document or provider.
+
+```tsx
+import { SchemaTree } from "apiuikit";
+
+<SchemaTree schema={schema} rootName="Payload" />
+```

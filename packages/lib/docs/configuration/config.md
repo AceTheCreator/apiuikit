@@ -14,6 +14,7 @@ interface ConfigInterface {
     sidebar?: boolean;
     info?: boolean;
     servers?: boolean;
+    search?: boolean;
     operations?: boolean;
     messages?: boolean;
     messageExamples?: boolean;
@@ -67,7 +68,7 @@ interface ThemeModeColors {
   This field contains configuration responsible for rendering specific parts of the AsyncAPI component.
   The `schemas` and `messageExamples` fields are set to `false` by default. The default for all other fields is `true`.
 
-  Setting a tab (`operations`, `messages`, `schemas`) to `false` removes it from both the tab bar and the side navigation panel.
+  Setting `search` to `false` hides the search panel. Setting a tab (`operations`, `messages`, `schemas`) to `false` removes it from both the tab bar and the side navigation panel.
 
 - **sidebar?: Partial\<SideBarConfig\>**
 

@@ -8,16 +8,22 @@ import {
   schemaFormatName,
   ResolvedSchemaInput,
 } from "../../helpers/schemaFormat";
+import { useProtobufConverterReady } from "../../helpers/protobuf/lazyProtoToJsonSchema";
 import { SchemaViewer } from "./SchemaViewer";
 import { useAsyncAPIDocument } from "../../contexts";
 
 interface SchemasProps {
   schemas: Record<string, SchemaNodeData>;
   selectedKey?: string | null;
+  /** The precisely-matched nested node search navigated to, if any — see Layout.tsx. */
+  focusTarget?: { tokens: string[]; id: string } | null;
 }
 
-export default function Schemas({ schemas, selectedKey }: SchemasProps) {
+export default function Schemas({ schemas, selectedKey, focusTarget }: SchemasProps) {
   const { deref } = useAsyncAPIDocument();
+  // Re-resolves once the (lazy-loaded) Protobuf converter becomes available —
+  // see lazyProtoToJsonSchema.ts.
+  const protobufReady = useProtobufConverterReady();
 
   // v3 components.schemas entries can be multi-format wrappers
   // ({ schemaFormat, schema }) — normalize each entry for rendering.
@@ -27,7 +33,11 @@ export default function Schemas({ schemas, selectedKey }: SchemasProps) {
         schemaName,
         resolveSchemaInput(schema, deref),
       ]),
-    [schemas, deref],
+    // protobufReady isn't read in the body, but resolveSchemaInput's result
+    // silently depends on it via module-level state (lazyProtoToJsonSchema.ts)
+    // — the memo must invalidate when it flips or a pending conversion never re-resolves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schemas, deref, protobufReady],
   );
 
   const content = schemaEntries.length ? (
@@ -93,15 +103,26 @@ export default function Schemas({ schemas, selectedKey }: SchemasProps) {
                 showing raw definition. {resolved.conversionError}
               </p>
             )}
+            {resolved.pendingConversion && (
+              <p className="mt-4 text-xs text-foreground-muted">
+                Loading Protobuf definition…
+              </p>
+            )}
             {/* String sources (e.g. raw .proto text) can't be shown as a tree;
                 fall back to the raw definition the warning above refers to. */}
-            {resolved.conversionError &&
+            {resolved.pendingConversion ? null : resolved.conversionError &&
             typeof resolved.originalSchema === "string" ? (
               <div className="mt-4">
                 <SchemaViewer schema={resolved.originalSchema} />
               </div>
             ) : (
-              <SchemaTree schema={schema} rootName={schemaName} className="mt-4" />
+              <SchemaTree
+                schema={schema}
+                rootName={schemaName}
+                className="mt-4"
+                focusTokens={schemaName === selectedKey ? focusTarget?.tokens ?? null : null}
+                focusId={schemaName === selectedKey ? focusTarget?.id ?? null : null}
+              />
             )}
           </article>
         );

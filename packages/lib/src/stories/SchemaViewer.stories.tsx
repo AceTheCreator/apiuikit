@@ -1,12 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { SchemaViewer } from '../containers/Schema/SchemaViewer';
+import { centeredDecorator } from './documentContextDecorator';
 
 const meta = {
-  title: 'Components/SchemaViewer',
+  title: 'Internal/SchemaViewer',
   component: SchemaViewer,
-  // parameters: {
-  //   layout: 'centered',
-  // },
+  decorators: [centeredDecorator],
 } satisfies Meta<typeof SchemaViewer>;
 
 export default meta;

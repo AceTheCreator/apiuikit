@@ -6,21 +6,27 @@
   ],
   "scripts": {
     "build:lib": "npm run build --workspace=packages/lib",
+    "build:web-component": "npm run build --workspace=packages/lib && npm run build --workspace=packages/web-component",
     "build:playground-lib": "npm run build:lib && npm run build:lib --workspace=packages/playground",
     "dev:lib": "npm run dev --workspace=packages/lib",
+    "demo:wc": "npm run build --workspace=packages/lib && npm run demo --workspace=packages/web-component",
     "test": "npm run test --workspace=packages/lib",
     "test:watch": "npm run test:watch --workspace=packages/lib",
     "playground": "npm run build --workspace=packages/lib && concurrently \"npm run watch --workspace=packages/lib\" \"npm run dev --workspace=packages/playground\"",
     "storybook": "npm run storybook --workspace=packages/lib",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "npm run build --workspace=packages/lib && changeset publish"
+    "release": "npm run build --workspace=packages/lib && npm run build --workspace=packages/web-component && changeset publish"
   },
   "peerDependencies": {
-    "@asyncapi/parser": "^3.6.0"
+    "@asyncapi/parser": "^3.6.0",
+    "@scalar/openapi-parser": "^0.28.10"
   },
   "peerDependenciesMeta": {
     "@asyncapi/parser": {
+      "optional": true
+    },
+    "@scalar/openapi-parser": {
       "optional": true
     }
   },

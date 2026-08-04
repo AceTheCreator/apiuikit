@@ -13,25 +13,38 @@ export const defaultConfig: ConfigInterface = {
     // errors: true,
   },
   theme: {
+    // GitHub Dark (Primer) accent scale — kept in sync with the playground's
+    // own UI_PALETTES.dark in packages/playground/src/theme.ts.
     colors: {
       primary: {
-        50:  "#ebf1fe",
-        100: "#d6e3fd",
-        200: "#adc7fb",
-        300: "#85abf9",
-        500: "#7aa2f7",
-        600: "#5a7ef0",
-        700: "#3d5bc4",
+        50:  "#ddf4ff",
+        100: "#b6e3ff",
+        200: "#80ccff",
+        300: "#54aeff",
+        500: "#58a6ff",
+        600: "#1f6feb",
+        700: "#0d419d",
       },
     },
-    dark: {
-      background: "#1a1b26",
-      surface: "#24283b",
-      border: "#414868",
+    // Matches the :root fallback values in index.css — kept explicit here so light
+    // wins outright over `dark` below per buildThemeVars' precedence rule.
+    light: {
+      background: "#f8fafc",
+      surface: "#ffffff",
+      border: "#e2e8f0",
 
-      textPrimary: "#c0caf5",
-      textSecondary: "#a9b1d6",
-      textMuted: "#666c86",
+      textPrimary: "#1e293b",
+      textSecondary: "#475569",
+      textMuted: "#64748b",
+    },
+    dark: {
+      background: "#0d1117",
+      surface: "#161b22",
+      border: "#30363d",
+
+      textPrimary: "#c9d1d9",
+      textSecondary: "#8b949e",
+      textMuted: "#6e7681",
     },
     depthColors: DEFAULT_DEPTH_COLORS,
   },
@@ -39,6 +52,6 @@ export const defaultConfig: ConfigInterface = {
     schemas: false,
   },
   sidebar: {
-    useChannelAddressAsIdentifier: false,
+    useChannelAddressAsIdentifier: true,
   },
 };

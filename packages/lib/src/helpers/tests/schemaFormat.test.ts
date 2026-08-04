@@ -9,6 +9,7 @@ import {
   schemaFormatName,
   supportsGeneratedExamples,
 } from "../schemaFormat";
+import { waitForProtobufConverter } from "../protobuf/lazyProtoToJsonSchema";
 
 const AVRO_FORMAT = "application/vnd.apache.avro;version=1.9.0";
 const PROTOBUF_FORMAT = "application/vnd.google.protobuf;version=3";
@@ -150,7 +151,11 @@ describe("resolveSchemaInput", () => {
     expect(result.conversionError).toContain("fields");
   });
 
-  it("converts a multi-format wrapper holding raw protobuf source", () => {
+  it("converts a multi-format wrapper holding raw protobuf source", async () => {
+    // Protobuf conversion is lazy-loaded (see lazyProtoToJsonSchema.ts) —
+    // wait for it so this asserts on the real conversion, not the pending
+    // placeholder resolveSchemaInput returns before it's ready.
+    await waitForProtobufConverter();
     const result = resolveSchemaInput({
       schemaFormat: PROTOBUF_FORMAT,
       schema: rawProtoSource,
@@ -164,7 +169,8 @@ describe("resolveSchemaInput", () => {
     expect(result.schema.required).toEqual(["lat", "lon"]);
   });
 
-  it("fails soft on invalid protobuf source without throwing", () => {
+  it("fails soft on invalid protobuf source without throwing", async () => {
+    await waitForProtobufConverter();
     const broken = "message Broken {"; // unterminated block
     const result = resolveSchemaInput({
       schemaFormat: PROTOBUF_FORMAT,
@@ -189,7 +195,8 @@ describe("resolveSchemaInput", () => {
     expect(result.conversionError).toBeUndefined();
   });
 
-  it("resolves a top-level $ref before converting multi-format protobuf", () => {
+  it("resolves a top-level $ref before converting multi-format protobuf", async () => {
+    await waitForProtobufConverter();
     const components: Record<string, unknown> = {
       pointPayload: { schemaFormat: PROTOBUF_FORMAT, schema: rawProtoSource },
     };

@@ -5,17 +5,36 @@ import { useState } from "react";
 import Server from "./Server";
 import { SERVER_TEXT } from "../../contants";
 
-interface ServersInterface {
-  [key: string]: Record<string, ServerInterface>;
+interface ServersProps {
+  servers: Record<string, ServerInterface>;
+  selectedServer?: string | null;
+  onSelectServer?: (serverName: string) => void;
+  /** Which collapsed section of the selected server search navigated to. */
+  focusSection?: string | null;
 }
 
-export default function Servers({ servers }: ServersInterface) {
-  const serverNames = [...Object.keys(servers)];
+export default function Servers({ servers, selectedServer, onSelectServer, focusSection = null }: ServersProps) {
+  const serverNames = Object.keys(servers);
   const [selected, setSelected] = useState<string | undefined>(undefined);
-  // Falls back to the first server whenever there's no explicit selection yet, or the
-  // previously selected one no longer exists (e.g. after switching to a different document).
-  const current = selected && serverNames.includes(selected) ? selected : serverNames[0];
-  const content = <Server {...servers[current]} />;
+  // Prefers the caller-controlled selection (e.g. from search); falls back to
+  // uncontrolled local state, then to the first server if neither is set yet or
+  // the previously selected one no longer exists (e.g. after switching documents).
+  const current = [selectedServer, selected].find(
+    (name): name is string => !!name && serverNames.includes(name),
+  ) ?? serverNames[0];
+
+  const setCurrent = (serverName: string) => {
+    setSelected(serverName);
+    onSelectServer?.(serverName);
+  };
+
+  const content = (
+    <Server
+      {...servers[current]}
+      serverKey={current}
+      focusSection={selectedServer || selected ? focusSection : null}
+    />
+  );
   return (
     <div className="flex justify-center w-full">
       <Section
@@ -25,7 +44,7 @@ export default function Servers({ servers }: ServersInterface) {
           <VerticalNavigation
             serverNames={serverNames}
             current={current}
-            setCurrent={setSelected}
+            setCurrent={setCurrent}
           />
         }
         stickySideContent={true}

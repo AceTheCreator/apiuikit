@@ -7,6 +7,8 @@ interface SectionProps {
   stickySideContent: boolean;
   info?: boolean;
   reverseLayoutOnMobile?: boolean;
+  /** Rendered directly above the title, visible on small screens only (e.g. a logo that otherwise lives at the top of the desktop sidebar). */
+  mobileLeadContent?: ReactNode;
 }
 
 export default function Section({
@@ -16,9 +18,11 @@ export default function Section({
   stickySideContent = false,
   info = false,
   reverseLayoutOnMobile = false,
+  mobileLeadContent,
 }: SectionProps) {
   return (
     <div className="w-full @lg:max-w-[calc(70ch+28rem)] @lg:mx-auto mt-6">
+      {mobileLeadContent && <div className="@lg:hidden mb-3">{mobileLeadContent}</div>}
       {title && (
         <h1
           className={`${info ? "text-4xl inline-block text-3xl font-extrabold text-foreground tracking-tight" : "text-2xl"} mb-4 @lg:mb-0 font-bold`}

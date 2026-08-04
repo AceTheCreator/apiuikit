@@ -1,5 +1,6 @@
-import { useId } from "react";
+import { useId, useRef } from "react";
 import type { ComponentType } from "react";
+import type { KeyboardEvent } from "react";
 import classNames from "../helpers/classNames";
 
 export type Tab = {
@@ -14,6 +15,8 @@ interface TabsProps {
   onChange?: (id: string) => void;
   ariaLabel?: string;
   selectLabel?: string;
+  /** When set, the mobile `<select>` includes an empty option for no selection. */
+  placeholder?: string;
 }
 
 export default function Tabs({
@@ -22,10 +25,46 @@ export default function Tabs({
   onChange = () => {},
   ariaLabel = "Tabs",
   selectLabel = "Select a tab",
+  placeholder,
 }: TabsProps) {
   const selectId = useId();
-  const selectValue = current ?? tabs[0]?.id ?? "";
+  const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  // With a placeholder, empty means "none selected". Without one, fall back to
+  // the first tab so uncontrolled-looking selects stay valid HTML.
+  const selectValue = current ?? (placeholder ? "" : tabs[0]?.id ?? "");
   const hasIcons = tabs.some((tab) => Boolean(tab.icon));
+  const activeIndex = current ? tabs.findIndex((tab) => tab.id === current) : -1;
+  // Keep one tab focusable when nothing is selected so keyboard users can enter the list.
+  const focusableIndex = activeIndex >= 0 ? activeIndex : 0;
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, tabIndex: number) => {
+    if (tabs.length === 0) return;
+    const getIndex = (index: number) => (index + tabs.length) % tabs.length;
+    let nextIndex = tabIndex;
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      nextIndex = getIndex(tabIndex + 1);
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      nextIndex = getIndex(tabIndex - 1);
+    }
+    if (event.key === "Home") {
+      event.preventDefault();
+      nextIndex = 0;
+    }
+    if (event.key === "End") {
+      event.preventDefault();
+      nextIndex = tabs.length - 1;
+    }
+
+    if (nextIndex !== tabIndex) {
+      const nextTab = tabs[nextIndex];
+      onChange(nextTab.id);
+      buttonRefs.current[nextIndex]?.focus();
+    }
+  };
 
   if (!tabs.length) {
     return null;
@@ -47,6 +86,11 @@ export default function Tabs({
             hasIcons ? "mt-0" : "mt-4"
           )}
         >
+          {placeholder && (
+            <option value="">
+              {placeholder}
+            </option>
+          )}
           {tabs.map((tab) => (
             <option key={tab.id} value={tab.id}>
               {tab.name}
@@ -63,21 +107,24 @@ export default function Tabs({
             aria-label={ariaLabel}
           >
             <div className="flex flex-wrap gap-6">
-              {tabs.map((tab) => {
+              {tabs.map((tab, tabIndex) => {
                 const isActive = tab.id === current;
                 const Icon = tab.icon;
 
                 return (
                   <button
+                    ref={(el) => { buttonRefs.current[tabIndex] = el; }}
                     key={tab.id}
                     id={`tab-${tab.id}`}
                     type="button"
                     role="tab"
+                    tabIndex={tabIndex === focusableIndex ? 0 : -1}
                     aria-selected={isActive}
                     aria-controls={`panel-${tab.id}`}
                     onClick={() => onChange(tab.id)}
+                    onKeyDown={(event) => handleTabKeyDown(event, tabIndex)}
                     className={classNames(
-                      "border-b-2 px-1 py-3 text-sm font-semibold transition-colors",
+                      "cursor-pointer border-b-2 px-1 py-3 text-sm font-semibold transition-colors",
                       isActive
                         ? "border-primary-500 text-primary-600"
                         : "border-transparent text-foreground-muted hover:text-foreground"
@@ -95,32 +142,43 @@ export default function Tabs({
         ) : (
           <nav
             className="relative z-0 flex divide-x divide-border rounded-lg shadow"
+            role="tablist"
             aria-label={ariaLabel}
           >
-            {tabs.map((tab, tabIdx) => (
-              <button
-                key={tab.id}
-                onClick={() => onChange(tab.id)}
-                className={classNames(
-                  tab.id === current
-                    ? "text-foreground"
-                    : "text-foreground-muted hover:text-foreground-secondary",
-                  tabIdx === 0 ? "rounded-l-lg" : "",
-                  tabIdx === tabs.length - 1 ? "rounded-r-lg" : "",
-                  "group relative min-w-0 flex-1 overflow-hidden bg-surface px-4 py-4 text-center text-sm font-medium hover:bg-neutral-50 focus:z-10"
-                )}
-                aria-current={tab.id === current ? "page" : undefined}
-              >
-                <span>{tab.name}</span>
-                <span
-                  aria-hidden="true"
+            {tabs.map((tab, tabIdx) => {
+              const isActive = tab.id === current;
+              return (
+                <button
+                  ref={(el) => { buttonRefs.current[tabIdx] = el; }}
+                  key={tab.id}
+                  id={`tab-${tab.id}`}
+                  type="button"
+                  role="tab"
+                  tabIndex={tabIdx === focusableIndex ? 0 : -1}
+                  aria-selected={isActive}
+                  aria-controls={`panel-${tab.id}`}
+                  onClick={() => onChange(tab.id)}
+                  onKeyDown={(event) => handleTabKeyDown(event, tabIdx)}
                   className={classNames(
-                    tab.id === current ? "bg-primary-500" : "bg-transparent",
-                    "absolute inset-x-0 bottom-0 h-0.5"
+                    isActive
+                      ? "text-foreground"
+                      : "text-foreground-muted hover:text-foreground-secondary",
+                    tabIdx === 0 ? "rounded-l-lg" : "",
+                    tabIdx === tabs.length - 1 ? "rounded-r-lg" : "",
+                    "group relative min-w-0 flex-1 cursor-pointer overflow-hidden bg-surface px-4 py-4 text-center text-sm font-medium hover:bg-neutral-50 focus:z-10"
                   )}
-                />
-              </button>
-            ))}
+                >
+                  <span>{tab.name}</span>
+                  <span
+                    aria-hidden="true"
+                    className={classNames(
+                      isActive ? "bg-primary-500" : "bg-transparent",
+                      "absolute inset-x-0 bottom-0 h-0.5"
+                    )}
+                  />
+                </button>
+              );
+            })}
           </nav>
         )}
       </div>

@@ -11,7 +11,7 @@ export interface SchemaTypeLabelProps {
 export default function SchemaTypeLabel({
   schema,
   refLabel,
-  className = "text-xs text-gray-500",
+  className = "text-xs text-foreground-muted",
 }: SchemaTypeLabelProps) {
   const { text, format, refHint } = buildTypeDisplay(schema, refLabel);
 
@@ -19,7 +19,7 @@ export default function SchemaTypeLabel({
     <span className={className}>
       {format ?? text}
       {refHint && !text.includes(`(${refHint})`) && (
-        <span className="text-gray-400"> ({refHint})</span>
+        <span className="text-foreground-muted"> ({refHint})</span>
       )}
     </span>
   );

@@ -9,11 +9,11 @@ export default function SchemaNotBranch({ children }: SchemaNotBranchProps) {
   return (
     <div className="py-2">
       <div className="flex flex-col items-start">
-        <span className="inline-block px-2 py-0.5 text-xs font-medium text-gray-700 border border-gray-300 rounded-md bg-white">
+        <span className="inline-block px-2 py-0.5 text-xs font-medium text-foreground-secondary border border-border rounded-md bg-surface">
           Should Not match:
         </span>
         <div
-          className="w-px h-3 bg-gray-300 ml-[1.125rem]"
+          className="w-px h-3 bg-border ml-[1.125rem]"
           aria-hidden="true"
         />
       </div>
@@ -31,7 +31,7 @@ export function BooleanNotPill({ value }: BooleanNotPillProps) {
   const label = value ? "any value" : "false schema";
 
   return (
-    <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+    <span className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-foreground-secondary">
       {label}
     </span>
   );

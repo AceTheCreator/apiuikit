@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import IconArrowDown from "../../icons/ArrowDown";
 import TagComponent from "../../components/Tag";
 import Tabs from "../../components/Tabs";
@@ -6,6 +6,7 @@ import SchemaTabs from "../../components/schema/SchemaTab";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
 import { Tag } from "../../types/asyncapi/Tag";
 import { resolveSchemaInput } from "../../helpers/schemaFormat";
+import { useProtobufConverterReady } from "../../helpers/protobuf/lazyProtoToJsonSchema";
 import { useAsyncAPIDocument } from "../../contexts";
 
 interface MessageDetailsProps {
@@ -13,6 +14,8 @@ interface MessageDetailsProps {
   expanded: boolean;
   onToggleExpanded: () => void;
   paddingX?: string;
+  /** "payload" | "headers" when search navigated here for that schema specifically. */
+  focusSection?: string | null;
 }
 
 export function MessageDetails({
@@ -20,18 +23,34 @@ export function MessageDetails({
   expanded,
   onToggleExpanded,
   paddingX = "px-4",
+  focusSection = null,
 }: MessageDetailsProps) {
   const [schemaTab, setSchemaTab] = useState<"payload" | "headers">("payload");
+  useEffect(() => {
+    if (focusSection === "headers" || focusSection === "payload") setSchemaTab(focusSection);
+  }, [focusSection]);
   const { deref } = useAsyncAPIDocument();
+  // Re-resolves once the (lazy-loaded) Protobuf converter becomes available —
+  // see lazyProtoToJsonSchema.ts.
+  const protobufReady = useProtobufConverterReady();
 
   const payload = useMemo(
     () => (message.payload ? resolveSchemaInput(message.payload, deref) : null),
-    [message.payload, deref],
+    // protobufReady isn't read in the body, but resolveSchemaInput's result
+    // silently depends on it via module-level state (lazyProtoToJsonSchema.ts)
+    // — the memo must invalidate when it flips or a pending conversion never re-resolves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [message.payload, deref, protobufReady],
   );
   const headers = useMemo(
     () => (message.headers ? resolveSchemaInput(message.headers, deref) : null),
-    [message.headers, deref],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [message.headers, deref, protobufReady],
   );
+
+  // Prefer the message's own declared example over letting the Example tab
+  // fake-generate one from the schema.
+  const firstExample = (message.examples as Array<{ payload?: unknown; headers?: unknown }> | undefined)?.[0];
 
   const hasMore =
     message.description ||
@@ -73,6 +92,8 @@ export function MessageDetails({
                       schemaFormat={payload.schemaFormat}
                       originalSchema={payload.originalSchema}
                       conversionError={payload.conversionError}
+                      pendingConversion={payload.pendingConversion}
+                      example={firstExample?.payload}
                     />
                   )}
                   {(schemaTab === "headers" || !message.payload) && headers && (
@@ -83,6 +104,8 @@ export function MessageDetails({
                       schemaFormat={headers.schemaFormat}
                       originalSchema={headers.originalSchema}
                       conversionError={headers.conversionError}
+                      pendingConversion={headers.pendingConversion}
+                      example={firstExample?.headers}
                     />
                   )}
                 </div>

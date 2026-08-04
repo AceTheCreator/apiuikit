@@ -1,10 +1,8 @@
-import { useState } from "react";
+import { useId } from "react";
 import Markdown from "../../components/Markdown";
-import IconLink from "../../icons/Link";
 import IconShieldCheck from "../../icons/ShieldCheck";
-import IconArrowRight from "../../icons/ArrowRight";
-import IconDownRight from "../../icons/ArrowDown";
-import { ChannelAddress } from "../../components/ChannelAddress";
+import ServerAddressBanner from "../../components/ServerAddressBanner";
+import CollapsiblePanel from "../../components/CollapsiblePanel";
 import { Server as ServerInterface } from "../../types/asyncapi/Server";
 import { ServerVariable } from "../../types/asyncapi/ServerVariable";
 import { Tag as TagType } from "../../types/asyncapi/Tag";
@@ -15,6 +13,13 @@ import Tag from "../../components/Tag";
 import Connection from "../../icons/Connection";
 import Bindings from "../../components/Bindings";
 
+interface ServerProps extends ServerInterface {
+  /** The server's own key/name, needed to build ids for its sub-sections. */
+  serverKey?: string;
+  /** Which collapsed section (if any) search navigated to, e.g. `binding:kafka`. */
+  focusSection?: string | null;
+}
+
 export default function Server({
   host,
   protocol,
@@ -23,19 +28,17 @@ export default function Server({
   variables,
   security,
   bindings,
-}: ServerInterface) {
+  serverKey,
+  focusSection = null,
+}: ServerProps) {
   // `variables` is typed as a Map (a codegen artifact from the AsyncAPI JSON schema),
   // but parsed documents are always plain objects at runtime — never real Map instances.
   const variableEntries = variables as unknown as Record<string, ServerVariable> | undefined;
-  const [authExpanded, setAuthExpanded] = useState(false);
+  const authHeadingId = useId();
 
   return (
     <div>
-      <div className="font-bold text-foreground-secondary mt-8 mb-4 bg-neutral-200 border border-neutral-500 p-4 rounded-lg">
-        <div className="border border-dotted border-black p-2 rounded-lg bg-surface">
-          <IconLink className="inline-block mr-1 -mt-1 h-6 text-foreground-muted" />
-          {host && <ChannelAddress address={host} parameters={variableEntries} className="font-bold leading-tight tracking-tight px-0" />}
-        </div>
+      <ServerAddressBanner address={host} variables={variableEntries}>
         <div className="mt-2">
           {tags &&
             tags.map((tag, index) => {
@@ -56,37 +59,31 @@ export default function Server({
               );
             })}
         </div>
-      </div>
+      </ServerAddressBanner>
       <Markdown>{description}</Markdown>
       {security && security.length > 0 && (
-        <div>
+        <div id={serverKey ? `server-${serverKey}-security` : undefined}>
           <h3 className="font-bold text-foreground-secondary mt-8">
             <IconShieldCheck className="inline-block mr-2 -mt-1 h-6 text-foreground-muted" />
             Authorization
           </h3>
           <p className="prose text-foreground-muted mt-4">
-            This server accepts the following authorization mechanisms:
+            This server accepts the following authorization mechanism{security.length > 1 ? "s" : ""}:
           </p>
-          <div className="mt-4 rounded-lg border border-border overflow-hidden">
-            <div
-              className="flex items-center justify-between px-4 py-3 bg-neutral-50 cursor-pointer hover:bg-neutral-100 transition-colors"
-              onClick={() => setAuthExpanded((v) => !v)}
-            >
+          <CollapsiblePanel
+            className="mt-4"
+            ariaLabelledBy={authHeadingId}
+            forceExpanded={focusSection === "security"}
+            trigger={
               <span className="text-xs font-normal text-foreground-muted bg-neutral-100 border border-border rounded-full px-2 py-0.5">
                 {security.length}
               </span>
-              {authExpanded ? (
-                <IconDownRight className="w-4 h-4 text-foreground-muted shrink-0" />
-              ) : (
-                <IconArrowRight className="w-4 h-4 text-foreground-muted shrink-0" />
-              )}
+            }
+          >
+            <div className="px-4 py-2 border-t border-border">
+              <Authorization securities={security} />
             </div>
-            {authExpanded && (
-              <div className="px-4 py-2 border-t border-border">
-                <Authorization securities={security} />
-              </div>
-            )}
-          </div>
+          </CollapsiblePanel>
         </div>
       )}
       {(() => {
@@ -94,7 +91,7 @@ export default function Server({
         const hasContent = protocolBinding && Object.keys(protocolBinding).some((k) => k !== "bindingVersion");
         if (!hasContent) return null;
         return (
-          <div>
+          <div id={serverKey ? `server-${serverKey}-bindings` : undefined}>
             <h3 className="font-bold text-foreground-secondary mt-8">
               <Connection className="inline-block mr-2 -mt-1 h-6 text-foreground-muted" />
               Connection Settings
@@ -102,7 +99,11 @@ export default function Server({
             <p className="prose text-foreground-muted mt-4">
               This server accepts the following connection configuration:
             </p>
-            <Bindings bindings={protocolBinding} protocol={protocol} />
+            <Bindings
+              bindings={protocolBinding}
+              protocol={protocol}
+              focused={focusSection === `binding:${protocol}`}
+            />
           </div>
         );
       })()}

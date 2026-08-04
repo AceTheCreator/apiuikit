@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import IconAtSymbol from "../icons/AtSymbol";
 import IconExternalLink from "../icons/ExternalLink";
 import IconGlobe from "../icons/Globe";
@@ -12,36 +13,42 @@ import {
   EMAIL_TEXT,
   EXTERNAL_DOCUMENTATION_TEXT,
 } from "../contants";
-import { Info } from "../types/asyncapi/Info";
 import { Tag as TagType } from "../types/asyncapi/Tag";
 import { ExternalDocs } from "../types/asyncapi/ExternalDocs";
+
+// Structurally compatible with both AsyncAPI's and OpenAPI's info/tag shapes
+// (each spec's actual type is a superset of what's read here), so this
+// component works for either without callers casting to AsyncAPI's types.
+interface InfoMetadataProps {
+  license?: { name?: string; url?: string };
+  externalDocs?: { description?: string; url?: string };
+  contact?: { name?: string; url?: string; email?: string };
+  tags?: unknown[];
+  /** `info.x-logo`, rendered above the metadata list. */
+  logo?: ReactNode;
+}
 
 export default function InfoMetadata({
   license,
   externalDocs,
   contact,
   tags,
-}: Pick<Info, "license" | "externalDocs" | "contact" | "tags">) {
-  const resolvedExternalDocs = externalDocs as ExternalDocs | undefined;
+  logo,
+}: InfoMetadataProps) {
   const details = {
-    licenseName: license && license.name ? license.name : null,
-    licenseUrl: license && license.url ? license.url : null,
-    externalDocsTitle:
-      resolvedExternalDocs && resolvedExternalDocs.description
-        ? resolvedExternalDocs.description
-        : "External documentation",
-    externalDocsUrl: resolvedExternalDocs && resolvedExternalDocs.url ? resolvedExternalDocs.url : null,
-    externalDocsDescription:
-      resolvedExternalDocs && resolvedExternalDocs.description
-        ? resolvedExternalDocs.description
-        : null,
-    contactName: contact && contact.name ? contact.name : null,
-    contactUrl: contact && contact.url ? contact.url : null,
-    contactEmail: contact && contact.email ? contact.email : null,
-    tags: tags,
+    licenseName: license?.name ?? null,
+    licenseUrl: license?.url ?? null,
+    externalDocsTitle: externalDocs?.description ?? "External documentation",
+    externalDocsUrl: externalDocs?.url ?? null,
+    externalDocsDescription: externalDocs?.description ?? null,
+    contactName: contact?.name ?? null,
+    contactUrl: contact?.url ?? null,
+    contactEmail: contact?.email ?? null,
+    tags,
   };
   return (
     <>
+      {logo && <div className="hidden @lg:block mb-3">{logo}</div>}
       <dl className="flex flex-wrap @lg:flex-unwrap gap-2 ">
         {details.licenseName && (
           <DefinitionListItem
@@ -50,7 +57,7 @@ export default function InfoMetadata({
             term={LICENSE_TEXT}
             visibleTerm={details.licenseName ? false : true}
             href={details.licenseUrl}
-            className="mb-4 text-foreground-secondary hover:text-pink-500"
+            className="text-foreground-secondary hover:text-pink-500"
           />
         )}
         {details.externalDocsUrl && (
@@ -60,7 +67,7 @@ export default function InfoMetadata({
             href={details.externalDocsUrl}
             term={EXTERNAL_DOCUMENTATION_TEXT}
             visibleTerm={details.externalDocsTitle ? false : true}
-            className="mb-4 text-foreground-secondary hover:text-secondary-500"
+            className="text-foreground-secondary hover:text-secondary-500"
           />
         )}
         {details.contactEmail && (
@@ -70,7 +77,7 @@ export default function InfoMetadata({
             term={EMAIL_TEXT}
             visibleTerm={details.contactEmail ? false : true}
             href={`mailto:${details.contactEmail}`}
-            className="mb-4 text-foreground-secondary hover:text-green-500"
+            className="text-foreground-secondary hover:text-green-500"
           />
         )}
         {details.contactUrl && (
@@ -80,11 +87,11 @@ export default function InfoMetadata({
             term={CONTACT_TEXT}
             visibleTerm={details.contactName ? false : true}
             href={details.contactUrl}
-            className="mb-4 text-foreground-secondary hover:text-green-500"
+            className="text-foreground-secondary hover:text-green-500"
           />
         )}
       </dl>
-      <dl>
+      <dl className="mt-[10px]">
         {details.tags && (
           <DefinitionListItem
             IconClass={IconTag}

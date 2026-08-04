@@ -13,14 +13,21 @@ npm, not the raw source.
 
 ## The race this setup has to avoid
 
-A library rebuild is not atomic. `vite build --watch` first **empties `dist/`**
-(`emptyOutDir`), then writes the outputs back over several seconds. If the
-playground dev server watched `dist/` directly, the first file written would
-trigger an HMR/full-reload **while `dist/apiuikit.es.js` and `dist/apiuikit.css` don't
-exist yet** — the browser reloads into `Failed to load url ...apiuikit.es.js. Does
-the file exist?` and shows a blank screen until you reload manually. (This was
-the original behavior; the symptoms are exactly those "Pre-transform error"
-lines from the `[1]` process.)
+A library rebuild is not atomic. Without safeguards, `vite build --watch` can
+**empty `dist/`** (`emptyOutDir`) and then fail mid-rebuild — notably Vite 6's
+`[commonjs] Cannot read properties of undefined (reading 'resolved')` on
+incremental rebuilds — leaving `dist/` without `apiuikit.es.js` /
+`apiuikit.css`. Refreshing the playground then keeps failing until a later
+build succeeds.
+
+Even when the rebuild succeeds, if the playground watched `dist/` directly the
+first file written would trigger an HMR/full-reload **while sibling outputs
+were still missing** — blank screen with `Failed to load url ...apiuikit.es.js`.
+
+Watch mode therefore keeps the previous `dist/` (`emptyOutDir: false`) and
+applies Rollup workarounds so incremental rebuilds complete; the playground
+still only reloads off the completion marker (below), not off mid-write file
+events.
 
 ## How it works now
 
@@ -56,7 +63,7 @@ The resulting flow on every library edit:
 
 ```
 save packages/lib/src/**        (playground untouched, page keeps working)
-  └─ [0] build started...       dist/ emptied + rewritten (~4s)
+  └─ [0] build started...       dist/ rewritten in place (~3–6s; previous files kept if rebuild fails)
        └─ closeBundle           .build-complete touched
             └─ [1] marker seen  invalidateAll + single full-reload
                  └─ browser     fresh, complete bundle
@@ -64,6 +71,13 @@ save packages/lib/src/**        (playground untouched, page keeps working)
 
 ## Things to know / gotchas
 
+- **Watch rebuilds keep the previous `dist/`.** Lib `vite.config.ts` sets
+  `emptyOutDir: false` when `--watch` is on, so a failed incremental rebuild
+  (e.g. the Vite 6 `[commonjs] Cannot read properties of undefined` race)
+  does not wipe a good bundle and leave the playground blank on refresh.
+  One-shot `vite build` still empties `dist/` as usual. Watch mode also skips
+  `vite-plugin-dts` (types still emit on publish/`build:lib`) and ignores
+  `.build-complete` + `dist/` in chokidar so those writes cannot loop a rebuild.
 - **One extra reload on startup.** The root `playground` script builds the lib
   once, then starts the watch build, whose first build also touches the
   marker. So the browser may reload once shortly after the dev server opens.
@@ -73,9 +87,9 @@ save packages/lib/src/**        (playground untouched, page keeps working)
   working, check the `[0]` process for a build error — no completed build, no
   marker touch, no reload. Playground-only edits (`packages/playground/src`)
   still use normal instant HMR and are unaffected by any of this.
-- **Manually reloading the tab mid-build can still show the error page** — the
-  files genuinely don't exist at that moment. Wait for the build to finish (or
-  the automatic reload).
+- **Manually reloading the tab mid-build** can briefly serve a half-written
+  bundle while files are being overwritten. Wait for `[0] built in …` (or the
+  automatic reload) if the page looks wrong.
 - **If you rename/move `packages/lib/dist` or the marker file**, update both
   vite configs together: the `ignored` glob and `libMarker` path in
   `packages/playground/vite.config.ts`, and the marker path in

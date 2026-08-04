@@ -14,6 +14,7 @@ interface ConfigInterface {
     sidebar?: boolean;
     info?: boolean;
     servers?: boolean;
+    search?: boolean;
     operations?: boolean;
     messages?: boolean;
     messageExamples?: boolean;
@@ -67,7 +68,7 @@ interface ThemeModeColors {
 
   Controls which sections and tabs are rendered. Setting a tab (`operations`, `messages`, `schemas`) to `false` removes it from both the tab bar and the side navigation.
 
-  `schemas` and `messageExamples` default to `false`. All other fields default to `true`.
+  `search` controls whether the search panel is shown. `schemas` and `messageExamples` default to `false`. All other fields default to `true`.
 
 - **sidebar?: Partial\<SideBarConfig\>**
 

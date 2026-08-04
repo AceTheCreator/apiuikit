@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import AsyncAPI from "../AsyncAPI";
 import type { AsyncAPIDocumentData } from "../../../types/schema";
 import exampleDoc from "../../../config/examples/example1.json";
@@ -27,6 +27,54 @@ describe("AsyncAPI", () => {
     render(<AsyncAPI asyncapi={asDoc(exampleDoc)} config={{ show: { servers: false } }} />);
 
     expect(screen.queryByText("test.mykafkacluster.org", { exact: false })).not.toBeInTheDocument();
+  });
+
+  it("hides the search panel when show.search is false", () => {
+    render(<AsyncAPI asyncapi={asDoc(exampleDoc)} config={{ show: { search: false } }} />);
+
+    expect(screen.queryByPlaceholderText("Search document...")).not.toBeInTheDocument();
+  });
+
+  it("opens the search modal via Ctrl+K/Cmd+K when the widget is hovered", () => {
+    const { container } = render(<AsyncAPI asyncapi={asDoc(exampleDoc)} />);
+    expect(screen.queryByRole("combobox", { name: "Search document" })).not.toBeInTheDocument();
+
+    // Most of the widget's content (headings, table rows, schema trees) isn't
+    // a focusable element, so hovering — not DOM focus — is the realistic
+    // "user is engaged with this widget" signal for a plain mouse-over.
+    const widgetRoot = container.firstElementChild as Element;
+    fireEvent.mouseEnter(widgetRoot);
+    fireEvent.keyDown(document, { key: "k", ctrlKey: true });
+    expect(screen.getByRole("combobox", { name: "Search document" })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("combobox", { name: "Search document" })).not.toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "k", metaKey: true });
+    expect(screen.getByRole("combobox", { name: "Search document" })).toBeInTheDocument();
+  });
+
+  it("opens the search modal via Ctrl+K when the last click landed inside the widget", () => {
+    render(<AsyncAPI asyncapi={asDoc(exampleDoc)} />);
+
+    const heading = screen.getByRole("heading", { name: "Streetlights Kafka API" });
+    fireEvent.mouseDown(heading);
+    fireEvent.keyDown(document, { key: "k", ctrlKey: true });
+    expect(screen.getByRole("combobox", { name: "Search document" })).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    // A subsequent click outside the widget flips the "last click" signal —
+    // Ctrl+K should stop firing until the widget is interacted with again.
+    fireEvent.mouseDown(document.body);
+    fireEvent.keyDown(document, { key: "k", ctrlKey: true });
+    expect(screen.queryByRole("combobox", { name: "Search document" })).not.toBeInTheDocument();
+  });
+
+  it("ignores Ctrl+K/Cmd+K when the widget is neither hovered, clicked, nor focused", () => {
+    render(<AsyncAPI asyncapi={asDoc(exampleDoc)} />);
+
+    fireEvent.keyDown(document, { key: "k", ctrlKey: true });
+    expect(screen.queryByRole("combobox", { name: "Search document" })).not.toBeInTheDocument();
   });
 
   it("applies an expand.schemas config change to already-mounted schema trees", () => {
@@ -124,14 +172,39 @@ describe("AsyncAPI", () => {
     expect(document.getElementById("panel-messages")).not.toBeNull();
   });
 
-  it('self-heals when kind="resolved" is passed a document that still has $refs', () => {
+  it('self-heals when kind="resolved" is passed a document that still has $refs, and warns about the false promise', () => {
     // The "resolved" promise is verified, not trusted: resolveDocument's
-    // ref scan catches the leftover $ref and inlines it anyway.
-    render(<AsyncAPI kind="resolved" asyncapi={asDoc(exampleDoc)} />);
+    // ref scan catches the leftover $ref and inlines it anyway, and the
+    // caller gets told their upstream resolution isn't doing what they think.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      render(<AsyncAPI kind="resolved" asyncapi={asDoc(exampleDoc)} />);
 
-    const bodyText = document.body.textContent ?? "";
-    expect(bodyText).toContain("smartylighting.streetlights.1.0.action.");
-    expect(bodyText).not.toContain("$ref");
+      const bodyText = document.body.textContent ?? "";
+      expect(bodyText).toContain("smartylighting.streetlights.1.0.action.");
+      expect(bodyText).not.toContain("$ref");
+      expect(warn).toHaveBeenCalledWith(expect.stringMatching(/kind="resolved".*still contains \$ref/));
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('does not warn for kind="resolved" parser output whose only quirk is object cycles', () => {
+    const schema: Record<string, unknown> = { type: "object" };
+    schema.properties = { self: schema };
+    const doc = {
+      asyncapi: "3.0.0",
+      info: { title: "Cyclic API", version: "1.0.0" },
+      components: { schemas: { schema } },
+    };
+
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      render(<AsyncAPI kind="resolved" asyncapi={asDoc(doc)} />);
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it("renders recursive $ref schemas as a circular row instead of crashing", () => {

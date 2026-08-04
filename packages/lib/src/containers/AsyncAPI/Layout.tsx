@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AsyncAPIDocumentContext } from "../../contexts/index";
+import AsyncAPIDocumentProvider from "./AsyncAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
-import Navigation from "../../components/Navigation";
+import { AsyncAPINavigation, NavTab } from "../../components/Navigation";
+import SearchPanel from "../../components/SearchPanel";
+import MarkdownExportMenu from "../../components/MarkdownExportMenu";
+import { useSpecSearch } from "../../hooks/useSpecSearch";
+import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
+import { asyncApiToMarkdown } from "../../helpers/toMarkdown";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
 import { ConfigInterface } from "../../config";
-import { buildThemeVars } from "../../utils/theme";
-import { DEFAULT_DEPTH_COLORS } from "../../components/schema/depthColors";
 import IconMessage from "../../icons/Message";
 import IconOperation from "../../icons/Operation";
 import IconSchema from "../../icons/Schema";
@@ -21,10 +23,7 @@ export interface LayoutProps {
   config: ConfigInterface;
 }
 
-type AsyncAPITabKey = "operations" | "messages" | "schemas";
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+type AsyncAPITabKey = NavTab;
 
 const isAsyncAPITabKey = (value: string): value is AsyncAPITabKey =>
   value === "operations" || value === "messages" || value === "schemas";
@@ -38,98 +37,100 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
     ...(show.schemas    !== false ? [{ id: "schemas",    name: "Schemas",    icon: IconSchema    }] : []),
   ];
 
-  const firstTab = (tabs[0]?.id ?? "operations") as AsyncAPITabKey;
-  const [activeTab, setActiveTab] = useState<AsyncAPITabKey>(firstTab);
-  const [rawSelectedOperationKey, setSelectedOperationKey] = useState<string | null>(null);
-  const [rawSelectedMessageKey, setSelectedMessageKey] = useState<string | null>(null);
-  const [rawSelectedSchemaKey, setSelectedSchemaKey] = useState<string | null>(null);
+  const { query: searchQuery, setQuery: setSearchQuery, results: searchResults } =
+    useSpecSearch(asyncapi, { threshold: 0.3, limit: 20 });
 
-  // `activeTab` and the selection keys can go stale when a live config edit hides
-  // their tab (e.g. `show.operations: false` while Operations is active), so clamp
-  // them to the currently visible tabs instead of trusting the stored state.
-  const effectiveTab = tabs.some((tab) => tab.id === activeTab) ? activeTab : firstTab;
-  const selectedOperationKey = show.operations !== false ? rawSelectedOperationKey : null;
-  const selectedMessageKey = show.messages !== false ? rawSelectedMessageKey : null;
-  const selectedSchemaKey = show.schemas !== false ? rawSelectedSchemaKey : null;
-  const derefCache = useMemo(() => new Map<string, unknown>(), []);
-  const [portalHost, setPortalHost] = useState<HTMLDivElement | null>(null);
-  const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null);
+  const {
+    effectiveTab,
+    focusTab,
+    navActiveSection,
+    selected,
+    setSelectedKey,
+    selectedNavItem,
+    handleSearchSelect,
+    handleNavItemSelect,
+    handleNavServerSelect,
+    handleContentTabChange,
+    focusSection,
+    schemaFocusTarget,
+  } = useSpecLayoutController<AsyncAPITabKey>({
+    tabs,
+    defaultTab: "operations",
+    isTabKey: isAsyncAPITabKey,
+    sections: [
+      { id: "operations", visible: show.operations !== false },
+      { id: "messages", visible: show.messages !== false },
+      { id: "schemas", visible: show.schemas !== false },
+      { id: "servers", visible: show.servers !== false },
+    ],
+    searchQuery,
+  });
 
-  useEffect(() => {
-    derefCache.clear();
-  }, [asyncapi, derefCache]);
-
-  // Fallback resolver for the few $refs that survive upfront resolution —
-  // resolveDocument deliberately leaves cycle-forming refs in place, and the
-  // schema tree resolves those lazily (one level per expansion) via this.
-  const deref = useCallback((refPath: string) => {
-    if (derefCache.has(refPath)) return derefCache.get(refPath);
-
-    const parts = refPath.replace(/^#\//, "").split("/");
-    let current: unknown = asyncapi;
-
-    for (const part of parts) {
-      if (!isRecord(current)) {
-        current = undefined;
-        break;
-      }
-      const decoded = part.replace(/~1/g, "/").replace(/~0/g, "~");
-      current = current[decoded];
-      if (current == null) break;
-    }
-
-    if (current !== undefined) {
-      derefCache.set(refPath, current);
-    }
-
-    return current;
-  }, [asyncapi, derefCache]);
-
-  const defaultSchemaExpanded = config.expand?.schemas === true;
-  const depthColors = config.theme?.depthColors?.length
-    ? config.theme.depthColors
-    : DEFAULT_DEPTH_COLORS;
-
-  const value = useMemo(
-    () => ({ document: asyncapi, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors }),
-    [asyncapi, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors],
-  );
+  const serverNames = asyncapi.servers ? Object.keys(asyncapi.servers) : [];
 
   const activeContent =
     effectiveTab === "operations" ? (
       <Operations
         operations={asyncapi.operations ?? {}}
-        selectedKey={selectedOperationKey}
-        onSelectKey={setSelectedOperationKey}
+        selectedKey={selected.operations}
+        onSelectKey={(key) => setSelectedKey("operations", key)}
+        focusSection={focusSection}
+        showCopyMarkdown={show.copyMarkdown !== false}
       />
     ) : effectiveTab === "messages" ? (
       <Messages
         messages={(asyncapi.components?.messages ?? {}) as Record<string, MessageObject>}
-        selectedKey={selectedMessageKey}
+        selectedKey={selected.messages}
+        focusSection={focusSection}
       />
-    ) : (
-      <Schemas schemas={asyncapi.components?.schemas ?? {}} selectedKey={selectedSchemaKey} />
-    );
-
-  const themeVars = config.theme ? buildThemeVars(config.theme) : {};
+    ) : effectiveTab === "schemas" ? (
+      <Schemas
+        schemas={asyncapi.components?.schemas ?? {}}
+        selectedKey={selected.schemas}
+        focusTarget={schemaFocusTarget}
+      />
+    ) : null;
 
   return (
-    <AsyncAPIDocumentContext.Provider value={value}>
-      <div
-        ref={setRootElement}
-        style={themeVars as React.CSSProperties}
-        className={`relative @container bg-background text-foreground p-2 ${show.sidebar !== false ? "pt-14" : ""}`}
-      >
-        <div ref={setPortalHost} className="asyncapi-portal-root" />
-        {show.info !== false && <Information {...asyncapi.info} />}
-        {show.servers !== false &&
-          asyncapi.servers &&
-          Object.keys(asyncapi.servers).length > 0 && (
-            <Servers servers={asyncapi.servers} />
-          )}
+    <AsyncAPIDocumentProvider
+      document={asyncapi}
+      config={config}
+      className={show.sidebar !== false ? "pt-14" : ""}
+    >
+      <div className="px-4">
+        {show.search !== false && (
+          <SearchPanel
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            results={searchResults}
+            onSelectResult={handleSearchSelect}
+          />
+        )}
+        {show.copyMarkdown !== false && (
+          <MarkdownExportMenu
+            serialize={(deref) => asyncApiToMarkdown(asyncapi, deref)}
+            // Search toggle is at 12px; sit immediately to its right when it's shown
+            // (12 + 40 width + 8 gap), else take the vacated first slot.
+            leftOffset={show.search !== false ? 60 : 12}
+          />
+        )}
+        {show.info !== false && (
+          <div id="info-panel">
+            <Information {...asyncapi.info} />
+          </div>
+        )}
+        {show.servers !== false && serverNames.length > 0 && (
+          <div id={`server-${selected.servers ?? serverNames[0]}`}>
+            <Servers
+              servers={asyncapi.servers!}
+              selectedServer={selected.servers}
+              onSelectServer={(key) => setSelectedKey("servers", key)}
+              focusSection={focusSection}
+            />
+          </div>
+        )}
         {show.sidebar !== false && (
-          <Navigation
-            info={asyncapi.info}
+          <AsyncAPINavigation
             operations={show.operations !== false ? asyncapi.operations : undefined}
             messages={
               show.messages !== false
@@ -141,41 +142,23 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
                 ? (asyncapi.components?.schemas as Record<string, unknown>)
                 : undefined
             }
+            servers={show.servers !== false ? asyncapi.servers : undefined}
+            hasInfo={show.info !== false}
             sidebarConfig={config.sidebar}
-            activeTab={effectiveTab}
-            onTabChange={setActiveTab}
-            onItemSelect={(tab, key) => {
-              setActiveTab(tab);
-              setSelectedOperationKey(tab === "operations" ? key : null);
-              setSelectedMessageKey(tab === "messages" ? key : null);
-              setSelectedSchemaKey(tab === "schemas" ? key : null);
-            }}
-            selectedItem={
-              selectedOperationKey
-                ? { tab: "operations" as const, key: selectedOperationKey }
-                : selectedMessageKey
-                  ? { tab: "messages" as const, key: selectedMessageKey }
-                  : selectedSchemaKey
-                    ? { tab: "schemas" as const, key: selectedSchemaKey }
-                    : null
-            }
+            activeTab={navActiveSection}
+            onTabChange={focusTab}
+            onItemSelect={handleNavItemSelect}
+            onSelectServer={handleNavServerSelect}
+            selectedItem={selectedNavItem}
           />
         )}
-        <ContentTab
-          tabs={tabs}
-          current={effectiveTab}
-          onChange={(id) => {
-            if (isAsyncAPITabKey(id)) setActiveTab(id);
-          }}
-        />
-        <div
-          id={`panel-${effectiveTab}`}
-          role="tabpanel"
-          aria-labelledby={`tab-${effectiveTab}`}
-        >
-          {activeContent}
-        </div>
+        <ContentTab tabs={tabs} current={effectiveTab} onChange={handleContentTabChange} />
+        {effectiveTab && (
+          <div id={`panel-${effectiveTab}`} role="tabpanel" aria-labelledby={`tab-${effectiveTab}`}>
+            {activeContent}
+          </div>
+        )}
       </div>
-    </AsyncAPIDocumentContext.Provider>
+    </AsyncAPIDocumentProvider>
   );
 }

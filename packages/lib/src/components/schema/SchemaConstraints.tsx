@@ -30,7 +30,7 @@ function constraintValueCopyText(value: unknown): string {
 }
 
 function Label({ children }: { children: string }) {
-  return <span className="text-xs text-gray-500">{children}</span>;
+  return <span className="text-xs text-foreground-muted">{children}</span>;
 }
 
 function Pill({
@@ -44,11 +44,11 @@ function Pill({
 }) {
   return (
     <span
-      className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600"
+      className="inline-flex items-center rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-foreground-secondary"
       title={title}
     >
       {mono ? (
-        <span className="font-mono text-gray-700">{children}</span>
+        <span className="font-mono text-foreground">{children}</span>
       ) : (
         children
       )}
@@ -164,7 +164,7 @@ function CopyablePill({ value, displayValue }: { value: unknown; displayValue?: 
     <span
       role="button"
       tabIndex={0}
-      className="inline-flex cursor-pointer select-text items-center rounded-md bg-gray-100 px-2 py-1 font-mono text-xs font-medium text-gray-700 hover:bg-gray-200"
+      className="inline-flex cursor-pointer select-text items-center rounded-md bg-neutral-100 px-2 py-1 font-mono text-xs font-medium text-foreground hover:bg-neutral-200"
       title="Click to copy"
       onClick={handleCopy}
       onKeyDown={handleKeyDown}

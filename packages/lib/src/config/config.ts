@@ -13,11 +13,22 @@ export interface ShowConfig {
   sidebar?: boolean;
   info?: boolean;
   servers?: boolean;
+  search?: boolean;
   operations?: boolean;
   messages?: boolean;
   messageExamples?: boolean;
   schemas?: boolean;
   errors?: boolean;
+  /** OpenAPI only: the Endpoints tab (paths/operations). */
+  endpoints?: boolean;
+  /** OpenAPI 3.1 only: the Webhooks tab. The tab appears only when the document declares `webhooks`. */
+  webhooks?: boolean;
+  /** Whether to render known x-* spec extensions (see the `x-tensions` catalog). Defaults to true. */
+  extensions?: boolean;
+  /** OpenAPI only: per-operation cURL/JavaScript/Python request examples. Defaults to true. */
+  codeSamples?: boolean;
+  /** The "Copy for LLM" / "View as Markdown" floating button. Defaults to true. */
+  copyMarkdown?: boolean;
 }
 
 export interface ExpandConfig {
@@ -63,9 +74,9 @@ export interface ThemeModeColors {
 export interface ThemeConfig {
   /** Brand color scale overrides, applied regardless of which mode is active. */
   colors?: ThemeColors;
-  /** Applied when only a light theme is configured. */
+  /** Applied when a light theme is configured. Wins over `dark` if both are set. */
   light?: ThemeModeColors;
-  /** Applied when a dark theme is configured. Wins over `light` if both are set. */
+  /** Applied when only a dark theme is configured. */
   dark?: ThemeModeColors;
   /**
    * Colors for the schema tree's depth-indicator lines (and matching label

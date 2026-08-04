@@ -10,7 +10,7 @@
  */
 import { asSchemaNode, isSchemaRecord, SchemaNodeData } from "../types/schema";
 import { avroToJsonSchema, validateAvroStructure, AvroSchema } from "./avro";
-import { protoToJsonSchema } from "./protobuf";
+import { getProtoToJsonSchema } from "./protobuf/lazyProtoToJsonSchema";
 
 export const X_PARSER_ORIGINAL_PAYLOAD = "x-parser-original-payload";
 /** Marker set by the with-parser fail-soft path when conversion throws. */
@@ -41,6 +41,9 @@ export interface ResolvedSchemaInput {
    * back to one carried on the multi-format wrapper (not spec-defined there,
    * but tolerated — the parser passes it through untouched). */
   description?: string;
+  /** True while a Protobuf schema's converter is still being lazy-loaded —
+   * `schema` is a placeholder until then. See lazyProtoToJsonSchema.ts. */
+  pendingConversion?: boolean;
 }
 
 export function isAvroSchemaFormat(format: unknown): boolean {
@@ -254,6 +257,19 @@ function unwrapSchemaInput(input: unknown): ResolvedSchemaInput {
     // fall through to the passthrough below, matching the with-parser
     // `original !== undefined` branch. No pre-validation here (unlike Avro):
     // validateProtobufStructure compiles, so it would just compile twice.
+    const protoToJsonSchema = getProtoToJsonSchema();
+    if (!protoToJsonSchema) {
+      // First Protobuf schema encountered this session — the converter
+      // (protobufjs) is loading in the background. Callers should include
+      // useProtobufConverterReady() in their memo deps to re-resolve once
+      // it's ready, same as any other format from then on.
+      return {
+        schema: {},
+        schemaFormat,
+        originalSchema: inner,
+        pendingConversion: true,
+      };
+    }
     try {
       return {
         schema: protoToJsonSchema(inner),

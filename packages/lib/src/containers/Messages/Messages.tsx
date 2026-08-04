@@ -7,9 +7,11 @@ import { CorrelationId } from "../../types/asyncapi/CorrelationId";
 interface MessagesProps {
   messages: Record<string, MessageObject>;
   selectedKey?: string | null;
+  /** Which collapsed section ("payload" | "headers") search navigated to. */
+  focusSection?: string | null;
 }
 
-function MessageRow({ messageKey, message, first, isSelected }: { messageKey: string; message: MessageObject; first: boolean; isSelected?: boolean }) {
+function MessageRow({ messageKey, message, first, isSelected, focusSection }: { messageKey: string; message: MessageObject; first: boolean; isSelected?: boolean; focusSection?: string | null }) {
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -18,9 +20,10 @@ function MessageRow({ messageKey, message, first, isSelected }: { messageKey: st
 
   return (
     <tbody
+      id={`message-${messageKey}`}
       className={`${first ? "" : "border-t border-border"} ${isSelected ? "bg-primary-50/60 outline outline-1 outline-primary-300" : ""}`}
     >
-      <tr id={`message-${messageKey}`} className="">
+      <tr className="">
         <td className="px-6 py-4">
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-foreground">
@@ -78,6 +81,7 @@ function MessageRow({ messageKey, message, first, isSelected }: { messageKey: st
             expanded={expanded}
             onToggleExpanded={() => setExpanded((v) => !v)}
             paddingX="px-6"
+            focusSection={isSelected ? focusSection : null}
           />
         </td>
       </tr>
@@ -85,7 +89,7 @@ function MessageRow({ messageKey, message, first, isSelected }: { messageKey: st
   );
 }
 
-export default function Messages({ messages, selectedKey }: MessagesProps) {
+export default function Messages({ messages, selectedKey, focusSection }: MessagesProps) {
   const messageEntries = Object.entries(messages);
 
   const content = messageEntries.length ? (
@@ -105,7 +109,7 @@ export default function Messages({ messages, selectedKey }: MessagesProps) {
           </tr>
         </thead>
           {messageEntries.map(([messageKey, message], i) => (
-            <MessageRow key={messageKey} messageKey={messageKey} message={message} first={i === 0} isSelected={selectedKey === messageKey} />
+            <MessageRow key={messageKey} messageKey={messageKey} message={message} first={i === 0} isSelected={selectedKey === messageKey} focusSection={focusSection} />
           ))}
       </table>
     </div>

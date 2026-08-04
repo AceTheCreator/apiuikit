@@ -50,8 +50,8 @@ const DARK_NEUTRAL_DEFAULTS: Record<number, string> = {
 export function buildThemeVars(theme: ThemeConfig): Record<string, string> {
   const vars: Record<string, string> = {};
 
-  // Dark wins when both a light and a dark theme are configured.
-  const mode = theme.dark ? "dark" : theme.light ? "light" : null;
+  // Light wins when both a light and a dark theme are configured.
+  const mode = theme.light ? "light" : theme.dark ? "dark" : null;
   const modeColors = mode === "dark" ? theme.dark : mode === "light" ? theme.light : undefined;
 
   if (mode === "dark") {

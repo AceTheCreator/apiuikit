@@ -17,6 +17,14 @@ import bash from "highlight.js/lib/languages/bash";
 
 hljs.registerLanguage("bash", bash);
 
+import javascript from "highlight.js/lib/languages/javascript";
+
+hljs.registerLanguage("javascript", javascript);
+
+import python from "highlight.js/lib/languages/python";
+
+hljs.registerLanguage("python", python);
+
 const marked = new Marked(
   markedHighlight({
     emptyLangClass: "hljs",

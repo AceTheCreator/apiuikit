@@ -21,13 +21,13 @@ export default function ExpandToggle({ depth, expanded, onToggle }: ExpandToggle
     >
       <span
         aria-hidden="true"
-        className="w-4 h-4 rounded-full border-2 flex items-center justify-center text-[10px] leading-none font-bold hover:bg-gray-50"
+        className="w-4 h-4 rounded-full border-2 flex items-center justify-center text-[10px] leading-none font-bold hover:bg-neutral-100"
         style={{ borderColor: color, color }}
       >
         {expanded ? "−" : "+"}
       </span>
       {!expanded && (
-        <span className="text-xs text-gray-500">Show details</span>
+        <span className="text-xs text-foreground-muted">Show details</span>
       )}
     </button>
   );

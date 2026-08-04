@@ -4,7 +4,7 @@ import { useAsyncAPIDocument } from "../../contexts";
 
 export type SchemaTreeBranchLineVariant = "depth" | "muted" | "none";
 
-const MUTED_LINE = "ml-0 border-dashed border-gray-300";
+const MUTED_LINE = "ml-0 border-dashed border-border";
 
 /** Indented child container with a depth-colored left line — no box borders. */
 export default function SchemaTreeBranch({

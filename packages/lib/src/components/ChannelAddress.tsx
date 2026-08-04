@@ -3,7 +3,17 @@ import { createPortal } from "react-dom";
 import { chunkColors } from "../contants";
 import { useAsyncAPIDocument } from "../contexts";
 import formatEnumDescription from "../helpers/formatEnumDescription";
-import { Parameter } from "../types/asyncapi/Parameter";
+
+// Structurally compatible with AsyncAPI's own Parameter type (a superset of
+// this) as well as an OpenAPI parameter's schema fields, so both specs can
+// pass their own parameter data here without casting.
+export interface ChannelAddressParameterDetail {
+  description?: string;
+  type?: string;
+  default?: string;
+  enum?: string[];
+  examples?: string[];
+}
 
 type AddressPart = { type: "text"; value: string } | { type: "param"; value: string };
 
@@ -27,13 +37,21 @@ function parseAddress(address: string): AddressPart[] {
 
 interface ChannelAddressProps {
   address: string;
-  parameters?: Record<string, Parameter>;
+  parameters?: Record<string, ChannelAddressParameterDetail>;
   className?: string;
   /** Clip to a single line with an ellipsis instead of wrapping. Useful in fixed-width contexts like table rows. */
   truncate?: boolean;
+  /**
+   * Whether to keep its own `px-2 py-1`. Off for callers that sit in an
+   * already-padded row, such as the navigation list. This has to be a prop
+   * rather than a `p-0` in `className`: Tailwind emits `.px-2`/`.py-1` after
+   * `.p-0`, so at equal specificity the padding wins on source order and the
+   * override silently does nothing.
+   */
+  padded?: boolean;
 }
 
-export function ChannelAddress({ address, parameters, className = "text-xs", truncate = false }: ChannelAddressProps) {
+export function ChannelAddress({ address, parameters, className = "text-xs", truncate = false, padded = true }: ChannelAddressProps) {
   const { portalHost } = useAsyncAPIDocument();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [coords, setCoords] = useState({ top: 0, left: 0, placement: "top" as "top" | "bottom" });
@@ -68,6 +86,8 @@ export function ChannelAddress({ address, parameters, className = "text-xs", tru
     setHoveredIndex(i);
   };
 
+  const hideTooltip = () => setHoveredIndex(null);
+
   const content = parts.map((part, i) => {
     if (part.type === "text") return <span key={i}>{part.value}</span>;
     const parameter = parameters?.[part.value];
@@ -75,27 +95,56 @@ export function ChannelAddress({ address, parameters, className = "text-xs", tru
     const isHovered = hoveredIndex === i;
     const hasDetails =
       !!parameter &&
-      (parameter.description || parameter.default || (parameter.enum && parameter.enum.length > 0) ||
+      (parameter.description || parameter.type || parameter.default || (parameter.enum && parameter.enum.length > 0) ||
         (parameter.examples && parameter.examples.length > 0));
+    const tooltipId = `channel-address-tooltip-${i}`;
+    const describedBy = hasDetails && isHovered ? tooltipId : undefined;
+
     return (
       <span
         key={i}
         className="inline-block"
-        onMouseEnter={(e) => showTooltip(i, e.currentTarget)}
-        onMouseLeave={() => setHoveredIndex(null)}
+        onMouseEnter={(e) => hasDetails && showTooltip(i, e.currentTarget)}
+        onMouseLeave={hideTooltip}
       >
-        <span className={`font-semibold ${color} ${hasDetails ? "cursor-help underline decoration-dotted" : ""}`}>
+        <span
+          className={`font-semibold ${color} ${hasDetails ? "cursor-help underline decoration-dotted" : ""}`}
+          role={hasDetails ? "button" : undefined}
+          tabIndex={hasDetails ? 0 : undefined}
+          aria-expanded={hasDetails ? isHovered : undefined}
+          aria-describedby={describedBy}
+          onFocus={(e) => hasDetails && showTooltip(i, e.currentTarget)}
+          onBlur={hideTooltip}
+          onKeyDown={(event) => {
+            if (!hasDetails) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              showTooltip(i, event.currentTarget);
+            }
+            if (event.key === "Escape") {
+              event.preventDefault();
+              hideTooltip();
+              event.currentTarget.blur();
+            }
+          }}
+        >
           {`{${part.value}}`}
         </span>
         {hasDetails && isHovered && portalHost &&
           createPortal(
             <div
+              id={tooltipId}
               className={`fixed -translate-x-1/2 max-w-xs px-2.5 py-1.5 bg-neutral-50 text-foreground-muted text-xs rounded pointer-events-none z-[60] shadow-lg text-left leading-snug ${
                 coords.placement === "top" ? "-translate-y-full" : ""
               }`}
               style={{ top: coords.top, left: coords.left }}
             >
               {parameter.description && <div>{parameter.description}</div>}
+              {parameter.type && (
+                <div className="mt-1">
+                  <code>{parameter.type}</code>
+                </div>
+              )}
               {parameter.default && (
                 <div className="mt-1">
                   <span className="font-semibold text-foreground-secondary">Default:</span>{" "}
@@ -118,16 +167,18 @@ export function ChannelAddress({ address, parameters, className = "text-xs", tru
     );
   });
 
+  const padding = padded ? "px-2 py-1 " : "";
+
   if (!truncate) {
     return (
-      <code className={`px-2 py-1 rounded text-foreground-secondary break-all ${className}`}>
+      <code className={`${padding}rounded text-foreground-secondary break-all ${className}`}>
         {content}
       </code>
     );
   }
 
   return (
-    <code className={`px-2 py-1 rounded text-foreground-secondary flex items-center min-w-0 ${className}`}>
+    <code className={`${padding}rounded text-foreground-secondary flex items-center min-w-0 ${className}`}>
       <span ref={contentRef} className="overflow-hidden whitespace-nowrap min-w-0">
         {content}
       </span>

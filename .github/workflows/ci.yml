@@ -37,6 +37,15 @@ jobs:
       - name: Build library (lib)
         run: npm run build --workspace=packages/lib
 
+      - name: Lint (web-component)
+        run: npm run lint --workspace=packages/web-component
+
+      - name: Typecheck (web-component)
+        run: npm run typecheck --workspace=packages/web-component
+
+      - name: Build web component
+        run: npm run build --workspace=packages/web-component
+
       - name: Build playground
         run: npm run build --workspace=packages/playground
 

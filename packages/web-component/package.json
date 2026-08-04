@@ -1,0 +1,62 @@
+{
+  "name": "@apiuikit/web-component",
+  "version": "1.0.0",
+  "description": "Framework-agnostic web components for apiuikit — <aui-asyncapi>, <aui-asyncapi-renderer>, <aui-openapi>, and <aui-openapi-renderer> custom elements",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AceTheCreator/apiuikit",
+    "directory": "packages/web-component"
+  },
+  "type": "module",
+  "main": "./dist/web-component.iife.js",
+  "module": "./dist/web-component.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/web-component.es.js",
+      "default": "./dist/web-component.iife.js"
+    },
+    "./style.css": "./dist/web-component.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "prepublishOnly": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "demo": "npm run build && serve . -l 8735"
+  },
+  "dependencies": {
+    "@r2wc/react-to-web-component": "^2.1.1",
+    "apiuikit": "*"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "serve": "^14.2.4",
+    "typescript": "~5.6.2",
+    "typescript-eslint": "^8.18.2",
+    "vite": "^6.0.5",
+    "vite-plugin-dts": "^5.0.3"
+  }
+}

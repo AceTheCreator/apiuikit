@@ -1,12 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { AsyncAPIRenderer } from "../containers/AsyncAPI/AsyncAPIRenderer";
 import example1 from "../config/examples/streetlight.json";
+import { NoCanvasDocsPage } from "./noCanvasDocsPage";
 
 const raw = JSON.stringify(example1);
 
 const meta = {
-  title: "Example/AsyncAPIRenderer",
+  title: "Components/AsyncAPIRenderer",
   component: AsyncAPIRenderer,
+  tags: ["autodocs"],
+  // Full-page widget, same as AsyncAPI: see noCanvasDocsPage.
+  parameters: { docs: { page: NoCanvasDocsPage } },
 } satisfies Meta<typeof AsyncAPIRenderer>;
 
 export default meta;

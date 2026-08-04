@@ -17,6 +17,10 @@ export interface SchemaTreeProps {
   /** When set, the name is assumed shown by the parent — the root row is skipped and children render directly. */
   rootName?: string;
   className?: string;
+  /** Remaining steps toward a search-selected node — see SchemaNode's own doc. */
+  focusTokens?: string[] | null;
+  /** The target node's DOM id, paired with focusTokens. */
+  focusId?: string | null;
 }
 
 /** Entry point: renders a full schema tree with $ref resolution and expand/collapse. */
@@ -24,6 +28,8 @@ export default function SchemaTree({
   schema,
   rootName,
   className = "",
+  focusTokens = null,
+  focusId = null,
 }: SchemaTreeProps) {
   const { deref, defaultSchemaExpanded = false } = useAsyncAPIDocument();
   const refStack = useMemo(() => new Set<string>(), []);
@@ -35,7 +41,7 @@ export default function SchemaTree({
 
   if (!node || !flattenedNode) {
     return (
-      <p className="text-xs text-gray-400 italic">
+      <p className="text-xs text-foreground-muted italic">
         No schema details available.
       </p>
     );
@@ -61,6 +67,8 @@ export default function SchemaTree({
               refStack={refStack}
               deref={deref}
               defaultExpanded={defaultSchemaExpanded}
+              focusTokens={focusTokens}
+              focusId={focusId}
             />
           </div>
         );
@@ -115,6 +123,8 @@ export default function SchemaTree({
         deref={deref}
         suppressRow={suppressRootRow}
         defaultExpanded={defaultSchemaExpanded}
+        focusTokens={focusTokens}
+        focusId={focusId}
       />
     </div>
   );

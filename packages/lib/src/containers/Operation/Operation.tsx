@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useId } from "react";
 import { OperationBindingsObject } from "../../types/asyncapi/OperationBindingsObject";
 import Authorization from "../../components/Authorization";
 import Bindings from "../../components/Bindings";
-import IconArrowRight from "../../icons/ArrowRight";
-import IconDownRight from "../../icons/ArrowDown";
+import CollapsiblePanel from "../../components/CollapsiblePanel";
 import IconExternalLink from "../../icons/ExternalLink";
 import { ExternalDocs } from "../../types/asyncapi/ExternalDocs";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
@@ -18,10 +17,12 @@ import Markdown from "../../components/Markdown";
 interface OperationProps {
   op: OperationInterface;
   id: string | null;
+  /** Which collapsed section search navigated to, e.g. `binding:kafka`. */
+  focusSection?: string | null;
 }
 
-export default function Operation({ op, id }: OperationProps) {
-  const [authExpanded, setAuthExpanded] = useState(false);
+export default function Operation({ op, id, focusSection = null }: OperationProps) {
+  const authHeadingId = useId();
   const messages = (op.messages ?? []) as unknown as MessageObject[];
   const tags = (op.tags ?? []) as unknown as Tag[];
   const bindings = op.bindings as unknown as OperationBindingsObject | undefined;
@@ -46,7 +47,7 @@ export default function Operation({ op, id }: OperationProps) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id={`operation-${id}-detail`}>
       <div className="flex items-center gap-2">
         <span
           className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono bg-primary-50 text-primary-600 border border-primary-200`}
@@ -79,36 +80,29 @@ export default function Operation({ op, id }: OperationProps) {
 
       {/* Security */}
       {security && security.length > 0 && (
-        <div>
+        <div id={`operation-${id}-security`}>
           <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
             Operation Authorization
           </p>
-          <div className="rounded-lg border border-border overflow-hidden">
-            <div
-              className="flex items-center justify-between px-4 py-3 bg-neutral-50 cursor-pointer hover:bg-neutral-100 transition-colors"
-              onClick={() => setAuthExpanded((v) => !v)}
-            >
+          <CollapsiblePanel
+            ariaLabelledBy={authHeadingId}
+            forceExpanded={focusSection === "security"}
+            trigger={
               <span className="text-xs font-normal text-foreground-muted bg-neutral-100 border border-border rounded-full px-2 py-0.5">
                 {security.length}
               </span>
-              {authExpanded ? (
-                <IconDownRight className="w-4 h-4 text-foreground-muted shrink-0" />
-              ) : (
-                <IconArrowRight className="w-4 h-4 text-foreground-muted shrink-0" />
-              )}
+            }
+          >
+            <div className="px-4 py-2 border-t border-border">
+              <Authorization
+                securities={
+                  security as Parameters<
+                    typeof Authorization
+                  >[0]["securities"]
+                }
+              />
             </div>
-            {authExpanded && (
-              <div className="px-4 py-2 border-t border-border">
-                <Authorization
-                  securities={
-                    security as Parameters<
-                      typeof Authorization
-                    >[0]["securities"]
-                  }
-                />
-              </div>
-            )}
-          </div>
+          </CollapsiblePanel>
         </div>
       )}
 
@@ -116,14 +110,14 @@ export default function Operation({ op, id }: OperationProps) {
       {operationBindings &&
         Object.entries(operationBindings).map(([protocol, binding]) =>
           binding ? (
-            <div>
+            <div key={protocol} id={`operation-${id}-bindings-${protocol}`}>
               <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-1">
                 Operation configuration
               </p>
               <Bindings
-                key={protocol}
                 protocol={protocol}
                 bindings={binding as Record<string, unknown>}
+                focused={focusSection === `binding:${protocol}`}
               />
             </div>
           ) : null,

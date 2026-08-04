@@ -8,6 +8,7 @@ import SchemaTypeLabel from "./SchemaTypeLabel";
 import { shouldShowRefFootnote } from "./schemaDisplayUtils";
 
 export interface SchemaTreeRowProps {
+  id?: string;
   path: string;
   depth: number;
   schema?: SchemaNodeData;
@@ -28,6 +29,7 @@ const CONTENT_INDENT = "ml-6";
 
 /** Single tree row: name, type, constraints, and optional description. */
 export default function SchemaTreeRow({
+  id,
   path,
   depth,
   schema,
@@ -75,22 +77,23 @@ export default function SchemaTreeRow({
 
   return (
     <div
-      className={`py-2 ${showBorder ? "border-b border-gray-200 last:border-b-0" : ""}`}
+      id={id}
+      className={`py-2 ${showBorder ? "border-b border-border last:border-b-0" : ""}`}
     >
       <div className="flex items-center gap-2 min-h-[24px]">
         <span className="text-xs font-mono flex-1 min-w-0 flex items-center">
           <span className="truncate min-w-0">
-            {prefix && <span className="text-gray-400">{prefix}</span>}
+            {prefix && <span className="text-foreground-muted">{prefix}</span>}
             <span className="font-semibold" style={{ color }}>{name}</span>
           </span>
           {required && (
             <span className="shrink-0 text-red-500 ml-2 text-[10px]">required</span>
           )}
           {schema?.readOnly === true && (
-            <span className="shrink-0 text-gray-500 ml-2 text-[10px]">readOnly</span>
+            <span className="shrink-0 text-foreground-muted ml-2 text-[10px]">readOnly</span>
           )}
           {schema?.writeOnly === true && (
-            <span className="shrink-0 text-gray-500 ml-2 text-[10px]">writeOnly</span>
+            <span className="shrink-0 text-foreground-muted ml-2 text-[10px]">writeOnly</span>
           )}
           {schema?.deprecated === true && (
             <span className="shrink-0 text-amber-600 ml-2 text-[10px]">deprecated</span>
@@ -100,12 +103,12 @@ export default function SchemaTreeRow({
           <div className="shrink-0 text-right">
             <SchemaTypeLabel schema={schema} refLabel={refLabel} />
             {showRef && (
-              <span className="text-xs text-gray-400"> (ref: {refLabel})</span>
+              <span className="text-xs text-foreground-muted"> (ref: {refLabel})</span>
             )}
           </div>
         ) : (
           typeLabelOverride && (
-            <span className="text-xs text-gray-500 shrink-0">
+            <span className="text-xs text-foreground-muted shrink-0">
               {typeLabelOverride}
             </span>
           )
@@ -123,7 +126,7 @@ export default function SchemaTreeRow({
         description.split("\n\n").map((paragraph, index) => (
           <p
             key={index}
-            className={`text-xs text-gray-500 mt-1 ${contentIndent} leading-relaxed`}
+            className={`text-xs text-foreground-muted mt-1 ${contentIndent} leading-relaxed`}
           >
             {paragraph}
           </p>

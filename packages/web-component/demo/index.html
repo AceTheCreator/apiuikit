@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>@apiuikit/web-component demo</title>
+  <link rel="stylesheet" href="/dist/web-component.css" />
+  <style>
+    body { font-family: sans-serif; margin: 0; }
+    /* Direct-child combinator only — a bare "p"/"h2" selector would also match
+       markdown-rendered <p>/<h2> tags that apiuikit renders into light DOM
+       *inside* .frame, several levels down. Custom elements don't use shadow
+       DOM here (see docs/usage/with-webcomponents.md), so any unscoped
+       selector on this demo page leaks straight into the widget's content. */
+    .section > h2 { padding: 8px 16px; margin: 0; background: #222; color: #fff; }
+    .section > p { padding: 4px 16px; margin: 0; background: #444; color: #ccc; font-size: 13px; }
+    .frame { height: 700px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <div class="section">
+    <h2>With Parser — &lt;aui-asyncapi-renderer&gt;</h2>
+    <p>Raw YAML/JSON spec text set as <code>.spec</code>; parsed internally via the bundled @asyncapi/parser.</p>
+    <div class="frame">
+      <aui-asyncapi-renderer id="renderer-el"></aui-asyncapi-renderer>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Without Parser — &lt;aui-asyncapi&gt;</h2>
+    <p>Pre-parsed document object set as <code>.spec</code>; no parser involved.</p>
+    <div class="frame">
+      <aui-asyncapi id="asyncapi-el"></aui-asyncapi>
+    </div>
+  </div>
+
+  <script type="module" src="/dist/web-component.es.js"></script>
+  <script type="module">
+    const rawText = await (await fetch('/demo/streetlight.json')).text();
+
+    // With parser: raw spec string, parsed internally.
+    document.getElementById('renderer-el').spec = rawText;
+
+    // Without parser: same document, but pre-parsed by us and handed over as an object.
+    document.getElementById('asyncapi-el').spec = JSON.parse(rawText);
+  </script>
+</body>
+</html>

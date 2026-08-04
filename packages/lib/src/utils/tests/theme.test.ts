@@ -26,13 +26,13 @@ describe("buildThemeVars", () => {
     expect(vars["--color-neutral-50"]).toBe("15 23 42");
   });
 
-  it("prefers dark over light when both are configured", () => {
+  it("prefers light over dark when both are configured", () => {
     const vars = buildThemeVars({
       light: { background: "#ffffff" },
       dark: { background: "#000000" },
     });
 
-    expect(vars["--color-background"]).toBe("0 0 0");
+    expect(vars["--color-background"]).toBe("255 255 255");
   });
 
   it("applies brand color scales regardless of which mode is active", () => {

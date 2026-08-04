@@ -29,12 +29,12 @@ export default function SchemaFieldMeta({
   return (
     <div className={className}>
       {typeLabelOverride ? (
-        <span className="text-xs text-gray-500">{typeLabelOverride}</span>
+        <span className="text-xs text-foreground-muted">{typeLabelOverride}</span>
       ) : (
         <div>
           <SchemaTypeLabel schema={schema} refLabel={refLabel} />
           {showRef && (
-            <span className="text-xs text-gray-400"> (ref: {refLabel})</span>
+            <span className="text-xs text-foreground-muted"> (ref: {refLabel})</span>
           )}
         </div>
       )}

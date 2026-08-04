@@ -18,7 +18,7 @@ export default function SchemaCaseDetail({
 
   return (
     <div
-      className={`py-2 ${showBorder ? "border-b border-gray-200 last:border-b-0" : ""}`}
+      className={`py-2 ${showBorder ? "border-b border-border last:border-b-0" : ""}`}
     >
       <div className="flex items-center gap-2 min-h-[24px]">
         <span className="w-4 shrink-0" aria-hidden="true" />
@@ -34,7 +34,7 @@ export default function SchemaCaseDetail({
         description.split("\n\n").map((paragraph, index) => (
           <p
             key={index}
-            className={`text-xs text-gray-500 mt-1 ${CONTENT_INDENT} leading-relaxed`}
+            className={`text-xs text-foreground-muted mt-1 ${CONTENT_INDENT} leading-relaxed`}
           >
             {paragraph}
           </p>
