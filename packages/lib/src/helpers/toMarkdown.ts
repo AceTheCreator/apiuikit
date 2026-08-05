@@ -10,7 +10,13 @@
  * flattened into nested headings.
  */
 import { AsyncAPIDocumentData, SchemaNodeData } from "../types/schema";
-import { HttpMethod, OpenAPIDocumentData, OpenAPIOperationData, flattenEndpoints } from "../types/openapi";
+import {
+  HttpMethod,
+  OpenAPIDocumentData,
+  OpenAPIOperationData,
+  OpenAPISecuritySchemeData,
+  flattenEndpoints,
+} from "../types/openapi";
 import { Channel } from "../types/asyncapi/Channel";
 import { MessageObject } from "../types/asyncapi/MessageObject";
 import { Operation } from "../types/asyncapi/Operation";
@@ -110,6 +116,101 @@ function resolvedSchemaToMarkdown(name: string, input: unknown, deref: Deref): s
   return schemaTreeToMarkdown(name, withDescription, deref);
 }
 
+/**
+ * Fields this file reads off a security scheme — a loose subset of the
+ * type-specific shapes across both OpenAPI's `SecuritySchemeObject` union and
+ * AsyncAPI's several scheme types (UserPassword, ApiKey, X509,
+ * BearerHttpSecurityScheme, ApiKeyHttpSecurityScheme, Oauth2Flows,
+ * OpenIdConnect, the Sasl* schemes), mirroring `Authorization.tsx`'s
+ * `SecuritySchemeData` — the same component renders either spec's scheme
+ * from this shape, so the Markdown export reads it the same way.
+ */
+interface SecuritySchemeLike {
+  type?: string;
+  description?: string;
+  in?: string;
+  name?: string;
+  scheme?: string;
+  bearerFormat?: string;
+  openIdConnectUrl?: string;
+  flows?: Record<
+    string,
+    { authorizationUrl?: string; tokenUrl?: string; refreshUrl?: string; scopes?: Record<string, string>; availableScopes?: Record<string, string> }
+  >;
+}
+
+/** Human label for a scheme, mirroring `Authorization.tsx`'s tab naming so the Markdown export and the UI agree on terminology. */
+function securitySchemeLabel(scheme: SecuritySchemeLike): string {
+  switch (scheme.type) {
+    case "apiKey":
+    case "httpApiKey":
+      return `API Key (${safe(scheme.in)}${scheme.name ? `: \`${safe(scheme.name)}\`` : ""})`;
+    case "http":
+      return scheme.scheme?.toLowerCase() === "basic"
+        ? "HTTP Basic"
+        : `HTTP Bearer${scheme.bearerFormat ? ` (format: ${safe(scheme.bearerFormat)})` : ""}`;
+    case "openIdConnect":
+      return "OpenID Connect";
+    case "oauth2":
+      return "OAuth2";
+    case "mutualTLS":
+      return "Mutual TLS";
+    case "X509":
+      return "X.509 Certificate";
+    case "userPassword":
+      return "User / Password";
+    case "plain":
+    case "scramSha256":
+    case "scramSha512":
+      return "SASL";
+    case "gssapi":
+      return "SASL (GSSAPI)";
+    case "symmetricEncryption":
+      return "Symmetric Encryption";
+    case "asymmetricEncryption":
+      return "Asymmetric Encryption";
+    default:
+      return safe(scheme.type);
+  }
+}
+
+/**
+ * Builds the "**Authorization:**" block for a server's `security` list.
+ * Unlike OpenAPI's per-operation `security` (requirement names + scopes,
+ * resolved against `components.securitySchemes`), AsyncAPI's server
+ * `security` is already a list of the actual scheme objects — refs inlined
+ * by `resolveDocument` the same way `Server.tsx` receives them before
+ * passing straight to `Authorization`.
+ */
+function serverSecurityToMarkdown(security: SecuritySchemeLike[] | undefined): string {
+  if (!security?.length) return "";
+
+  const lines: string[] = [];
+  for (const scheme of security) {
+    if (!scheme?.type) continue;
+
+    lines.push(`- **${securitySchemeLabel(scheme)}**`);
+    if (scheme.description) lines.push(`  ${safe(scheme.description)}`);
+
+    if (scheme.type === "openIdConnect" && scheme.openIdConnectUrl) {
+      lines.push(`  - OpenID Connect URL: \`${safe(scheme.openIdConnectUrl)}\``);
+    }
+
+    if (scheme.type === "oauth2") {
+      for (const [flowName, flowData] of Object.entries(scheme.flows ?? {})) {
+        lines.push(`  - Flow \`${safe(flowName)}\`:`);
+        if (flowData.authorizationUrl) lines.push(`    - Authorization URL: \`${safe(flowData.authorizationUrl)}\``);
+        if (flowData.tokenUrl) lines.push(`    - Token URL: \`${safe(flowData.tokenUrl)}\``);
+        if (flowData.refreshUrl) lines.push(`    - Refresh URL: \`${safe(flowData.refreshUrl)}\``);
+        const scopes = Object.keys(flowData.availableScopes ?? flowData.scopes ?? {});
+        if (scopes.length) lines.push(`    - Available scopes: ${scopes.map((s) => `\`${safe(s)}\``).join(", ")}`);
+      }
+    }
+  }
+
+  return lines.length ? ["**Authorization:**", lines.join("\n")].join("\n\n") : "";
+}
+
 /** Builds the Title/Version/License/Contact/Description + Servers header shared
  * by the full-document export and the single-operation export. */
 function asyncApiHeaderToMarkdown(doc: AsyncAPIDocumentData): string[] {
@@ -136,6 +237,8 @@ function asyncApiHeaderToMarkdown(doc: AsyncAPIDocumentData): string[] {
       lines.push(`**Protocol:** ${safe(server.protocol)}${server.protocolVersion ? ` ${safe(server.protocolVersion)}` : ""}`);
       if (server.description) lines.push(safe(server.description));
       serverSections.push(lines.join("  \n"));
+      const securityMarkdown = serverSecurityToMarkdown(server.security as SecuritySchemeLike[] | undefined);
+      if (securityMarkdown) serverSections.push(securityMarkdown);
     }
     sections.push(serverSections.join("\n\n"));
   }
@@ -238,15 +341,84 @@ export function asyncApiOperationToMarkdown(doc: AsyncAPIDocumentData, key: stri
   return sections.filter(Boolean).join("\n\n");
 }
 
+/**
+ * Builds the "**Authorization:**" block for one operation's `security`
+ * requirements, resolved against `components.securitySchemes` — mirrors
+ * `PathOperation.tsx`'s resolution (union each requirement's scopes per
+ * scheme name, drop requirement entries whose scheme name isn't defined)
+ * so the Markdown export shows the same auth info as the Authorization
+ * panel in the UI, not just the bare requirement names.
+ */
+function securityRequirementToMarkdown(
+  security: Array<Record<string, string[]>>,
+  securitySchemes: Record<string, OpenAPISecuritySchemeData> | undefined,
+): string {
+  if (!security.length || !securitySchemes) return "";
+
+  const requiredScopesByScheme = new Map<string, string[]>();
+  for (const requirement of security) {
+    for (const [schemeName, scopes] of Object.entries(requirement)) {
+      if (!scopes.length) continue;
+      const existing = requiredScopesByScheme.get(schemeName) ?? [];
+      requiredScopesByScheme.set(schemeName, Array.from(new Set([...existing, ...scopes])));
+    }
+  }
+
+  const names = Array.from(new Set(security.flatMap((requirement) => Object.keys(requirement))));
+  const lines: string[] = [];
+  for (const name of names) {
+    const scheme = securitySchemes[name] as SecuritySchemeLike | undefined;
+    if (!scheme) continue;
+
+    const requiredScopes = requiredScopesByScheme.get(name);
+    lines.push(`- **${securitySchemeLabel(scheme)}** (\`${safe(name)}\`)`);
+    if (scheme.description) lines.push(`  ${safe(scheme.description)}`);
+
+    if (scheme.type === "openIdConnect" && scheme.openIdConnectUrl) {
+      lines.push(`  - OpenID Connect URL: \`${safe(scheme.openIdConnectUrl)}\``);
+    }
+
+    if (scheme.type === "oauth2") {
+      for (const [flowName, flowData] of Object.entries(scheme.flows ?? {})) {
+        lines.push(`  - Flow \`${safe(flowName)}\`:`);
+        if (flowData.authorizationUrl) lines.push(`    - Authorization URL: \`${safe(flowData.authorizationUrl)}\``);
+        if (flowData.tokenUrl) lines.push(`    - Token URL: \`${safe(flowData.tokenUrl)}\``);
+        if (flowData.refreshUrl) lines.push(`    - Refresh URL: \`${safe(flowData.refreshUrl)}\``);
+        const scopes = requiredScopes?.length ? requiredScopes : Object.keys(flowData.scopes ?? {});
+        if (scopes.length) {
+          lines.push(
+            `    - ${requiredScopes?.length ? "Required scopes" : "Scopes"}: ${scopes.map((s) => `\`${safe(s)}\``).join(", ")}`,
+          );
+        }
+      }
+    } else if (requiredScopes?.length) {
+      lines.push(`  - Required scopes: ${requiredScopes.map((s) => `\`${safe(s)}\``).join(", ")}`);
+    }
+  }
+
+  return lines.length ? ["**Authorization:**", lines.join("\n")].join("\n\n") : "";
+}
+
 /** Builds the Markdown section for a single OpenAPI operation: summary/description,
- * parameters grouped by location, request body, and responses — shared by the
- * full-document export's endpoint loop and the single-endpoint export. */
-function endpointSectionToMarkdown(method: HttpMethod, path: string, op: OpenAPIOperationData, deref: Deref): string {
+ * authorization, parameters grouped by location, request body, and responses —
+ * shared by the full-document export's endpoint loop and the single-endpoint export. */
+function endpointSectionToMarkdown(
+  method: HttpMethod,
+  path: string,
+  op: OpenAPIOperationData,
+  deref: Deref,
+  securitySchemes?: Record<string, OpenAPISecuritySchemeData>,
+  globalSecurity?: Array<Record<string, string[]>>,
+): string {
   const endpointSections = [heading(3, `${method.toUpperCase()} \`${safe(path)}\``)];
   const lines: string[] = [];
   if (op.summary) lines.push(safe(op.summary));
   if (op.description) lines.push(safe(op.description));
   if (op.deprecated) lines.push("**Deprecated**");
+
+  const security = op.security ?? globalSecurity ?? [];
+  const securityMarkdown = securityRequirementToMarkdown(security, securitySchemes);
+  if (securityMarkdown) lines.push(securityMarkdown);
 
   for (const location of ["path", "query", "header", "cookie"] as const) {
     const params = (op.parameters ?? []).filter((p) => p.in === location);
@@ -310,7 +482,9 @@ export function openApiToMarkdown(doc: OpenAPIDocumentData, deref: Deref): strin
     for (const { method, path } of endpoints) {
       const op = doc.paths?.[path]?.[method];
       if (!op) continue;
-      endpointSections.push(endpointSectionToMarkdown(method, path, op, deref));
+      endpointSections.push(
+        endpointSectionToMarkdown(method, path, op, deref, doc.components?.securitySchemes, doc.security),
+      );
     }
     sections.push(endpointSections.join("\n\n"));
   }
@@ -354,7 +528,7 @@ export function openApiEndpointToMarkdown(doc: OpenAPIDocumentData, method: Http
     sections.push(serverSections.join("\n"));
   }
 
-  sections.push(endpointSectionToMarkdown(method, path, op, deref));
+  sections.push(endpointSectionToMarkdown(method, path, op, deref, doc.components?.securitySchemes, doc.security));
 
   return sections.filter(Boolean).join("\n\n");
 }

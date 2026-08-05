@@ -72,6 +72,61 @@ describe("asyncApiToMarkdown", () => {
     expect(md).toContain("Light intensity");
   });
 
+  it("omits the Authorization block for a server with no security", () => {
+    const md = asyncApiToMarkdown(doc, noopDeref);
+    expect(md).not.toContain("**Authorization:**");
+  });
+
+  describe("server security", () => {
+    const securedDoc: AsyncAPIDocumentData = {
+      info: { title: "Streetlight API", version: "1.0.0" },
+      servers: {
+        production: {
+          host: "api.streetlights.io",
+          protocol: "kafka-secure",
+          security: [
+            {
+              type: "oauth2",
+              flows: {
+                clientCredentials: {
+                  tokenUrl: "https://auth.streetlights.io/token",
+                  availableScopes: { "streetlights:read": "Read streetlight data" },
+                },
+              },
+            },
+            { type: "userPassword", description: "Or authenticate with a username and password." },
+          ] as never,
+        },
+      },
+    };
+
+    it("resolves a server's security list into an Authorization block", () => {
+      const md = asyncApiToMarkdown(securedDoc, noopDeref);
+      expect(md).toContain("**Authorization:**");
+      expect(md).toContain("**OAuth2**");
+      expect(md).toContain("Flow `clientCredentials`");
+      expect(md).toContain("Token URL: `https://auth.streetlights.io/token`");
+      expect(md).toContain("Available scopes: `streetlights:read`");
+      expect(md).toContain("**User / Password**");
+      expect(md).toContain("Or authenticate with a username and password.");
+    });
+
+    it("includes the server security in the single-operation export too", () => {
+      const opDoc: AsyncAPIDocumentData = {
+        ...securedDoc,
+        operations: {
+          receiveLightMeasured: {
+            action: "receive" as never,
+            channel: { address: "light/measured" } as never,
+          },
+        },
+      };
+      const md = asyncApiOperationToMarkdown(opDoc, "receiveLightMeasured", noopDeref);
+      expect(md).toContain("**Authorization:**");
+      expect(md).toContain("**OAuth2**");
+    });
+  });
+
   it("does not recurse infinitely on a circular schema $ref", () => {
     const circularDoc: AsyncAPIDocumentData = {
       info: { title: "Circular", version: "1.0.0" },
@@ -301,6 +356,73 @@ describe("openApiToMarkdown", () => {
 
     it("returns an empty string when the endpoint doesn't exist", () => {
       expect(openApiEndpointToMarkdown(doc, "post", "/nonexistent", noopDeref)).toBe("");
+    });
+  });
+
+  describe("security schemes", () => {
+    const securedDoc: OpenAPIDocumentData = {
+      openapi: "3.0.0",
+      info: { title: "Pet Store", version: "1.0.0" },
+      paths: {
+        "/pets": {
+          get: {
+            summary: "List pets",
+            responses: { "200": { description: "A list of pets" } },
+            security: [{ apiKeyAuth: [] }],
+          },
+        },
+        "/pets/{id}": {
+          delete: {
+            summary: "Delete a pet",
+            responses: { "204": { description: "Deleted" } },
+            // No operation-level `security` — falls back to the doc's global `security`.
+          },
+        },
+      },
+      components: {
+        securitySchemes: {
+          apiKeyAuth: { type: "apiKey", in: "header", name: "X-API-Key" } as never,
+          oauth: {
+            type: "oauth2",
+            flows: {
+              clientCredentials: {
+                tokenUrl: "https://api.petstore.io/oauth/token",
+                scopes: { "pets:read": "Read pets", "pets:write": "Write pets" },
+              },
+            },
+          } as never,
+        },
+      },
+      security: [{ oauth: ["pets:read"] }],
+    };
+
+    it("resolves an operation's security requirement against components.securitySchemes", () => {
+      const md = openApiToMarkdown(securedDoc, noopDeref);
+      const petsSection = md.slice(md.indexOf("GET `/pets`"), md.indexOf("DELETE"));
+      expect(petsSection).toContain("**Authorization:**");
+      expect(petsSection).toContain("API Key (header: `X-API-Key`)");
+      expect(petsSection).toContain("`apiKeyAuth`");
+    });
+
+    it("falls back to the document's global security when an operation declares none", () => {
+      const md = openApiToMarkdown(securedDoc, noopDeref);
+      const deleteSection = md.slice(md.indexOf("DELETE"));
+      expect(deleteSection).toContain("**Authorization:**");
+      expect(deleteSection).toContain("OAuth2");
+      expect(deleteSection).toContain("Flow `clientCredentials`");
+      expect(deleteSection).toContain("Token URL: `https://api.petstore.io/oauth/token`");
+      expect(deleteSection).toContain("Required scopes: `pets:read`");
+    });
+
+    it("includes the resolved security in the single-endpoint export", () => {
+      const md = openApiEndpointToMarkdown(securedDoc, "get", "/pets", noopDeref);
+      expect(md).toContain("**Authorization:**");
+      expect(md).toContain("API Key (header: `X-API-Key`)");
+    });
+
+    it("omits the Authorization block when there's no security", () => {
+      const md = openApiToMarkdown(doc, noopDeref);
+      expect(md).not.toContain("**Authorization:**");
     });
   });
 });
