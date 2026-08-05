@@ -17,6 +17,9 @@ export { useAsyncAPIDocument } from './contexts';
 export { SchemaTree, SchemaTab } from './components/schema';
 export type { SchemaTreeProps } from './components/schema';
 
+export { ErrorBoundary } from './components/ErrorBoundary';
+export type { ErrorBoundaryProps, ErrorBoundaryFallbackRenderer } from './components/ErrorBoundary';
+
 export { parseAndRender } from './helpers/parser';
 export { AsyncAPIRenderer } from './containers/AsyncAPI/AsyncAPIRenderer';
 

@@ -2,6 +2,8 @@ import { useEffect, useMemo } from "react";
 import { ConfigInterface, defaultConfig } from "../../config";
 import { containsRefs, resolveDocument } from "../../helpers/resolveDocument";
 import { AsyncAPIDocumentData } from "../../types/schema";
+import { ErrorBoundary, ErrorBoundaryFallbackRenderer } from "../../components/ErrorBoundary";
+import type { ErrorInfo, ReactNode } from "react";
 import Layout from "./Layout";
 
 export interface IAsyncAPIProps {
@@ -11,6 +13,10 @@ export interface IAsyncAPIProps {
   config?: ConfigInterface;
   /** Promise that `asyncapi` is already fully dereferenced upstream. Verified rather than trusted: `$ref`s left in place are still resolved either way, with a console warning that the promise was false. */
   kind?: "resolved";
+  /** Custom UI shown if rendering this document throws. Defaults to a built-in fallback. */
+  errorFallback?: ReactNode | ErrorBoundaryFallbackRenderer;
+  /** Called once when a render error is caught, e.g. to report it to your own logging/telemetry. */
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 /**
@@ -44,7 +50,11 @@ const AsyncAPI = (props: IAsyncAPIProps) => {
   }, [kind, raw, asyncapi]);
 
   const config = props.config ?? defaultConfig;
-  return <Layout asyncapi={asyncapi} config={config} />;
+  return (
+    <ErrorBoundary fallback={props.errorFallback} onError={props.onError}>
+      <Layout asyncapi={asyncapi} config={config} />
+    </ErrorBoundary>
+  );
 };
 
 export default AsyncAPI;
