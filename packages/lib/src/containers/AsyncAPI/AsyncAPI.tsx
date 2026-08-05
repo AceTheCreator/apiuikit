@@ -25,7 +25,17 @@ export interface IAsyncAPIProps {
  * `$ref`-carrying) document object; for raw YAML/JSON strings, use
  * `AsyncAPIRenderer` instead, which parses first.
  */
-const AsyncAPI = (props: IAsyncAPIProps) => {
+const AsyncAPI = (props: IAsyncAPIProps) => (
+  // The boundary is deliberately the outermost thing this component renders:
+  // React only catches throws from a boundary's *descendants*, so document
+  // resolution has to happen one level down (in AsyncAPIContent) to be covered
+  // by it. Resolving here would put it outside its own boundary.
+  <ErrorBoundary fallback={props.errorFallback} onError={props.onError}>
+    <AsyncAPIContent {...props} />
+  </ErrorBoundary>
+);
+
+const AsyncAPIContent = (props: IAsyncAPIProps) => {
   const raw = props.asyncapi;
   // Always normalize: documents already meeting resolveDocument's contract
   // (no $refs, no object cycles) pass through its cheap scan untouched,
@@ -50,11 +60,7 @@ const AsyncAPI = (props: IAsyncAPIProps) => {
   }, [kind, raw, asyncapi]);
 
   const config = props.config ?? defaultConfig;
-  return (
-    <ErrorBoundary fallback={props.errorFallback} onError={props.onError}>
-      <Layout asyncapi={asyncapi} config={config} />
-    </ErrorBoundary>
-  );
+  return <Layout asyncapi={asyncapi} config={config} />;
 };
 
 export default AsyncAPI;

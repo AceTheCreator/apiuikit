@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import AsyncAPI from "./AsyncAPI";
 import type { AsyncAPIDocumentData } from "../../types/schema";
 import type { ConfigInterface } from "../../config/config";
+import type { ErrorBoundaryFallbackRenderer } from "../../components/ErrorBoundary";
+import type { ErrorInfo, ReactNode } from "react";
 import { parseDocument } from "../../helpers/parser";
 
 interface AsyncAPIRendererProps {
@@ -11,6 +13,10 @@ interface AsyncAPIRendererProps {
   config?: ConfigInterface;
   /** Called with the parser's diagnostics (errors/warnings) after each parse attempt. */
   onDiagnostics?: (diagnostics: unknown[]) => void;
+  /** Custom UI shown if rendering the parsed document throws. Defaults to a built-in fallback. */
+  errorFallback?: ReactNode | ErrorBoundaryFallbackRenderer;
+  /** Called once when a render error is caught. Parse failures arrive via `onDiagnostics` instead: an error boundary only sees synchronous render errors. */
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 /**
@@ -19,7 +25,7 @@ interface AsyncAPIRendererProps {
  * document as text rather than a pre-parsed object, e.g. user-entered or
  * loaded from a file at runtime.
  */
-export function AsyncAPIRenderer({ raw, config, onDiagnostics }: AsyncAPIRendererProps) {
+export function AsyncAPIRenderer({ raw, config, onDiagnostics, errorFallback, onError }: AsyncAPIRendererProps) {
   const [document, setDocument] = useState<AsyncAPIDocumentData | null>(null);
 
   // Keep the latest onDiagnostics without making the effect below re-run (and
@@ -43,5 +49,13 @@ export function AsyncAPIRenderer({ raw, config, onDiagnostics }: AsyncAPIRendere
   }, [raw]);
 
   if (!document) return null;
-  return <AsyncAPI kind="resolved" asyncapi={document} config={config} />;
+  return (
+    <AsyncAPI
+      kind="resolved"
+      asyncapi={document}
+      config={config}
+      errorFallback={errorFallback}
+      onError={onError}
+    />
+  );
 }

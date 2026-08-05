@@ -53,12 +53,26 @@ const renderCodeSamples = (showCodeSamples = true) =>
   );
 
 describe("CodeSamples", () => {
-  it("renders the curl sample by default with the resolved URL and auth header", () => {
+  it("renders the agent prompt by default with the resolved URL and auth header", () => {
     renderCodeSamples();
 
     const panel = within(document.getElementById(PANEL_ID)!);
     expect(panel.getByText("https://api.example.com/v1/pets/abc-123", { exact: false })).toBeInTheDocument();
     expect(panel.getByText("X-API-Key", { exact: false })).toBeInTheDocument();
+
+    const select = screen.getByRole("combobox", { name: "Code sample language" });
+    expect(select).toHaveValue("agent:prompt");
+  });
+
+  it("switches from the default agent prompt to curl", () => {
+    renderCodeSamples();
+
+    const select = screen.getByRole("combobox", { name: "Code sample language" });
+    fireEvent.change(select, { target: { value: "shell:curl" } });
+
+    const code = document.getElementById(PANEL_ID)!.querySelector("code")!;
+    expect(code.textContent).toContain("curl");
+    expect(code.textContent).toContain("https://api.example.com/v1/pets/abc-123");
   });
 
   it("lists every httpsnippet target as a grouped dropdown option, not just curl/JS/Python", () => {
