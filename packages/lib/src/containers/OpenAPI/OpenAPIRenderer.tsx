@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import OpenAPI from "./OpenAPI";
 import type { OpenAPIDocumentData } from "../../types/openapi";
 import type { ConfigInterface } from "../../config/config";
+import type { ErrorBoundaryFallbackRenderer } from "../../components/ErrorBoundary";
+import type { ErrorInfo, ReactNode } from "react";
 import { parseDocument } from "../../helpers/openapiParser";
 
 interface OpenAPIRendererProps {
@@ -11,6 +13,10 @@ interface OpenAPIRendererProps {
   config?: ConfigInterface;
   /** Called with the parser's diagnostics (errors/warnings) after each parse attempt. */
   onDiagnostics?: (diagnostics: unknown[]) => void;
+  /** Custom UI shown if rendering the parsed document throws. Defaults to a built-in fallback. */
+  errorFallback?: ReactNode | ErrorBoundaryFallbackRenderer;
+  /** Called once when a render error is caught. Parse failures arrive via `onDiagnostics` instead: an error boundary only sees synchronous render errors. */
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 /**
@@ -19,7 +25,7 @@ interface OpenAPIRendererProps {
  * have a document as text rather than a pre-parsed object, e.g. user-entered
  * or loaded from a file at runtime.
  */
-export function OpenAPIRenderer({ raw, config, onDiagnostics }: OpenAPIRendererProps) {
+export function OpenAPIRenderer({ raw, config, onDiagnostics, errorFallback, onError }: OpenAPIRendererProps) {
   const [document, setDocument] = useState<OpenAPIDocumentData | null>(null);
 
   const onDiagnosticsRef = useRef(onDiagnostics);
@@ -38,5 +44,13 @@ export function OpenAPIRenderer({ raw, config, onDiagnostics }: OpenAPIRendererP
   }, [raw]);
 
   if (!document) return null;
-  return <OpenAPI kind="resolved" openapi={document} config={config} />;
+  return (
+    <OpenAPI
+      kind="resolved"
+      openapi={document}
+      config={config}
+      errorFallback={errorFallback}
+      onError={onError}
+    />
+  );
 }

@@ -23,6 +23,10 @@ The simplest way to use the parser entry. Pass a raw string and the component ha
 | `raw`            | `string`                        | Yes      | Raw AsyncAPI document — YAML or JSON                 |
 | `config`         | `ConfigInterface`               | No       | UI configuration (theme, show flags, sidebar, etc.)  |
 | `onDiagnostics`  | `(d: unknown[]) => void`        | No       | Called after parsing with any validation diagnostics |
+| `errorFallback`  | `ReactNode \| (error, reset) => ReactNode` | No | Forwarded to `AsyncAPI`: custom UI shown if rendering throws |
+| `onError`        | `(error, errorInfo) => void`    | No       | Forwarded to `AsyncAPI`: called once when a render error is caught |
+
+Parse failures and render failures are separate channels: `onDiagnostics` reports what the parser rejected, `onError` reports a throw during render. See [Error handling](./no-parser.md#error-handling).
 
 ### TypeScript
 

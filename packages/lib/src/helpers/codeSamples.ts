@@ -7,8 +7,12 @@ import {
   OpenAPIServerData,
 } from "../types/openapi";
 
-export const DEFAULT_CODE_SAMPLE_TARGET = "shell";
-export const DEFAULT_CODE_SAMPLE_CLIENT = "curl";
+/** The dropdown opens on httpsnippet's "agent" target: a plain-text prompt
+ * describing the request, meant to be pasted into an AI assistant rather than
+ * run. It's language-agnostic, so it's the one option that's useful to every
+ * reader regardless of what they're building in. */
+export const DEFAULT_CODE_SAMPLE_TARGET = "agent";
+export const DEFAULT_CODE_SAMPLE_CLIENT = "prompt";
 
 export type AvailableCodeSampleTarget = ReturnType<typeof availableTargets>[number];
 

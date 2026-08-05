@@ -14,6 +14,22 @@ Pass a plain JavaScript object that matches the AsyncAPI 3.0 document shape.
 |-----------|-------------------------|----------|-----------------------------------------------------|
 | `asyncapi`| `AsyncAPIDocumentData`  | Yes      | A pre-resolved AsyncAPI 3.0 document object         |
 | `config`  | `ConfigInterface`       | No       | UI configuration (theme, show flags, sidebar, etc.) |
+| `errorFallback` | `ReactNode \| (error, reset) => ReactNode` | No | Custom UI shown if rendering throws. Defaults to a built-in fallback |
+| `onError` | `(error, errorInfo) => void` | No  | Called once when a render error is caught, e.g. to report it to your own telemetry |
+
+### Error handling
+
+The component wraps its own tree in an error boundary, so a render-time throw from a malformed or edge-case document is contained here instead of unmounting your application. The default fallback is an alert with the error message and a "Try again" button:
+
+```tsx
+<AsyncAPI
+  asyncapi={doc}
+  errorFallback={(error, reset) => <MyFallback message={error.message} onRetry={reset} />}
+  onError={(error, errorInfo) => reportToSentry(error, errorInfo)}
+/>
+```
+
+This only covers synchronous render errors, which is all a React error boundary can see. Parse failures surface through `AsyncAPIRenderer`'s `onDiagnostics` instead. The `ErrorBoundary` component is also exported on its own if you want to wrap composable sections in it.
 
 ### TypeScript
 

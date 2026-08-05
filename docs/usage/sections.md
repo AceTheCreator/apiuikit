@@ -61,6 +61,48 @@ Because composition doesn't rely on a slot API, dropping in a custom implementat
 
 Any component rendered inside `AsyncAPIProvider` can call `useAsyncAPIDocument()` to read the resolved document, the same way the built-in sections do.
 
+## Error handling
+
+Unlike `AsyncAPI` and `OpenAPI`, which wrap themselves in an error boundary, sections and providers render unwrapped. That's deliberate: you're building the layout, so where a failure should be contained (and what should show in its place) is your call, not the library's. A boundary the library forced around every section would also mean a malformed schema quietly renders a fallback card in the middle of your page, which may not be what you want.
+
+The `ErrorBoundary` used by the full-page components is exported, so opt in wherever it suits your layout. Around everything, so one bad section doesn't take the page down:
+
+```tsx
+import { ErrorBoundary, AsyncAPIProvider, Servers, Operations, Schemas } from "apiuikit";
+
+<ErrorBoundary onError={(error, errorInfo) => reportToSentry(error, errorInfo)}>
+  <AsyncAPIProvider document={doc}>
+    <Servers />
+    <Operations />
+    <Schemas />
+  </AsyncAPIProvider>
+</ErrorBoundary>
+```
+
+Or around a single section, so the rest of the page survives it:
+
+```tsx
+<AsyncAPIProvider document={doc}>
+  <Servers />
+  <ErrorBoundary fallback={<p>Couldn't render operations.</p>}>
+    <Operations />
+  </ErrorBoundary>
+  <Schemas />
+</AsyncAPIProvider>
+```
+
+### `ErrorBoundary` props
+
+| Prop       | Type                                        | Required | Description                                                        |
+|------------|---------------------------------------------|----------|--------------------------------------------------------------------|
+| `children` | `ReactNode`                                 | Yes      | The tree to protect                                                |
+| `fallback` | `ReactNode \| (error, reset) => ReactNode`  | No       | UI shown after a caught error. Defaults to an alert with the message and a "Try again" button. The function form gets `reset`, which clears the error and re-renders the children |
+| `onError`  | `(error, errorInfo) => void`                | No       | Called once when an error is caught, in addition to the library's own `console.error` |
+
+Placement matters: React only catches errors thrown by a boundary's *descendants*. A section that resolves its document during its own render is covered only if the boundary sits above it, as in both examples here. Wrapping content *inside* a section doesn't protect that section.
+
+This covers synchronous render errors, which is all a React error boundary can see. Failures while parsing a raw document surface through `AsyncAPIRenderer`'s `onDiagnostics` instead.
+
 ## When to use this entry
 
 | Scenario                                                        | Use                                  |

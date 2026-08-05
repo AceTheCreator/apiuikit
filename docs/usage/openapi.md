@@ -41,8 +41,24 @@ export default function App() {
 | `openapi` | `OpenAPIDocumentData`  | Yes      | A pre-resolved OpenAPI 3.0/3.1 document object         |
 | `config`  | `ConfigInterface`      | No       | UI configuration (theme, show flags, sidebar, etc.)    |
 | `kind`    | `"resolved"`           | No       | Promise that `$ref`s are already inlined (verified)    |
+| `errorFallback` | `ReactNode \| (error, reset) => ReactNode` | No | Custom UI shown if rendering throws. Defaults to a built-in fallback |
+| `onError` | `(error, errorInfo) => void` | No     | Called once when a render error is caught, e.g. to report it to your own telemetry |
 
 As with `AsyncAPI`, `$ref`s are verified rather than trusted: a `kind="resolved"` document that still contains `$ref`s gets resolved anyway, with a console warning that the promise was false.
+
+### Error handling
+
+The component wraps its own tree in an error boundary, so a render-time throw from a malformed or edge-case document is contained here instead of unmounting your application. The default fallback is an alert with the error message and a "Try again" button; pass `errorFallback` to replace it, and `onError` to report the failure:
+
+```tsx
+<OpenAPI
+  openapi={doc}
+  errorFallback={(error, reset) => <MyFallback message={error.message} onRetry={reset} />}
+  onError={(error, errorInfo) => reportToSentry(error, errorInfo)}
+/>
+```
+
+This only covers synchronous render errors, which is all a React error boundary can see. Parse failures surface through `OpenAPIRenderer`'s `onDiagnostics` instead.
 
 ## `OpenAPIRenderer` component (with parser)
 
@@ -67,6 +83,8 @@ export default function App() {
 ```
 
 Diagnostics use the same shape as AsyncAPI's (`{ message, path, severity }`, `severity: 0` for errors), so a shared diagnostics panel works for both.
+
+`errorFallback` and `onError` are accepted here too and forwarded to the underlying `OpenAPI` component, so the raw-string entry point gets the same error boundary and the same customization.
 
 `parseAndRenderOpenAPI(raw, config)` is also available for imperative use, mirroring `parseAndRender`.
 
@@ -99,6 +117,8 @@ export default function CustomLayout() {
 }
 ```
 
+Sections and providers render without an error boundary of their own, unlike `OpenAPI` above. See [Error handling](./sections.md#error-handling) for why, and for how to wrap them in the exported `ErrorBoundary` yourself.
+
 ## Web components
 
 `@apiuikit/web-component` exposes `<aui-openapi>` and `<aui-openapi-renderer>`, mirroring `<aui-asyncapi>` / `<aui-asyncapi-renderer>`:
@@ -127,7 +147,7 @@ See [Web Components](./with-webcomponents.md) for the full attribute reference â
 ```tsx
 const config: ConfigInterface = {
   show: { endpoints: false }, // hide the Endpoints tab, e.g. for a schema-only reference page
-  // show: { codeSamples: false }, // hide the per-operation "Example Request" panel (cURL/JS/Python)
+  // show: { codeSamples: false }, // hide the per-operation "Example Request" panel (agent prompt, cURL, JS, Python, ...)
 };
 ```
 
