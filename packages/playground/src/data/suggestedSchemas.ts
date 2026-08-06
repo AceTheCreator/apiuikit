@@ -65,22 +65,22 @@ export const DEFAULT_SUGGESTED_SCHEMA = {
 export const SUGGESTED_SCHEMAS: SuggestedSchema[] = [
   ...[...new Set(RAW_URLS)].map((url) => ({
     url,
-    label: labelFromUrl(url),
+    label: `${labelFromUrl(url)} (AsyncAPI)`,
   })),
   {
-    label: 'Streetlights Avro',
+    label: 'Streetlights Avro (AsyncAPI)',
     url: 'local://avro-streetlight.json',
     content: JSON.stringify(avroStreetlightExample, null, 2),
     markdownPath: '/examples/avro-streetlight.md',
   },
   {
-    label: 'Streetlights Protobuf',
+    label: 'Streetlights Protobuf (AsyncAPI)',
     url: 'local://protobuf-streetlight.json',
     content: JSON.stringify(protobufStreetlightExample, null, 2),
     markdownPath: '/examples/protobuf-streetlight.md',
   },
   {
-    label: 'Unrealistic Torture Test',
+    label: 'Unrealistic Torture Test (AsyncAPI)',
     url: 'local://torture.json',
     content: JSON.stringify(tortureExample, null, 2),
     markdownPath: '/examples/torture.md',
