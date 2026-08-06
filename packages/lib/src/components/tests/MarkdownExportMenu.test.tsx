@@ -5,28 +5,36 @@ import MarkdownExportMenu from "../MarkdownExportMenu";
 import { AsyncAPIDocumentContext } from "../../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../schema/depthColors";
 import type { AsyncAPIDocumentData } from "../../types/schema";
+import type { MarkdownUrlResolver } from "../../config/config";
 
-function Providers({ children }: { children: ReactNode }) {
-  return (
-    <AsyncAPIDocumentContext.Provider
-      value={{
-        specType: "asyncapi",
-        document: {} as AsyncAPIDocumentData,
-        deref: () => undefined,
-        portalHost: document.body,
-        rootElement: null,
-        depthColors: DEFAULT_DEPTH_COLORS,
-        showExtensions: true,
-        showCodeSamples: true,
-      }}
-    >
-      {children}
-    </AsyncAPIDocumentContext.Provider>
-  );
+const specDocument = { info: { title: "Streetlights" } } as unknown as AsyncAPIDocumentData;
+
+function makeProviders(markdownUrl?: MarkdownUrlResolver) {
+  return function Providers({ children }: { children: ReactNode }) {
+    return (
+      <AsyncAPIDocumentContext.Provider
+        value={{
+          specType: "asyncapi",
+          document: specDocument,
+          deref: () => undefined,
+          portalHost: document.body,
+          rootElement: null,
+          depthColors: DEFAULT_DEPTH_COLORS,
+          showExtensions: true,
+          showCodeSamples: true,
+          markdownUrl,
+        }}
+      >
+        {children}
+      </AsyncAPIDocumentContext.Provider>
+    );
+  };
 }
 
-const renderMenu = (serialize = () => "# Hello") =>
-  render(<MarkdownExportMenu serialize={serialize} leftOffset={60} />, { wrapper: Providers });
+const renderMenu = (serialize = () => "# Hello", markdownUrl?: MarkdownUrlResolver) =>
+  render(<MarkdownExportMenu serialize={serialize} leftOffset={60} />, {
+    wrapper: makeProviders(markdownUrl),
+  });
 
 describe("MarkdownExportMenu", () => {
   it("opens the menu on trigger click and closes on Escape", () => {
@@ -75,5 +83,58 @@ describe("MarkdownExportMenu", () => {
 
     expect(createObjectURL).toHaveBeenCalled();
     expect(open).toHaveBeenCalledWith("blob:mock-url", "_blank");
+  });
+
+  it("opens the configured hosted URL instead of building a blob", () => {
+    const createObjectURL = vi.fn().mockReturnValue("blob:mock-url");
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
+    const open = vi.fn();
+    vi.stubGlobal("open", open);
+    const serialize = vi.fn(() => "# Serialized Doc");
+
+    renderMenu(serialize, () => "/docs/api.md");
+    fireEvent.click(screen.getByRole("button", { name: "Copy as Markdown" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /View as Markdown/ }));
+
+    expect(open).toHaveBeenCalledWith("/docs/api.md", "_blank");
+    expect(createObjectURL).not.toHaveBeenCalled();
+    // Serialization is the expensive part, so a hosted URL should skip it.
+    expect(serialize).not.toHaveBeenCalled();
+  });
+
+  it("passes the document-level target to the resolver", () => {
+    vi.stubGlobal("open", vi.fn());
+    const markdownUrl = vi.fn(() => "/docs/api.md");
+
+    renderMenu(() => "# Doc", markdownUrl);
+    fireEvent.click(screen.getByRole("button", { name: "Copy as Markdown" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /View as Markdown/ }));
+
+    expect(markdownUrl).toHaveBeenCalledWith({ kind: "document", document: specDocument });
+  });
+
+  it("falls back to the blob when the resolver declines", () => {
+    const createObjectURL = vi.fn().mockReturnValue("blob:mock-url");
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
+    const open = vi.fn();
+    vi.stubGlobal("open", open);
+
+    renderMenu(() => "# Serialized Doc", () => null);
+    fireEvent.click(screen.getByRole("button", { name: "Copy as Markdown" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /View as Markdown/ }));
+
+    expect(createObjectURL).toHaveBeenCalled();
+    expect(open).toHaveBeenCalledWith("blob:mock-url", "_blank");
+  });
+
+  it("still copies the serialized markdown when a hosted URL is configured", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    renderMenu(() => "# Serialized Doc", () => "/docs/api.md");
+    fireEvent.click(screen.getByRole("button", { name: "Copy as Markdown" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Copy for LLM/ }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("# Serialized Doc"));
   });
 });

@@ -51,10 +51,16 @@ export default defineConfig({
       strictRequires: 'auto',
     },
     lib: {
-      entry: 'src/index.ts',
+      entry: {
+        index: 'src/index.ts',
+        markdown: 'src/markdown.ts',
+      },
       name: 'apiuikit',
       formats: ['es', 'cjs'],
-      fileName: (format) => `apiuikit.${format}.js`,
+      fileName: (format, entryName) => {
+        if (entryName === 'index') return `apiuikit.${format}.js`
+        return format === 'cjs' ? `${entryName}.cjs` : `${entryName}.es.js`
+      },
     },
     rollupOptions: {
       maxParallelFileOps: 100,

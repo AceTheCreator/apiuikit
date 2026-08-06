@@ -24,6 +24,11 @@
       "import": "./dist/apiuikit.es.js",
       "require": "./dist/apiuikit.cjs.js"
     },
+    "./markdown": {
+      "types": "./dist/markdown.d.ts",
+      "import": "./dist/markdown.es.js",
+      "require": "./dist/markdown.cjs"
+    },
     "./style.css": "./dist/apiuikit.css"
   },
   "files": [

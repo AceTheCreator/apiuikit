@@ -27,6 +27,7 @@ packages/playground/public/llms-full.txt
 packages/playground/public/_headers
 packages/playground/public/README.md
 packages/playground/public/docs/
+packages/playground/public/examples/
 
 # Editor directories and files
 .vscode/*

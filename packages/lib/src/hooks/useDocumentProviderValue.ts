@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ConfigInterface, defaultConfig } from "../config";
+import type { MarkdownUrlResolver } from "../config/config";
 import { SpecType } from "../contexts";
 import { buildThemeVars } from "../utils/theme";
 import { DEFAULT_DEPTH_COLORS } from "../components/schema/depthColors";
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+import { createDocumentDeref } from "../helpers/jsonPointer";
 
 /**
  * Builds the shared DocumentContext value (deref resolver, portal/root refs,
@@ -21,38 +20,14 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
   document: D,
   config: ConfigInterface = defaultConfig,
 ) {
-  const derefCache = useMemo(() => new Map<string, unknown>(), []);
   const [portalHost, setPortalHost] = useState<HTMLDivElement | null>(null);
   const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    derefCache.clear();
-  }, [document, derefCache]);
-
   // Fallback resolver for the few $refs that survive upfront resolution — see
   // resolveDocument's own doc for why cycle-forming refs are left in place.
-  const deref = useCallback((refPath: string) => {
-    if (derefCache.has(refPath)) return derefCache.get(refPath);
-
-    const parts = refPath.replace(/^#\//, "").split("/");
-    let current: unknown = document;
-
-    for (const part of parts) {
-      if (!isRecord(current)) {
-        current = undefined;
-        break;
-      }
-      const decoded = part.replace(/~1/g, "/").replace(/~0/g, "~");
-      current = current[decoded];
-      if (current == null) break;
-    }
-
-    if (current !== undefined) {
-      derefCache.set(refPath, current);
-    }
-
-    return current;
-  }, [document, derefCache]);
+  // The resolver and its cache are replaced atomically with the document, so
+  // a render can never observe cached values belonging to the previous spec.
+  const deref = useMemo(() => createDocumentDeref(document), [document]);
 
   const defaultSchemaExpanded = config.expand?.schemas === true;
   const depthColors = config.theme?.depthColors?.length
@@ -61,9 +36,19 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
   const showExtensions = config.show?.extensions !== false;
   const showCodeSamples = config.show?.codeSamples !== false;
 
+  // Both accepted forms collapse to a resolver here so consumers have one
+  // shape to call. A bare string applies to every target; a function decides
+  // per target and can decline by returning null.
+  const configuredMarkdownUrl = config.markdown?.url;
+  const markdownUrl = useMemo<MarkdownUrlResolver | undefined>(() => {
+    if (typeof configuredMarkdownUrl === "function") return configuredMarkdownUrl;
+    if (typeof configuredMarkdownUrl === "string") return () => configuredMarkdownUrl;
+    return undefined;
+  }, [configuredMarkdownUrl]);
+
   const contextValue = useMemo(
-    () => ({ specType, document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples }),
-    [specType, document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples],
+    () => ({ specType, document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples, markdownUrl }),
+    [specType, document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples, markdownUrl],
   );
 
   const themeVars = config.theme ? buildThemeVars(config.theme) : {};

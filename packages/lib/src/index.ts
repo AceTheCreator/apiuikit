@@ -6,7 +6,24 @@ export type { IAsyncAPIProps } from './containers/AsyncAPI/AsyncAPI';
 export { default as OpenAPI } from './containers/OpenAPI/OpenAPI';
 export type { IOpenAPIProps } from './containers/OpenAPI/OpenAPI';
 
-export type { ConfigInterface } from './config';
+export type { ConfigInterface, MarkdownConfig, MarkdownTarget, MarkdownUrlResolver } from './config';
+
+// Publish an AI-discoverable docs site from a document, outside a rendered
+// tree: these produce what a `config.markdown.url` points at, from a build
+// step or a server route. Spec-agnostic — they dispatch on the document's own
+// version key, so the same code path handles AsyncAPI and OpenAPI.
+export { documentToLlmsTxt, documentToMarkdown, listDocumentTargets, targetSlug } from './helpers/llmsTxt';
+export type { DocumentTarget, LlmsTxtLink, LlmsTxtOptions } from './helpers/llmsTxt';
+
+// Spec-specific serializers, if you already know which spec you have. `deref`
+// defaults to resolving JSON Pointers against the document itself, so
+// pre-resolved documents need nothing extra.
+export {
+  asyncApiOperationToMarkdown,
+  asyncApiToMarkdown,
+  openApiEndpointToMarkdown,
+  openApiToMarkdown,
+} from './helpers/toMarkdown';
 export { defaultConfig } from './config';
 
 export type { AsyncAPIDocumentData } from './types/schema';

@@ -239,4 +239,21 @@ describe("AsyncAPI", () => {
     expect(schemasPanel.getByText("value")).toBeInTheDocument();
     expect(schemasPanel.getByText(/↩/)).toBeInTheDocument();
   });
+
+  it("links \"View as Markdown\" at a hosted URL given as a plain string in config", () => {
+    const open = vi.fn();
+    vi.stubGlobal("open", open);
+    const createObjectURL = vi.fn().mockReturnValue("blob:mock-url");
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
+
+    render(<AsyncAPI asyncapi={asDoc(exampleDoc)} config={{ markdown: { url: "/docs/streetlights.md" } }} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy as Markdown" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /View as Markdown/ }));
+
+    expect(open).toHaveBeenCalledWith("/docs/streetlights.md", "_blank");
+    expect(createObjectURL).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+  });
 });

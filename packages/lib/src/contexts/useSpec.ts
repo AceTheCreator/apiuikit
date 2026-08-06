@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 import type { AsyncAPIDocumentData } from "../types/schema";
 import type { OpenAPIDocumentData } from "../types/openapi";
+import type { MarkdownUrlResolver } from "../config/config";
 
 /** Which spec produced the ambient document. The discriminant of DocumentContextValue. */
 export type SpecType = "asyncapi" | "openapi";
@@ -19,6 +20,8 @@ interface DocumentContextBase {
   showExtensions: boolean;
   /** OpenAPI only: whether to render per-operation code samples (cURL/JS/Python). Defaults to true. */
   showCodeSamples: boolean;
+  /** Resolves the hosted URL serving a target as Markdown, if the consumer serves one (config.markdown.url). Undefined means "View as Markdown" falls back to a generated `blob:` URL. */
+  markdownUrl?: MarkdownUrlResolver;
 }
 
 export interface AsyncAPIDocumentContextValue extends DocumentContextBase {

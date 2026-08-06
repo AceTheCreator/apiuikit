@@ -15,6 +15,11 @@ import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// Use the DOM-free publishing entry: importing the main package here would
+// also initialize browser-only renderer dependencies that a build script
+// neither needs nor should have to shim.
+import { documentToMarkdown } from "apiuikit/markdown";
+
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..", "..", "..");
 const publicDir = join(here, "..", "public");
@@ -131,6 +136,37 @@ function buildHeaders(docs) {
     .join("\n");
 }
 
+/**
+ * The bundled example documents, rendered to Markdown at build time.
+ *
+ * This is what gives the playground a real URL to hand the library's
+ * `config.markdown.url`: for a built-in example, "View as Markdown" opens a
+ * static file that can be shared, bookmarked, and crawled, instead of a
+ * throwaway `blob:` URL. Pasted documents have no such file and keep the blob
+ * fallback, which is why the playground's resolver returns null for them.
+ *
+ * JSON only, and keyed by filename to match the `local://<file>` ids in
+ * src/data/suggestedSchemas.ts. The YAML example is skipped rather than
+ * pulling a YAML parser into the build for one file.
+ */
+async function generateExampleMarkdown() {
+  const examplesDir = join(here, "..", "src", "examples");
+  const files = (await readdir(examplesDir)).filter((name) => name.endsWith(".json")).sort();
+  const targetDir = join(publicDir, "examples");
+
+  await rm(targetDir, { recursive: true, force: true });
+  await mkdir(targetDir, { recursive: true });
+
+  return Promise.all(
+    files.map(async (file) => {
+      const doc = JSON.parse(await readFile(join(examplesDir, file), "utf8"));
+      const name = file.replace(/\.json$/, ".md");
+      await writeFile(join(targetDir, name), documentToMarkdown(doc));
+      return `examples/${name}`;
+    }),
+  );
+}
+
 async function main() {
   const docs = await Promise.all(
     (await collectDocs()).map(async (doc) => {
@@ -155,11 +191,13 @@ async function main() {
     await writeFile(target, doc.markdown);
   }
 
+  const examples = await generateExampleMarkdown();
+
   await writeFile(join(publicDir, "llms.txt"), buildLlmsTxt(docs));
   await writeFile(join(publicDir, "llms-full.txt"), buildLlmsFullTxt(docs));
-  await writeFile(join(publicDir, "_headers"), buildHeaders(docs));
+  await writeFile(join(publicDir, "_headers"), buildHeaders([...docs, ...examples.map((path) => ({ path }))]));
 
-  const written = docs.length + 3;
+  const written = docs.length + examples.length + 3;
   console.log(`[docs-assets] wrote ${written} files to ${relative(repoRoot, publicDir)}/`);
 }
 
