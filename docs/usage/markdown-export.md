@@ -6,8 +6,8 @@ Everything here serves one goal: making a docs site built with apiuikit readable
 
 Every rendered document carries a floating **Copy as Markdown** button with two actions:
 
-- **Copy for LLM** — writes the whole document, serialized as Markdown, to the clipboard.
-- **View as Markdown** — opens that same Markdown in a new tab.
+- **Copy for LLM**: writes the whole document, serialized as Markdown, to the clipboard.
+- **View as Markdown**: opens that same Markdown in a new tab.
 
 Hide the button entirely with `show: { copyMarkdown: false }`.
 

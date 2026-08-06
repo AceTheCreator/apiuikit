@@ -57,18 +57,19 @@ export interface SecuritySchemeData {
   >;
 }
 
-const tabs = [
-  { id: "userPassword", name: "User/Password" },
-  { id: "oauth2", name: "OAuth2" },
-  { id: "apiKey", name: "API key" },
-  { id: "bearer", name: "Bearer Token" },
-  { id: "openIdConnect", name: "OpenID" },
-  { id: "X509", name: "X.509 certificate" },
-  { id: "scramSha256", name: "SASL" },
-  { id: "scramSha512", name: "SASL" },
-  { id: "plain", name: "SASL" },
-  { id: "gssapi", name: "SASL" },
-];
+/** Display name per scheme kind. Several SASL types deliberately share one. */
+const KIND_LABELS: Record<string, string> = {
+  userPassword: "User/Password",
+  oauth2: "OAuth2",
+  apiKey: "API key",
+  bearer: "Bearer Token",
+  openIdConnect: "OpenID",
+  X509: "X.509 certificate",
+  scramSha256: "SASL",
+  scramSha512: "SASL",
+  plain: "SASL",
+  gssapi: "SASL",
+};
 
 /**
  * Which tab a scheme belongs to. Most types map onto a tab id directly
@@ -87,6 +88,62 @@ function tabIdFor(scheme: SecuritySchemeData): string {
   return scheme.type;
 }
 
+/** One tab: a single declared scheme, not a scheme *kind*. */
+interface AuthMethod {
+  id: string;
+  name: string;
+  /** Which kind's content to render, from `tabIdFor`. */
+  kind: string;
+  scheme: SecuritySchemeData;
+}
+
+/**
+ * The detail that tells two same-kind schemes apart in a tab label: the
+ * header/query parameter name for API keys, the HTTP scheme or bearer format
+ * for `http`, and the raw type for the SASL family (which shares one label).
+ */
+function disambiguator(scheme: SecuritySchemeData): string | undefined {
+  return scheme.name || scheme.scheme || scheme.bearerFormat || scheme.type || undefined;
+}
+
+/**
+ * One method per declared scheme, in document order.
+ *
+ * Schemes are *not* collapsed by kind: a document can legitimately declare
+ * several of the same kind (two `httpApiKey` schemes for different headers,
+ * say), and each is a distinct way to authenticate that the reader needs to
+ * see. Labels stay the plain kind name while they're unique, and only pick up
+ * a disambiguating suffix where they'd otherwise collide, so the common
+ * single-scheme case reads exactly as before.
+ *
+ * Kinds with no content renderer are dropped rather than shown as an empty
+ * tab, matching what this component has always displayed.
+ */
+function buildAuthMethods(securities: SecuritySchemeData[] | undefined): AuthMethod[] {
+  const renderable = (securities ?? []).filter((scheme) => KIND_LABELS[tabIdFor(scheme)]);
+
+  const labelCounts = new Map<string, number>();
+  for (const scheme of renderable) {
+    const label = KIND_LABELS[tabIdFor(scheme)];
+    labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
+  }
+
+  const usedNames = new Set<string>();
+  return renderable.map((scheme, index) => {
+    const kind = tabIdFor(scheme);
+    const label = KIND_LABELS[kind];
+    const detail = (labelCounts.get(label) ?? 0) > 1 ? disambiguator(scheme) : undefined;
+
+    let name = detail ? `${label} (${detail})` : label;
+    // Two schemes of one kind with nothing to tell them apart: number them so
+    // the tabs are at least addressable.
+    if (usedNames.has(name)) name = `${name} #${index + 1}`;
+    usedNames.add(name);
+
+    return { id: `${kind}-${index}`, name, kind, scheme };
+  });
+}
+
 interface Props {
   securities: SecuritySchemeData[];
 }
@@ -94,43 +151,40 @@ interface Props {
 export default function Authorization({ securities }: Props) {
   // Security scheme $refs are already inlined by resolveDocument /
   // @asyncapi/parser / @scalar/openapi-parser before the document reaches any component.
-  const filteredTabs = useMemo(() => {
-    return tabs.filter((tab) =>
-      securities?.some((security) => tabIdFor(security).toLowerCase() === tab.id.toLowerCase()),
-    );
-  }, [securities]);
-  const isMultiMethod = filteredTabs.length > 1;
+  const methods = useMemo(() => buildAuthMethods(securities), [securities]);
+  const isMultiMethod = methods.length > 1;
   // Single method: show content immediately. Multiple: nothing selected until
   // the user picks a tab — then they can close the panel back up.
   const [authTab, setAuthTab] = useState<string | null>(
-    isMultiMethod ? null : filteredTabs[0]?.id ?? null
+    isMultiMethod ? null : methods[0]?.id ?? null
   );
 
   useEffect(() => {
-    if (filteredTabs.length === 0) {
+    if (methods.length === 0) {
       setAuthTab(null);
       return;
     }
-    if (filteredTabs.length === 1) {
-      setAuthTab(filteredTabs[0].id);
+    if (methods.length === 1) {
+      setAuthTab(methods[0].id);
       return;
     }
     setAuthTab((current) =>
-      current && filteredTabs.some((tab) => tab.id === current) ? current : null
+      current && methods.some((method) => method.id === current) ? current : null
     );
-  }, [filteredTabs]);
+  }, [methods]);
 
-  function filteredType<T extends SecuritySchemeData>(tabId: string): T {
-    return securities.find((security) => tabIdFor(security).toLowerCase() === tabId.toLowerCase()) as T;
-  }
-
-  const activeDescription = authTab ? filteredType<SecuritySchemeData>(authTab)?.description : undefined;
+  // The selected scheme itself, so content renders the scheme the reader
+  // picked rather than the first one of its kind.
+  const active = methods.find((method) => method.id === authTab);
+  const activeKind = active?.kind;
+  const activeScheme = active?.scheme;
+  const activeDescription = activeScheme?.description;
 
   return (
     <div>
       {isMultiMethod && (
         <Tabs
-          tabs={filteredTabs}
+          tabs={methods}
           current={authTab}
           onChange={(id) =>
             setAuthTab((current) => (id && current === id ? null : id || null))
@@ -139,7 +193,7 @@ export default function Authorization({ securities }: Props) {
         />
       )}
       <div className="py-4 prose text-foreground-muted">
-        {authTab === "userPassword" && (
+        {activeKind === "userPassword" && (
           <AuthDescription description={activeDescription}>
             You have to{" "}
             <strong className="text-foreground-secondary">
@@ -148,7 +202,7 @@ export default function Authorization({ securities }: Props) {
             to connect to this server.
           </AuthDescription>
         )}
-        {authTab && ["scramSha256", "scramSha512", "plain"].includes(authTab) && (
+        {activeKind && ["scramSha256", "scramSha512", "plain"].includes(activeKind) && (
           <AuthDescription description={activeDescription}>
             You have to{" "}
             <strong className="text-foreground-secondary">
@@ -157,7 +211,7 @@ export default function Authorization({ securities }: Props) {
             to connect to this server.
           </AuthDescription>
         )}
-        {authTab === "gssapi" && (
+        {activeKind === "gssapi" && (
           <AuthDescription description={activeDescription}>
             You have to{" "}
             <strong className="text-foreground-secondary">
@@ -166,7 +220,7 @@ export default function Authorization({ securities }: Props) {
             to connect to this server.
           </AuthDescription>
         )}
-        {authTab === "X509" && (
+        {activeKind === "X509" && (
           <AuthDescription description={activeDescription}>
             You have to{" "}
             <strong className="text-foreground-secondary">
@@ -175,17 +229,17 @@ export default function Authorization({ securities }: Props) {
             from the service provider to connect to this server.
           </AuthDescription>
         )}
-        {authTab === "bearer" && (
-          <Bearer security={filteredType<SecuritySchemeData>("bearer")} />
+        {activeKind === "bearer" && (
+          <Bearer security={activeScheme!} />
         )}
-        {authTab === "apiKey" && (
-          <ApiKey security={filteredType<SecuritySchemeData>("apiKey")} />
+        {activeKind === "apiKey" && (
+          <ApiKey security={activeScheme!} />
         )}
-        {authTab === "openIdConnect" && (
-          <OpenID security={filteredType<SecuritySchemeData>("openIdConnect")} />
+        {activeKind === "openIdConnect" && (
+          <OpenID security={activeScheme!} />
         )}
-        {authTab === "oauth2" && (
-          <OAuth2 security={filteredType<SecuritySchemeData>("oauth2")} />
+        {activeKind === "oauth2" && (
+          <OAuth2 security={activeScheme!} />
         )}
       </div>
     </div>

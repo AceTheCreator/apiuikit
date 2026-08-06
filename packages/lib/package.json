@@ -37,9 +37,9 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.markdown.config.ts",
     "watch": "vite build --watch",
-    "prepublishOnly": "cp ../../README.md ./README.md && vite build",
+    "prepublishOnly": "cp ../../README.md ./README.md && npm run build",
     "typecheck": "node scripts/typecheck.mjs",
     "typecheck:strict": "tsc -b",
     "test": "vitest run",
