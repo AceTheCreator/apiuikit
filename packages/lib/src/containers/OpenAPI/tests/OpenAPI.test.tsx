@@ -53,10 +53,11 @@ describe("OpenAPI", () => {
     expect(detail.queryByText(/expects the following request/i)).not.toBeInTheDocument();
   });
 
-  it("renders a curl code sample with the resolved server URL for an endpoint's detail panel", () => {
+  it("renders a curl code sample with the resolved server URL for an endpoint's detail panel", async () => {
     render(<OpenAPI openapi={asDoc(exampleDoc)} />);
 
     fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
+    await screen.findByLabelText("Code sample language");
     const codeSamples = within(document.getElementById("endpoint-get /pets-code-samples")!);
     expect(codeSamples.getByText("https://api.example.com/v1/pets", { exact: false })).toBeInTheDocument();
   });

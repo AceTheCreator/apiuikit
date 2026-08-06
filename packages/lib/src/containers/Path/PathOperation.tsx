@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { SchemaTab } from "../../components/schema";
 import Markdown from "../../components/Markdown";
 import Tabs from "../../components/Tabs";
 import Authorization from "../../components/Authorization";
 import CollapsiblePanel from "../../components/CollapsiblePanel";
 import IconExternalLink from "../../icons/ExternalLink";
-import { CodeSamples } from "../../components/CodeSamples";
 import IconShieldCheck from "../../icons/ShieldCheck";
 import { PARAMETER_GROUPS } from "../../contants";
 import ResponseLinks from "./ResponseLinks";
@@ -21,6 +20,10 @@ import {
   OpenAPIResponseData,
   OpenAPISecuritySchemeData,
 } from "../../types/openapi";
+
+const CodeSamples = lazy(() =>
+  import("../../components/CodeSamples").then(({ CodeSamples }) => ({ default: CodeSamples })),
+);
 
 /** The parts of a response that can each have their own view: body schema, headers, and links. */
 type ResponseSection = "body" | "headers" | "links";
@@ -584,14 +587,16 @@ export default function PathOperation({
       {op.summary && <p className="text-sm text-foreground-secondary">{op.summary}</p>}
       {op.description && <Markdown>{op.description}</Markdown>}
 
-      <CodeSamples
-        method={method}
-        path={path}
-        parameters={parameters}
-        requestBody={op.requestBody}
-        security={security}
-        id={id}
-      />
+      <Suspense fallback={null}>
+        <CodeSamples
+          method={method}
+          path={path}
+          parameters={parameters}
+          requestBody={op.requestBody}
+          security={security}
+          id={id}
+        />
+      </Suspense>
 
       {security.length > 0 && (
         <div id={`${idPrefix}-${id}-security`}>
