@@ -25,7 +25,7 @@ export default function MarkdownExportMenu({ serialize, leftOffset }: MarkdownEx
   const [copied, setCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const { portalHost, rootElement, deref } = useAsyncAPIDocument();
+  const { portalHost, rootElement, deref, document: specDocument, markdownUrl } = useAsyncAPIDocument();
   const getMarkdown = () => serialize(deref);
 
   const toggleMode = useAutoHideOnScroll(rootElement, isOpen);
@@ -94,6 +94,21 @@ export default function MarkdownExportMenu({ serialize, leftOffset }: MarkdownEx
   };
 
   const handleViewAsMarkdown = () => {
+    // A consumer serving this document as Markdown at a real URL gets linked
+    // there instead: a blob: URL is revoked on reload, can't be shared, and
+    // no crawler or agent can ever fetch it.
+    const hostedUrl = markdownUrl?.({ kind: "document", document: specDocument });
+    if (hostedUrl) {
+      const hostedTab = window.open(hostedUrl, "_blank");
+      if (!hostedTab) {
+        console.error(
+          "[MarkdownExportMenu] window.open returned null — the popup was likely blocked by the browser's popup blocker.",
+        );
+      }
+      setIsOpen(false);
+      return;
+    }
+
     const markdown = getMarkdown();
     const blob = new Blob([markdown], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);

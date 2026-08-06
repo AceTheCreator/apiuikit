@@ -19,6 +19,16 @@ storybook-static
 # so the published npm package page isn't empty — not hand-maintained here.
 packages/lib/README.md
 
+# Generated from the repo's own markdown by packages/playground's
+# scripts/generateDocsAssets.mjs on every dev/build run, so the published
+# copies can't drift from the docs. Not hand-maintained here.
+packages/playground/public/llms.txt
+packages/playground/public/llms-full.txt
+packages/playground/public/_headers
+packages/playground/public/README.md
+packages/playground/public/docs/
+packages/playground/public/examples/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

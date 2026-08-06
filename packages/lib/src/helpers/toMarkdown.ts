@@ -21,8 +21,7 @@ import { Channel } from "../types/asyncapi/Channel";
 import { MessageObject } from "../types/asyncapi/MessageObject";
 import { Operation } from "../types/asyncapi/Operation";
 import { resolveSchemaInput } from "./schemaFormat";
-
-type Deref = (ref: string) => unknown;
+import { createDocumentDeref, type Deref } from "./jsonPointer";
 
 const heading = (level: number, text: string) => `${"#".repeat(level)} ${text}`;
 
@@ -246,7 +245,7 @@ function asyncApiHeaderToMarkdown(doc: AsyncAPIDocumentData): string[] {
   return sections;
 }
 
-export function asyncApiToMarkdown(doc: AsyncAPIDocumentData, deref: Deref): string {
+export function asyncApiToMarkdown(doc: AsyncAPIDocumentData, deref: Deref = createDocumentDeref(doc)): string {
   const sections: string[] = asyncApiHeaderToMarkdown(doc);
 
   if (doc.operations && Object.keys(doc.operations).length) {
@@ -333,7 +332,7 @@ function operationSectionToMarkdown(key: string, op: Operation, deref: Deref): s
  * doc info + servers, followed by that one operation's section (see
  * `operationSectionToMarkdown`). Used by the per-operation copy button, as
  * opposed to `asyncApiToMarkdown`'s whole-document export. */
-export function asyncApiOperationToMarkdown(doc: AsyncAPIDocumentData, key: string, deref: Deref): string {
+export function asyncApiOperationToMarkdown(doc: AsyncAPIDocumentData, key: string, deref: Deref = createDocumentDeref(doc)): string {
   const op = doc.operations?.[key];
   if (!op) return "";
   const sections = asyncApiHeaderToMarkdown(doc);
@@ -460,7 +459,7 @@ function endpointSectionToMarkdown(
   return endpointSections.join("\n\n");
 }
 
-export function openApiToMarkdown(doc: OpenAPIDocumentData, deref: Deref): string {
+export function openApiToMarkdown(doc: OpenAPIDocumentData, deref: Deref = createDocumentDeref(doc)): string {
   const sections: string[] = [];
 
   const { info } = doc;
@@ -509,7 +508,7 @@ export function openApiToMarkdown(doc: OpenAPIDocumentData, deref: Deref): strin
  * Endpoints side panel (Paths.tsx), as opposed to `openApiToMarkdown`'s
  * whole-document export.
  */
-export function openApiEndpointToMarkdown(doc: OpenAPIDocumentData, method: HttpMethod, path: string, deref: Deref): string {
+export function openApiEndpointToMarkdown(doc: OpenAPIDocumentData, method: HttpMethod, path: string, deref: Deref = createDocumentDeref(doc)): string {
   const op = doc.paths?.[path]?.[method];
   if (!op) return "";
 

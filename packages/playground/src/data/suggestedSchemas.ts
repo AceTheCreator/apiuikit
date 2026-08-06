@@ -1,6 +1,7 @@
 import avroStreetlightExample from '../examples/avro-streetlight.json'
 import protobufStreetlightExample from '../examples/protobuf-streetlight.json'
 import tortureExample from '../examples/torture.json'
+import openapiNetlifyExample from '../examples/openapi-netlify.json'
 import openapiPetstoreExample from '../examples/openapi-petstore.json'
 import openapiTortureExample from '../examples/openapi-torture.yaml?raw'
 
@@ -42,7 +43,24 @@ export interface SuggestedSchema {
   url: string
   /** Inline document text for bundled examples — loaded directly, no fetch. */
   content?: string
+  /**
+   * Site path serving this example rendered as Markdown, generated at build
+   * time by scripts/generateDocsAssets.mjs. Handed to the renderer's
+   * `config.markdown.url` so "View as Markdown" opens a real, shareable,
+   * crawlable URL instead of a throwaway `blob:` one.
+   *
+   * Only bundled JSON examples have one. Remote URLs aren't known at build
+   * time, and the YAML example is skipped, so both keep the blob fallback.
+   */
+  markdownPath?: string
 }
+
+export const DEFAULT_SUGGESTED_SCHEMA = {
+  label: 'Netlify API (OpenAPI)',
+  url: 'local://openapi-netlify.json',
+  content: JSON.stringify(openapiNetlifyExample, null, 2),
+  markdownPath: '/examples/openapi-netlify.md',
+} satisfies SuggestedSchema
 
 export const SUGGESTED_SCHEMAS: SuggestedSchema[] = [
   ...[...new Set(RAW_URLS)].map((url) => ({
@@ -53,21 +71,26 @@ export const SUGGESTED_SCHEMAS: SuggestedSchema[] = [
     label: 'Streetlights Avro',
     url: 'local://avro-streetlight.json',
     content: JSON.stringify(avroStreetlightExample, null, 2),
+    markdownPath: '/examples/avro-streetlight.md',
   },
   {
     label: 'Streetlights Protobuf',
     url: 'local://protobuf-streetlight.json',
     content: JSON.stringify(protobufStreetlightExample, null, 2),
+    markdownPath: '/examples/protobuf-streetlight.md',
   },
   {
     label: 'Unrealistic Torture Test',
     url: 'local://torture.json',
     content: JSON.stringify(tortureExample, null, 2),
+    markdownPath: '/examples/torture.md',
   },
+  DEFAULT_SUGGESTED_SCHEMA,
   {
     label: 'Petstore (OpenAPI)',
     url: 'local://openapi-petstore.json',
     content: JSON.stringify(openapiPetstoreExample, null, 2),
+    markdownPath: '/examples/openapi-petstore.md',
   },
   {
     label: 'Unrealistic Torture Test (OpenAPI)',

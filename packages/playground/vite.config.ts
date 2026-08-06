@@ -38,6 +38,9 @@ export default defineConfig(({ mode }) => {
         dts({ include: ['src'], exclude: ['src/main.tsx', 'src/App.tsx'], tsconfigPath: './tsconfig.json' }),
       ],
       build: {
+        // public/ holds the published docs surface (llms.txt, raw markdown) for
+        // the app build only — it has no business in the library output.
+        copyPublicDir: false,
         lib: {
           entry: 'src/index.ts',
           name: 'playground',

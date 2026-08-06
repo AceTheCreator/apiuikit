@@ -5,6 +5,18 @@ import react from '@vitejs/plugin-react'
 import dts from 'vite-plugin-dts'
 
 const isWatch = process.argv.includes('--watch')
+function browserNodePolyfills(): Plugin {
+  const browserUtilInspect = fileURLToPath(new URL('./src/shims/utilInspect.ts', import.meta.url))
+  return {
+    name: 'apiuikit-browser-node-polyfills',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      if (source === './util.inspect' && importer?.includes('/object-inspect/index.js')) {
+        return browserUtilInspect
+      }
+    },
+  }
+}
 
 // Touched after every completed (re)build. The playground dev server reloads
 // off this marker instead of dist/, which is emptied mid-rebuild — see
@@ -33,10 +45,21 @@ export default defineConfig({
     },
   },
   plugins: [
+    // object-inspect (pulled in by HTTPSnippet) probes Node's `util.inspect`.
+    // Replace that probe before it becomes a browser-external shim.
+    browserNodePolyfills(),
     react(),
     // .d.ts generation is slow and unnecessary for the playground watch loop;
     // one-shot `vite build` / publish still emits types.
-    ...(isWatch ? [] : [dts({ include: ['src'], tsconfigPath: './tsconfig.app.json' })]),
+    ...(isWatch
+      ? []
+      : [
+          dts({
+            include: ['src'],
+            exclude: ['src/**/*.test.*', 'src/**/tests/**', 'src/**/*.stories.*', 'src/stories/**'],
+            tsconfigPath: './tsconfig.app.json',
+          }),
+        ]),
     buildCompleteMarker(),
   ],
   build: {

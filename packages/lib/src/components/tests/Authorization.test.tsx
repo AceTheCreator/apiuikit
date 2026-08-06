@@ -49,6 +49,70 @@ describe("Authorization", () => {
     ).not.toBeInTheDocument();
   });
 
+  describe("multiple schemes of the same kind", () => {
+    // A server declaring two httpApiKey schemes (a JWT in Authorization, an
+    // API key in X-API-Key) used to collapse into one tab, which then took the
+    // single-method path and hid the tab bar entirely — so the second scheme
+    // was unreachable and the first rendered with no way to see it was one of
+    // two.
+    const twoApiKeys = [
+      { type: "httpApiKey", name: "Authorization", in: "header", description: "A JWT via the Authorization header." },
+      { type: "httpApiKey", name: "X-API-Key", in: "header", description: "An API key via the X-API-Key header." },
+    ] as never[];
+
+    it("renders one tab per declared scheme", () => {
+      render(<Authorization securities={twoApiKeys} />);
+
+      expect(screen.getAllByRole("tab")).toHaveLength(2);
+    });
+
+    it("disambiguates same-kind tabs by their parameter name", () => {
+      render(<Authorization securities={twoApiKeys} />);
+
+      expect(screen.getByRole("tab", { name: /API key \(Authorization\)/ })).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: /API key \(X-API-Key\)/ })).toBeInTheDocument();
+    });
+
+    it("shows the selected scheme's own content, not the first of its kind", () => {
+      render(<Authorization securities={twoApiKeys} />);
+
+      fireEvent.click(screen.getByRole("tab", { name: /API key \(X-API-Key\)/ }));
+      expect(screen.getByText(/An API key via the X-API-Key header/)).toBeInTheDocument();
+      expect(screen.queryByText(/A JWT via the Authorization header/)).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("tab", { name: /API key \(Authorization\)/ }));
+      expect(screen.getByText(/A JWT via the Authorization header/)).toBeInTheDocument();
+      expect(screen.queryByText(/An API key via the X-API-Key header/)).not.toBeInTheDocument();
+    });
+
+    it("tells apart SASL schemes, which share one label, by their type", () => {
+      render(
+        <Authorization securities={[{ type: "plain" } as never, { type: "scramSha256" } as never]} />,
+      );
+
+      expect(screen.getByRole("tab", { name: /SASL \(plain\)/ })).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: /SASL \(scramSha256\)/ })).toBeInTheDocument();
+    });
+
+    it("numbers tabs that have nothing else to tell them apart", () => {
+      render(
+        <Authorization securities={[{ type: "httpApiKey" } as never, { type: "httpApiKey" } as never]} />,
+      );
+
+      const tabs = screen.getAllByRole("tab");
+      expect(tabs).toHaveLength(2);
+      expect(tabs[0].textContent).not.toBe(tabs[1].textContent);
+    });
+
+    it("leaves a single scheme's label unsuffixed", () => {
+      render(<Authorization securities={[{ type: "httpApiKey", name: "X-API-Key", in: "header" } as never]} />);
+
+      // Single method: no tab bar at all, and no "(X-API-Key)" suffix anywhere.
+      expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+      expect(screen.getByText(/header parameter/i)).toBeInTheDocument();
+    });
+  });
+
   describe("OpenAPI security schemes", () => {
     it("routes an http/bearer scheme to a Bearer Token tab", () => {
       render(

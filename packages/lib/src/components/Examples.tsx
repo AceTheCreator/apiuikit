@@ -1,5 +1,4 @@
 import {useEffect, useState} from "react";
-import {generate} from "json-schema-faker";
 import { CodeBlock } from "./CodeBlock";
 import { useAsyncAPIDocument } from "../contexts";
 import { extendExampleSchema, JsonSchema } from "../helpers/exampleSchema";
@@ -24,18 +23,17 @@ export function Examples ({schema, providedExample}: ExamplesProps) {
         }
 
         let cancelled = false;
-        // Fail soft: circular or otherwise ungenerable schemas leave the tab
-        // empty rather than crashing the render (generate can throw
-        // synchronously or reject).
-        try {
-            generate(extendExampleSchema(schema, deref), { seed: 42, useExamplesValue: true, optionalsProbability: 1 })
+        // Load the relatively large faker only when the Example tab actually
+        // needs a synthetic value. Author-provided examples need no download.
+        import("json-schema-faker")
+            .then(({ generate }) => generate(
+                extendExampleSchema(schema, deref),
+                { seed: 42, useExamplesValue: true, optionalsProbability: 1 },
+            ))
                 .then((result) => {
                     if (!cancelled) setValue(result);
                 })
                 .catch(() => undefined);
-        } catch {
-            // leave value as null
-        }
         return () => {
             cancelled = true;
         };

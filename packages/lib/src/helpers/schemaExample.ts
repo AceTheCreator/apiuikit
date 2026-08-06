@@ -1,5 +1,3 @@
-import { generate } from "json-schema-faker";
-
 export type JsonSchema = Record<string, unknown>;
 
 export function extendExampleSchema(schema: JsonSchema, active = new Set<object>()): JsonSchema {
@@ -35,6 +33,7 @@ export function extendExampleSchema(schema: JsonSchema, active = new Set<object>
  */
 export async function generateSchemaExample(schema: JsonSchema): Promise<unknown> {
   try {
+    const { generate } = await import("json-schema-faker");
     return await generate(extendExampleSchema(schema), {
       seed: 42,
       useExamplesValue: true,

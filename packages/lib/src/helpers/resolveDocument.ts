@@ -1,4 +1,5 @@
 import { hasRef } from "../utils/hasRef";
+import { resolveLocalPointer } from "./jsonPointer";
 
 /**
  * Document normalization: every entry path (the without-parser components,
@@ -84,20 +85,6 @@ const needsNormalization = (
   }
 };
 
-/** Walks a JSON Pointer ("#/components/…") against the original document. */
-const lookupPointer = (root: unknown, refPath: string): unknown => {
-  if (!refPath.startsWith("#")) return undefined; // external refs are out of scope for now
-  const parts = refPath.replace(/^#\//, "").split("/").filter(Boolean);
-  let current: unknown = root;
-  for (const part of parts) {
-    if (!isRecord(current) && !Array.isArray(current)) return undefined;
-    const decoded = part.replace(/~1/g, "/").replace(/~0/g, "~");
-    current = (current as Record<string, unknown>)[decoded];
-    if (current == null) return undefined;
-  }
-  return current;
-};
-
 /** Encodes one path segment for a JSON Pointer, per RFC 6901 (~ first, then /). */
 const encodePointerSegment = (segment: string) =>
   segment.replace(/~/g, "~0").replace(/\//g, "~1");
@@ -145,7 +132,7 @@ export function resolveDocument<T>(doc: T): T {
     }
 
     if (hasRef(value)) {
-      const target = lookupPointer(doc, value.$ref);
+      const target = resolveLocalPointer(doc, value.$ref);
       const targetIsContainer = isRecord(target) || Array.isArray(target);
       if (targetIsContainer && !active.has(target)) {
         const resolved = walk(target, path);

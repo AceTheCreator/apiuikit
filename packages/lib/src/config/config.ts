@@ -1,12 +1,67 @@
+import type { AsyncAPIDocumentData } from "../types/schema";
+import type { HttpMethod, OpenAPIDocumentData } from "../types/openapi";
+
 export interface ConfigInterface {
   show?: ShowConfig;
   expand?: ExpandConfig;
   sidebar?: SideBarConfig;
   theme?: ThemeConfig;
+  markdown?: MarkdownConfig;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parserOptions?: any;
   requestLabel?: string;
   replyLabel?: string;
+}
+
+type MarkdownDocument = AsyncAPIDocumentData | OpenAPIDocumentData;
+
+/** What "View as Markdown" is being asked to open. Operation targets are
+ * discriminated by their spec-specific address, preventing invalid
+ * method/path/id combinations for TypeScript consumers. */
+export type MarkdownTarget =
+  | {
+      kind: "document";
+      /** The resolved document currently being rendered. */
+      document: MarkdownDocument;
+      method?: never;
+      path?: never;
+      id?: never;
+    }
+  | {
+      kind: "operation";
+      document: OpenAPIDocumentData;
+      /** OpenAPI endpoint method, e.g. `"get"`. */
+      method: HttpMethod;
+      /** OpenAPI endpoint path, e.g. `"/pets/{petId}"`. */
+      path: string;
+      id?: never;
+    }
+  | {
+      kind: "operation";
+      document: AsyncAPIDocumentData;
+      /** AsyncAPI operation key, e.g. `"sendLightMeasurement"`. */
+      id: string;
+      method?: never;
+      path?: never;
+    };
+
+/**
+ * Returns the URL serving `target` as Markdown, or `null`/`undefined` for
+ * targets you don't serve, which falls back to the generated `blob:` URL.
+ */
+export type MarkdownUrlResolver = (target: MarkdownTarget) => string | null | undefined;
+
+export interface MarkdownConfig {
+  /**
+   * A hosted URL serving this document as Markdown. When set, "View as
+   * Markdown" opens it instead of generating a throwaway `blob:` URL, which
+   * is ephemeral, unshareable, and invisible to crawlers.
+   *
+   * Only you can serve such a URL, since the library has no server and
+   * doesn't own your routes. Pass a function to decide per target, returning
+   * `null` for anything you don't serve.
+   */
+  url?: string | MarkdownUrlResolver;
 }
 
 export interface ShowConfig {
