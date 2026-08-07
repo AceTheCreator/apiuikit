@@ -26,8 +26,16 @@ export const SidePanel = forwardRef<HTMLDivElement, ISidePanelProps>(function Si
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  const translateClosed = side === "right" ? "translate-x-full" : "-translate-x-full";
   const panelPosition = side === "right" ? "right-0" : "left-0";
+  // Uses an inline `transform` instead of Tailwind's `translate-x-full` utility: that
+  // utility emits the standalone CSS `translate` property, whose value depends on the
+  // `--tw-translate-y` custom property being registered (via `@property`) with a zero
+  // initial value. When that registration doesn't take effect in the consuming page
+  // (e.g. `@property` stripped by a CSS processor, or shadowed by another stylesheet),
+  // `translate` fails to resolve and the panel never actually moves off-screen, leaving
+  // its `shadow-xl` box-shadow visible at rest. `transform: translateX(...)` has no such
+  // dependency and is covered by `.transition-transform`'s `transition-property` list.
+  const closedTransform = side === "right" ? "translateX(100%)" : "translateX(-100%)";
 
   const { portalHost, rootElement } = useAsyncAPIDocument();
 
@@ -67,9 +75,8 @@ export const SidePanel = forwardRef<HTMLDivElement, ISidePanelProps>(function Si
 
       <div
         ref={ref}
-        className={`absolute top-0 ${panelPosition} h-full ${width} max-w-[100cqw] bg-background shadow-xl flex flex-col transition-transform duration-300 ease-in-out ${
-          isOpen ? "translate-x-0" : translateClosed
-        }`}
+        className={`absolute top-0 ${panelPosition} h-full ${width} max-w-[100cqw] bg-background shadow-xl flex flex-col transition-transform duration-300 ease-in-out`}
+        style={{ transform: isOpen ? "translateX(0)" : closedTransform }}
       >
         {/* Header */}
         {title && (
