@@ -1,5 +1,11 @@
 # apiuikit
 
+## 1.3.0
+
+### Minor Changes
+
+- 463d671: Fix SidePanel not sliding fully off-screen when closed
+
 ## 1.2.0
 
 ### Minor Changes
