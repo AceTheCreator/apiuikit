@@ -21,6 +21,7 @@ const withPortalHost = (Story: ComponentType) => {
         // Tooltip portals need a real host; the canvas body works here.
         portalHost: typeof document !== "undefined" ? document.body : null,
         rootElement: null,
+        sidePanelContainment: "component",
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
         showCodeSamples: true,

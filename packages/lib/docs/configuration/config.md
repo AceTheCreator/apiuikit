@@ -27,6 +27,9 @@ interface ConfigInterface {
   sidebar?: {
     useChannelAddressAsIdentifier?: boolean;
   };
+  sidePanel?: {
+    containment?: "component" | "viewport";
+  };
   theme?: {
     colors?: ThemeColors;
     light?: ThemeModeColors;
@@ -75,6 +78,12 @@ interface ThemeModeColors {
   This field contains configuration responsible for the behaviour of the sidebar.
 
   `useChannelAddressAsIdentifier`: when `true`, operation items in the sidebar display the channel address instead of the operation key. This field is set to `false` by default.
+
+- **sidePanel?: Partial\<SidePanelConfig\>**
+
+  Controls where SidePanel overlays (opened from Operations / endpoints) are clipped.
+
+  `containment`: `"component"` (default) clips the overlay to the widget's root element — useful for embeds and standalone sections. `"viewport"` covers the full browser viewport edge-to-edge.
 
 - **expand?: Partial\<ExpandConfig\>**
 

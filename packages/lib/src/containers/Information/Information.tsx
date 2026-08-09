@@ -1,10 +1,20 @@
 import React from "react";
+import type { SectionLayout } from "../../components/Section";
 import InformationSection from "./InformationSection";
 import { Info as AsyncAPIMetadata } from "../../types/asyncapi/Info";
 
-const Information: React.FunctionComponent<AsyncAPIMetadata> = (info) => {
-  const { title, description, license, externalDocs, contact, tags } = info;
+type InformationProps = AsyncAPIMetadata & { layout?: SectionLayout };
 
+const Information: React.FunctionComponent<InformationProps> = ({
+  title,
+  description,
+  license,
+  externalDocs,
+  contact,
+  tags,
+  layout,
+  ...extensionsSource
+}) => {
   return (
     <InformationSection
       title={title}
@@ -16,7 +26,8 @@ const Information: React.FunctionComponent<AsyncAPIMetadata> = (info) => {
       externalDocs={externalDocs as { description?: string; url?: string } | undefined}
       contact={contact}
       tags={tags}
-      extensionsSource={info}
+      extensionsSource={extensionsSource}
+      layout={layout}
     />
   );
 };

@@ -1,5 +1,5 @@
 import { ChannelAddress } from "../../components/ChannelAddress";
-import Section from "../../components/Section";
+import Section, { type SectionLayout } from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
 import CopyMarkdownButton from "../../components/CopyMarkdownButton";
 import MethodBadge from "../../components/MethodBadge";
@@ -19,9 +19,10 @@ interface OperationsProps {
   /** Which collapsed section of the selected operation search navigated to. */
   focusSection?: string | null;
   showCopyMarkdown?: boolean;
+  layout?: SectionLayout;
 }
 
-export default function Operations({ operations, selectedKey = null, onSelectKey, focusSection = null, showCopyMarkdown }: OperationsProps) {
+export default function Operations({ operations, selectedKey = null, onSelectKey, focusSection = null, showCopyMarkdown, layout }: OperationsProps) {
   const setSelectedKey = (key: string | null) => onSelectKey?.(key);
   const { document, deref } = useAsyncAPIDocument();
   const doc = document as AsyncAPIDocumentData;
@@ -117,6 +118,7 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
           title={Operation_TEXT}
           content={content}
           stickySideContent={false}
+          layout={layout}
         />
       </div>
 
