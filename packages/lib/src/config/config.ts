@@ -80,7 +80,7 @@ export interface ShowConfig {
   webhooks?: boolean;
   /** Whether to render known x-* spec extensions (see the `x-tensions` catalog). Defaults to true. */
   extensions?: boolean;
-  /** OpenAPI only: per-operation cURL/JavaScript/Python request examples. Defaults to true. */
+  // Whether to render per-operation / per-endpoint code samples
   codeSamples?: boolean;
   /** The "Copy for LLM" / "View as Markdown" floating button. Defaults to true. */
   copyMarkdown?: boolean;

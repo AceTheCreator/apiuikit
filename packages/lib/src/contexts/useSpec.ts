@@ -18,7 +18,7 @@ interface DocumentContextBase {
   depthColors: string[];
   /** Whether to render known x-* spec extensions (see the `x-tensions` catalog). Defaults to true. */
   showExtensions: boolean;
-  /** OpenAPI only: whether to render per-operation code samples (cURL/JS/Python). Defaults to true. */
+  /** Whether to render per-operation / per-endpoint code samples
   showCodeSamples: boolean;
   /** Resolves the hosted URL serving a target as Markdown, if the consumer serves one (config.markdown.url). Undefined means "View as Markdown" falls back to a generated `blob:` URL. */
   markdownUrl?: MarkdownUrlResolver;
