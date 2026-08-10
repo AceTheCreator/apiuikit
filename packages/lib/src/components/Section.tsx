@@ -54,9 +54,7 @@ export default function Section({
       <section
         className={`border-border text-lg flex gap-6 @lg:gap-0 ${
           stacked
-            ? hasSideContent && reverseLayoutOnMobile
-              ? "flex-col-reverse"
-              : "flex-col"
+            ? "flex-col"
             : hasSideContent && reverseLayoutOnMobile
               ? "flex-col-reverse @lg:flex-row"
               : "flex-col @lg:flex-row"

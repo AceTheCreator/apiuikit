@@ -12,7 +12,7 @@ interface DocumentContextBase {
   portalHost: HTMLElement | null;
   /** The Layout component's own root element, used to scope viewport-fixed overlays (e.g. SidePanel) to where the <AsyncAPI> or <OpenAPI> widget is actually embedded, rather than the full browser viewport. */
   rootElement: HTMLElement | null;
-  /** Where SidePanel overlays are clipped. Defaults to `"component"`. */
+  /** Where SidePanel overlays are clipped. Defaults to `"viewport"`. */
   sidePanelContainment: SidePanelContainment;
   /** Whether schema tree nodes start expanded by default. Defaults to false. */
   defaultSchemaExpanded?: boolean;

@@ -19,8 +19,8 @@ export type SidePanelContainment = "component" | "viewport";
 
 export interface SidePanelConfig {
   /**
-   * `"component"` (default) — overlay is clipped to the widget's root element.
-   * `"viewport"` — overlay covers the full browser viewport edge-to-edge.
+   * `"viewport"` (default) — overlay covers the full browser viewport edge-to-edge.
+   * `"component"` — overlay is clipped to the widget's root element.
    */
   containment?: SidePanelContainment;
 }

@@ -23,17 +23,21 @@ describe("Section layout", () => {
   });
 
   it("stacks side content below main content when layout is stacked", () => {
-    render(
+    const { container } = render(
       <Section
         content={<div>main</div>}
         sideContent={<div>side</div>}
         stickySideContent={false}
+        reverseLayoutOnMobile={true}
         layout="stacked"
       />,
     );
     expect(screen.queryByTestId("section-side-column")).not.toBeInTheDocument();
     expect(screen.getByText("main")).toBeInTheDocument();
     expect(screen.getByText("side")).toBeInTheDocument();
+    const section = container.querySelector("section")!;
+    expect(section.firstElementChild).toContainElement(screen.getByText("main"));
+    expect(section.lastElementChild).toContainElement(screen.getByText("side"));
   });
 
   it("keeps the reserved right column in columns mode even when side content is present", () => {

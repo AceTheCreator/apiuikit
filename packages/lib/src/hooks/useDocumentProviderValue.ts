@@ -36,7 +36,7 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
   const showExtensions = config.show?.extensions !== false;
   const showCodeSamples = config.show?.codeSamples !== false;
   const sidePanelContainment: SidePanelContainment =
-    config.sidePanel?.containment ?? "component";
+    config.sidePanel?.containment ?? "viewport";
 
   // Both accepted forms collapse to a resolver here so consumers have one
   // shape to call. A bare string applies to every target; a function decides

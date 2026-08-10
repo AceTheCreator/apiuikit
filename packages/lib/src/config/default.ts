@@ -55,6 +55,6 @@ export const defaultConfig: ConfigInterface = {
     useChannelAddressAsIdentifier: true,
   },
   sidePanel: {
-    containment: "component",
+    containment: "viewport",
   },
 };

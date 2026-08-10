@@ -83,7 +83,7 @@ interface ThemeModeColors {
 
   Controls where SidePanel overlays (opened from Operations / endpoints) are clipped.
 
-  `containment`: `"component"` (default) clips the overlay to the widget's root element — useful for embeds and standalone sections. `"viewport"` covers the full browser viewport edge-to-edge.
+  `containment`: `"viewport"` (default) covers the full browser viewport edge-to-edge, preserving the existing behavior. `"component"` clips the overlay to the widget's root element — useful for contained embeds and standalone sections.
 
 - **expand?: Partial\<ExpandConfig\>**
 
