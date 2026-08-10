@@ -5,12 +5,24 @@ export interface ConfigInterface {
   show?: ShowConfig;
   expand?: ExpandConfig;
   sidebar?: SideBarConfig;
+  sidePanel?: SidePanelConfig;
   theme?: ThemeConfig;
   markdown?: MarkdownConfig;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parserOptions?: any;
   requestLabel?: string;
   replyLabel?: string;
+}
+
+/** Where SidePanel overlays are clipped when opened from Operations / endpoints. */
+export type SidePanelContainment = "component" | "viewport";
+
+export interface SidePanelConfig {
+  /**
+   * `"viewport"` (default) — overlay covers the full browser viewport edge-to-edge.
+   * `"component"` — overlay is clipped to the widget's root element.
+   */
+  containment?: SidePanelContainment;
 }
 
 type MarkdownDocument = AsyncAPIDocumentData | OpenAPIDocumentData;

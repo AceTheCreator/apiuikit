@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Section from "../../components/Section";
+import Section, { type SectionLayout } from "../../components/Section";
 import VerticalNavigation from "../../components/VerticalNavigation";
 import { SERVER_TEXT } from "../../contants";
 import { OpenAPIServerData } from "../../types/openapi";
@@ -9,6 +9,7 @@ interface OpenAPIServersProps {
   servers: OpenAPIServerData[];
   selectedServer?: string | null;
   onSelectServer?: (serverKey: string) => void;
+  layout?: SectionLayout;
 }
 
 const keyForIndex = (index: number) => `server-${index}`;
@@ -19,7 +20,7 @@ const indexForKey = (key: string) => Number(key.slice("server-".length));
  * map — server keys here are stable positional indices ("server-0", ...),
  * displayed via each server's own `url`.
  */
-export default function OpenAPIServers({ servers, selectedServer, onSelectServer }: OpenAPIServersProps) {
+export default function OpenAPIServers({ servers, selectedServer, onSelectServer, layout }: OpenAPIServersProps) {
   const serverNames = servers.map((server, index) => server.url || keyForIndex(index));
   const [selected, setSelected] = useState<string | undefined>(undefined);
 
@@ -53,6 +54,7 @@ export default function OpenAPIServers({ servers, selectedServer, onSelectServer
         }
         stickySideContent={true}
         reverseLayoutOnMobile={true}
+        layout={layout}
       />
     </div>
   );

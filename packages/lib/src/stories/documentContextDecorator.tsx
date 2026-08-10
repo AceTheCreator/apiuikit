@@ -59,6 +59,7 @@ export function buildDocumentContext(rawDoc: unknown) {
           deref,
           portalHost,
           rootElement,
+          sidePanelContainment: "component",
           depthColors: DEFAULT_DEPTH_COLORS,
           showExtensions: true,
           showCodeSamples: true,

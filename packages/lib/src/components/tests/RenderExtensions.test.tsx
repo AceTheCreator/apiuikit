@@ -14,6 +14,7 @@ function withContext(showExtensions: boolean, children: React.ReactNode) {
         deref: () => undefined,
         portalHost: null,
         rootElement: null,
+        sidePanelContainment: "component",
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions,
         showCodeSamples: true,

@@ -97,7 +97,9 @@ import { OpenAPIEndpoints } from "apiuikit";
 import doc from "./openapi.json";
 
 export default function EndpointsPage() {
-  return <OpenAPIEndpoints document={doc} />;
+  // Prefer layout="stacked" when embedding a section alone — same prop as
+  // AsyncAPI sections (see [sections](./sections.md#props)).
+  return <OpenAPIEndpoints document={doc} layout="stacked" />;
 }
 ```
 

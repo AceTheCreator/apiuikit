@@ -16,6 +16,14 @@ const meta = {
   component: Operations,
   decorators: [centeredDecorator],
   tags: ["autodocs"],
+  argTypes: {
+    layout: {
+      control: "radio",
+      options: ["columns", "stacked"],
+      description:
+        '`"columns"` (default) reserves a right gutter for alignment with Info/Servers. `"stacked"` drops it for full-width standalone use.',
+    },
+  },
   // The table + detail side panel don't render correctly embedded inline on
   // the docs page, see noCanvasDocsPage.
   parameters: { docs: { page: NoCanvasDocsPage } },
@@ -24,6 +32,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** Default: two-column geometry with an empty reserved right gutter. */
 export const Default: Story = {
-  args: { document },
+  args: { document, layout: "columns" },
+};
+
+/** Single column — preferred when embedding Operations alone (no empty side space). */
+export const Stacked: Story = {
+  args: { document, layout: "stacked" },
 };

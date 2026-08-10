@@ -19,6 +19,7 @@ function makeProviders(markdownUrl?: MarkdownUrlResolver) {
           deref: () => undefined,
           portalHost: document.body,
           rootElement: null,
+          sidePanelContainment: "component",
           depthColors: DEFAULT_DEPTH_COLORS,
           showExtensions: true,
           showCodeSamples: true,

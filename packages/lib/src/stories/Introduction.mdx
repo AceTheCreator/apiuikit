@@ -30,10 +30,14 @@ a single section into a page you're already building.
 ```tsx
 import { Operations } from "apiuikit";
 
-<Operations document={document} />
+<Operations document={document} layout="stacked" />
 ```
 
 `Servers`, `Operations`, `Messages`, `Schemas`, and `Info` all work this way.
+Pass `layout="stacked"` when embedding a section alone so it fills the
+container width and doesn't reserve the empty right column used for
+alignment in the full widget. Info and Servers still fill that column with
+metadata / server nav unless you stack them too.
 
 ### 3. Several sections, composed
 
@@ -59,10 +63,11 @@ import { AsyncAPIProvider, Servers, Operations, Schemas } from "apiuikit";
 The sidebar is split into two groups:
 
 - **Components**: `AsyncAPI`, `AsyncAPIRenderer`, `Servers`, `Operations`,
-  `Messages`, `SchemaTree`, and `SchemaTab` each have stories here.
-  `AsyncAPIProvider`, `Schemas`, and `Info` are exported the same way but don't
-  have dedicated stories yet. Everything exported from `apiuikit` is safe to
-  import and depend on directly.
+  `Messages`, `Schemas`, `Info`, `OpenAPIEndpoints`, `OpenAPIServers`,
+  `OpenAPIInfo`, `OpenAPISchemas`, `OpenAPIWebhooks`, `SchemaTree`, and
+  `SchemaTab` each have stories here. Layout variants (`columns` / `stacked`)
+  are under each modular section. Everything exported from `apiuikit` is safe
+  to import and depend on directly.
 - **Internal**: the building blocks these are made of (`Authorization`,
   `Bindings`, `ChannelAddress`, `Tabs`, and others). They're shown here for
   development and visual regression testing, but **aren't exported** from the

@@ -1,4 +1,4 @@
-import Section from "../../components/Section";
+import Section, { type SectionLayout } from "../../components/Section";
 import { Server as ServerInterface } from "../../types/asyncapi/Server";
 import VerticalNavigation from "../../components/VerticalNavigation";
 import { useState } from "react";
@@ -11,9 +11,10 @@ interface ServersProps {
   onSelectServer?: (serverName: string) => void;
   /** Which collapsed section of the selected server search navigated to. */
   focusSection?: string | null;
+  layout?: SectionLayout;
 }
 
-export default function Servers({ servers, selectedServer, onSelectServer, focusSection = null }: ServersProps) {
+export default function Servers({ servers, selectedServer, onSelectServer, focusSection = null, layout }: ServersProps) {
   const serverNames = Object.keys(servers);
   const [selected, setSelected] = useState<string | undefined>(undefined);
   // Prefers the caller-controlled selection (e.g. from search); falls back to
@@ -49,6 +50,7 @@ export default function Servers({ servers, selectedServer, onSelectServer, focus
         }
         stickySideContent={true}
         reverseLayoutOnMobile={true}
+        layout={layout}
       />
     </div>
   );
