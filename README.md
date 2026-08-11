@@ -1,6 +1,6 @@
 # apiuikit
 
-[![npm version](https://img.shields.io/npm/v/apiuikit.svg)](https://www.npmjs.com/package/apiuikit)
+[![npm version](https://img.shields.io/npm/v/apiuikit.svg?label=apiuikit)](https://www.npmjs.com/package/apiuikit)
 [![npm downloads](https://img.shields.io/npm/dm/apiuikit.svg)](https://www.npmjs.com/package/apiuikit)
 [![npm version](https://img.shields.io/npm/v/@apiuikit/web-component.svg?label=%40apiuikit%2Fweb-component)](https://www.npmjs.com/package/@apiuikit/web-component)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)

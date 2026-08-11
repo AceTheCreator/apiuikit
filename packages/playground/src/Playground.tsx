@@ -1,7 +1,7 @@
 import { AsyncAPIRenderer, OpenAPIRenderer, defaultConfig } from 'apiuikit'
 import type { ConfigInterface } from 'apiuikit'
 import 'apiuikit/style.css'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DiagnosticsPanel } from './components/DiagnosticsPanel'
 import type { ParserDiagnostic } from './components/DiagnosticsPanel'
 import { EditorPane } from './components/EditorPane'
@@ -21,12 +21,22 @@ import type { UiMode } from './theme'
 import { netlifyTheme } from './themes/netlify'
 
 const DEFAULT_DOC_TEXT = DEFAULT_SUGGESTED_SCHEMA.content
+const UI_MODE_STORAGE_KEY = 'apiuikit-playground-ui-mode'
 const MARKDOWN_CANDIDATES_BY_LENGTH = new Map<number, Array<{ content: string; path: string }>>()
 for (const { content, markdownPath } of SUGGESTED_SCHEMAS) {
   if (content === undefined || markdownPath === undefined) continue
   const candidates = MARKDOWN_CANDIDATES_BY_LENGTH.get(content.length) ?? []
   candidates.push({ content, path: markdownPath })
   MARKDOWN_CANDIDATES_BY_LENGTH.set(content.length, candidates)
+}
+
+function readStoredUiMode(): UiMode | null {
+  try {
+    const stored = localStorage.getItem(UI_MODE_STORAGE_KEY)
+    return stored === 'light' || stored === 'dark' ? stored : null
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -59,9 +69,17 @@ export function Playground({
   height = '100%',
 }: PlaygroundProps) {
   const [activeTab, setActiveTab] = useState<EditorTab>('doc')
-  const [uiMode, setUiMode] = useState<UiMode>(defaultUiMode)
+  const [uiMode, setUiMode] = useState<UiMode>(() => readStoredUiMode() ?? defaultUiMode)
   const [editorExpanded, setEditorExpanded] = useState(false)
   const palette = UI_PALETTES[uiMode]
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(UI_MODE_STORAGE_KEY, uiMode)
+    } catch {
+      // Ignore quota / private-mode failures — theme still works in-session.
+    }
+  }, [uiMode])
 
   // AsyncAPIRenderer parses `raw` itself via the real @asyncapi/parser and reports
   // real spec diagnostics — no need for our own JSON.parse validation on this side.
