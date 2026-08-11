@@ -67,6 +67,7 @@ function withContext(document: unknown, showCodeSamples: boolean, children: Reac
         deref: () => undefined,
         portalHost: null,
         rootElement: null,
+        sidePanelContainment: "component",
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
         showCodeSamples,

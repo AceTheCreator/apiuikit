@@ -13,16 +13,20 @@ import { Operations } from "apiuikit";
 import doc from "./asyncapi.json";
 
 export default function OperationsPage() {
-  return <Operations document={doc} />;
+  // Prefer layout="stacked" when embedding a section alone so it fills the
+  // container width instead of reserving the empty right gutter used for
+  // alignment in the full widget.
+  return <Operations document={doc} layout="stacked" />;
 }
 ```
 
 ### Props
 
-| Prop       | Type                    | Required | Description                                                  |
-|------------|-------------------------|----------|----------------------------------------------------------------|
-| `document` | `AsyncAPIDocumentData`  | Yes*     | A pre-resolved AsyncAPI 3.0 document. *Not required when rendered inside `AsyncAPIProvider` (see below). |
-| `config`   | `ConfigInterface`       | No       | UI configuration. Only applied when the section sets up its own context (standalone); ignored when composed under a provider. |
+| Prop       | Type                         | Required | Description                                                  |
+|------------|------------------------------|----------|----------------------------------------------------------------|
+| `document` | `AsyncAPIDocumentData`       | Yes*     | A pre-resolved AsyncAPI 3.0 document. *Not required when rendered inside `AsyncAPIProvider` (see below). |
+| `config`   | `ConfigInterface`            | No       | UI configuration. Only applied when the section sets up its own context (standalone); ignored when composed under a provider. |
+| `layout`   | `"columns"` \| `"stacked"`   | No       | Column geometry. `"columns"` (default) keeps the reserved right gutter so sections align with Info/Servers in the full widget. `"stacked"` uses the full container width (no prose max-width), drops empty side space, and stacks Info/Servers side content below the main content. Prefer `"stacked"` when embedding a section alone. |
 
 ## Composing several sections
 

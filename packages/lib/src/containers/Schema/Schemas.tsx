@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import SchemaTree from "../../components/schema/SchemaTree";
-import Section from "../../components/Section";
+import Section, { type SectionLayout } from "../../components/Section";
 import { SchemaNodeData } from "../../types/schema";
 import {
   resolveSchemaInput,
@@ -17,9 +17,10 @@ interface SchemasProps {
   selectedKey?: string | null;
   /** The precisely-matched nested node search navigated to, if any — see Layout.tsx. */
   focusTarget?: { tokens: string[]; id: string } | null;
+  layout?: SectionLayout;
 }
 
-export default function Schemas({ schemas, selectedKey, focusTarget }: SchemasProps) {
+export default function Schemas({ schemas, selectedKey, focusTarget, layout }: SchemasProps) {
   const { deref } = useAsyncAPIDocument();
   // Re-resolves once the (lazy-loaded) Protobuf converter becomes available —
   // see lazyProtoToJsonSchema.ts.
@@ -136,7 +137,7 @@ export default function Schemas({ schemas, selectedKey, focusTarget }: SchemasPr
 
   return (
     <div className="flex justify-center w-full">
-      <Section content={content} stickySideContent={false} />
+      <Section content={content} stickySideContent={false} layout={layout} />
     </div>
   );
 }

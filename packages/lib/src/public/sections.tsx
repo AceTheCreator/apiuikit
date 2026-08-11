@@ -11,6 +11,7 @@ import OperationsContainer from "../containers/Operation/Operations";
 import MessagesContainer from "../containers/Messages/Messages";
 import SchemasContainer from "../containers/Schema/Schemas";
 import Information from "../containers/Information/Information";
+import type { SectionLayout } from "../components/Section";
 import { createSectionRoot } from "./createSectionRoot";
 
 /**
@@ -38,6 +39,12 @@ export interface SectionProps {
   /** Only applied when this section sets up its own context (standalone). When
    * composed under a provider, config comes from that provider. */
   config?: ConfigInterface;
+  /**
+   * `"columns"` (default) — reserved right gutter at large breakpoints.
+   * `"stacked"` — full-width single column; no prose max-width and no empty
+   * side space. For Info/Servers, side content stacks below the main content.
+   */
+  layout?: SectionLayout;
 }
 
 /**
@@ -85,23 +92,23 @@ function useDocument(): AsyncAPIDocumentData {
 
 // --- Servers ---------------------------------------------------------------
 
-function ServersBody() {
+function ServersBody({ layout }: { layout?: SectionLayout }) {
   const document = useDocument();
   if (!document.servers || Object.keys(document.servers).length === 0) return null;
-  return <ServersContainer servers={document.servers} />;
+  return <ServersContainer servers={document.servers} layout={layout} />;
 }
 
-export function Servers(props: SectionProps) {
+export function Servers({ layout, ...providerProps }: SectionProps) {
   return (
-    <SectionRoot {...props}>
-      <ServersBody />
+    <SectionRoot {...providerProps}>
+      <ServersBody layout={layout} />
     </SectionRoot>
   );
 }
 
 // --- Operations ------------------------------------------------------------
 
-function OperationsBody() {
+function OperationsBody({ layout }: { layout?: SectionLayout }) {
   const document = useDocument();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   return (
@@ -109,64 +116,66 @@ function OperationsBody() {
       operations={document.operations ?? {}}
       selectedKey={selectedKey}
       onSelectKey={setSelectedKey}
+      layout={layout}
     />
   );
 }
 
-export function Operations(props: SectionProps) {
+export function Operations({ layout, ...providerProps }: SectionProps) {
   return (
-    <SectionRoot {...props}>
-      <OperationsBody />
+    <SectionRoot {...providerProps}>
+      <OperationsBody layout={layout} />
     </SectionRoot>
   );
 }
 
 // --- Messages --------------------------------------------------------------
 
-function MessagesBody() {
+function MessagesBody({ layout }: { layout?: SectionLayout }) {
   const document = useDocument();
   return (
     <MessagesContainer
       messages={(document.components?.messages ?? {}) as Record<string, MessageObject>}
+      layout={layout}
     />
   );
 }
 
-export function Messages(props: SectionProps) {
+export function Messages({ layout, ...providerProps }: SectionProps) {
   return (
-    <SectionRoot {...props}>
-      <MessagesBody />
+    <SectionRoot {...providerProps}>
+      <MessagesBody layout={layout} />
     </SectionRoot>
   );
 }
 
 // --- Schemas ---------------------------------------------------------------
 
-function SchemasBody() {
+function SchemasBody({ layout }: { layout?: SectionLayout }) {
   const document = useDocument();
-  return <SchemasContainer schemas={document.components?.schemas ?? {}} />;
+  return <SchemasContainer schemas={document.components?.schemas ?? {}} layout={layout} />;
 }
 
-export function Schemas(props: SectionProps) {
+export function Schemas({ layout, ...providerProps }: SectionProps) {
   return (
-    <SectionRoot {...props}>
-      <SchemasBody />
+    <SectionRoot {...providerProps}>
+      <SchemasBody layout={layout} />
     </SectionRoot>
   );
 }
 
 // --- Info ------------------------------------------------------------------
 
-function InfoBody() {
+function InfoBody({ layout }: { layout?: SectionLayout }) {
   const document = useDocument();
   if (!document.info) return null;
-  return <Information {...document.info} />;
+  return <Information {...document.info} layout={layout} />;
 }
 
-export function Info(props: SectionProps) {
+export function Info({ layout, ...providerProps }: SectionProps) {
   return (
-    <SectionRoot {...props}>
-      <InfoBody />
+    <SectionRoot {...providerProps}>
+      <InfoBody layout={layout} />
     </SectionRoot>
   );
 }

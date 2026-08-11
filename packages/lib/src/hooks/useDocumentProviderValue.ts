@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ConfigInterface, defaultConfig } from "../config";
-import type { MarkdownUrlResolver } from "../config/config";
+import type { MarkdownUrlResolver, SidePanelContainment } from "../config/config";
 import { SpecType } from "../contexts";
 import { buildThemeVars } from "../utils/theme";
 import { DEFAULT_DEPTH_COLORS } from "../components/schema/depthColors";
@@ -35,6 +35,8 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
     : DEFAULT_DEPTH_COLORS;
   const showExtensions = config.show?.extensions !== false;
   const showCodeSamples = config.show?.codeSamples !== false;
+  const sidePanelContainment: SidePanelContainment =
+    config.sidePanel?.containment ?? "viewport";
 
   // Both accepted forms collapse to a resolver here so consumers have one
   // shape to call. A bare string applies to every target; a function decides
@@ -47,8 +49,32 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
   }, [configuredMarkdownUrl]);
 
   const contextValue = useMemo(
-    () => ({ specType, document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples, markdownUrl }),
-    [specType, document, deref, portalHost, rootElement, defaultSchemaExpanded, depthColors, showExtensions, showCodeSamples, markdownUrl],
+    () => ({
+      specType,
+      document,
+      deref,
+      portalHost,
+      rootElement,
+      sidePanelContainment,
+      defaultSchemaExpanded,
+      depthColors,
+      showExtensions,
+      showCodeSamples,
+      markdownUrl,
+    }),
+    [
+      specType,
+      document,
+      deref,
+      portalHost,
+      rootElement,
+      sidePanelContainment,
+      defaultSchemaExpanded,
+      depthColors,
+      showExtensions,
+      showCodeSamples,
+      markdownUrl,
+    ],
   );
 
   const themeVars = config.theme ? buildThemeVars(config.theme) : {};

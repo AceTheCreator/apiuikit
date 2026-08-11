@@ -1,5 +1,5 @@
 import { ChannelAddress } from "../../components/ChannelAddress";
-import Section from "../../components/Section";
+import Section, { type SectionLayout } from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
 import MethodBadge from "../../components/MethodBadge";
 import { Operation_TEXT } from "../../contants";
@@ -14,9 +14,10 @@ interface OperationsProps {
   onSelectKey?: (key: string | null) => void;
   /** Which collapsed section of the selected operation search navigated to. */
   focusSection?: string | null;
+  layout?: SectionLayout;
 }
 
-export default function Operations({ operations, selectedKey = null, onSelectKey, focusSection = null }: OperationsProps) {
+export default function Operations({ operations, selectedKey = null, onSelectKey, focusSection = null, layout }: OperationsProps) {
   const setSelectedKey = (key: string | null) => onSelectKey?.(key);
 
   if (!Object.keys(operations).length) {
@@ -110,6 +111,7 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
           title={Operation_TEXT}
           content={content}
           stickySideContent={false}
+          layout={layout}
         />
       </div>
 

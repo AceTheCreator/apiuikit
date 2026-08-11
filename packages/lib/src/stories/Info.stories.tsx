@@ -1,17 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Messages } from "../public/sections";
+import { Info } from "../public/sections";
 import type { AsyncAPIDocumentData } from "../types/schema";
 import rawExample from "../config/examples/example1.json";
 import { centeredDecorator } from "./documentContextDecorator";
 
-// The public `Messages` section: pass a `document` and it renders that
-// document's messages table standalone. Each row expands independently to
-// reveal its payload/headers.
+// Public `Info` section — title, description, and metadata (license/contact)
+// in the side column by default.
 const document = rawExample as unknown as AsyncAPIDocumentData;
 
 const meta = {
-  title: "Components/Messages",
-  component: Messages,
+  title: "Components/Info",
+  component: Info,
   decorators: [centeredDecorator],
   tags: ["autodocs"],
   argTypes: {
@@ -19,10 +18,10 @@ const meta = {
       control: "radio",
       options: ["columns", "stacked"],
       description:
-        '`"columns"` (default) reserves a right gutter. `"stacked"` drops it for full-width standalone use.',
+        '`"columns"` (default) puts license/contact metadata on the right. `"stacked"` places it below the description.',
     },
   },
-} satisfies Meta<typeof Messages>;
+} satisfies Meta<typeof Info>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

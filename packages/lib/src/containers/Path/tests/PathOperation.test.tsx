@@ -22,6 +22,7 @@ function withContext(children: React.ReactNode) {
         deref: () => undefined,
         portalHost: null,
         rootElement: null,
+        sidePanelContainment: "component",
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
         showCodeSamples: true,

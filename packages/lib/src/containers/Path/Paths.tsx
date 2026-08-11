@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import Section from "../../components/Section";
+import Section, { type SectionLayout } from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
 import { ChannelAddress, ChannelAddressParameterDetail } from "../../components/ChannelAddress";
 import MethodBadge from "../../components/MethodBadge";
@@ -25,6 +25,7 @@ interface PathsProps {
   columnLabel?: string;
   /** Prefix for this list's DOM anchor ids, keeping webhook anchors distinct from endpoint ones for search and sidebar navigation. */
   idPrefix?: string;
+  layout?: SectionLayout;
 }
 
 // Query parameters aren't otherwise visible until "Show more" is expanded —
@@ -62,6 +63,7 @@ export default function Paths({
   onSelectKey,
   columnLabel = "Path",
   idPrefix = "endpoint",
+  layout,
 }: PathsProps) {
   const setSelectedKey = (key: string | null) => onSelectKey?.(key);
 
@@ -272,7 +274,7 @@ export default function Paths({
   return (
     <>
       <div className="flex justify-center w-full">
-        <Section content={content} stickySideContent={false} />
+        <Section content={content} stickySideContent={false} layout={layout} />
       </div>
 
       <SidePanel

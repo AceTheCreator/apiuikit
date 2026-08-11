@@ -6,7 +6,7 @@ export type { IAsyncAPIProps } from './containers/AsyncAPI/AsyncAPI';
 export { default as OpenAPI } from './containers/OpenAPI/OpenAPI';
 export type { IOpenAPIProps } from './containers/OpenAPI/OpenAPI';
 
-export type { ConfigInterface, MarkdownConfig, MarkdownTarget, MarkdownUrlResolver } from './config';
+export type { ConfigInterface, MarkdownConfig, MarkdownTarget, MarkdownUrlResolver, SidePanelConfig, SidePanelContainment } from './config';
 
 // Publish an AI-discoverable docs site from a document, outside a rendered
 // tree: these produce what a `config.markdown.url` points at, from a build
@@ -54,6 +54,7 @@ export {
   Info,
 } from './public/sections';
 export type { SectionProps } from './public/sections';
+export type { SectionLayout } from './components/Section';
 
 // Composable standalone OpenAPI sections — mirrors the AsyncAPI ones above,
 // see ./public/openapiSections.
