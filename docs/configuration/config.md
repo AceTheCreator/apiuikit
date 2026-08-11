@@ -121,7 +121,8 @@ interface ThemeModeColors {
 ### TypeScript
 
 ```tsx
-import AsyncAPI, { ConfigInterface } from "@your-org/aui";
+import { AsyncAPI } from "apiuikit";
+import type { ConfigInterface } from "apiuikit";
 import doc from "./asyncapi.json";
 
 const config: ConfigInterface = {
@@ -169,7 +170,7 @@ export default function App() {
 ### JavaScript
 
 ```jsx
-import AsyncAPI from "@your-org/aui";
+import { AsyncAPI } from "apiuikit";
 import doc from "./asyncapi.json";
 
 const config = {

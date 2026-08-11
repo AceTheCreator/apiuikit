@@ -98,6 +98,7 @@ See the full usage docs for props, configuration options, and more:
 - [Without Parser](./docs/usage/no-parser.md) (`AsyncAPI` component)
 - [With Parser](./docs/usage/with-parser.md) (`AsyncAPIRenderer` component, `parseAndRender` utility)
 - [Composable Sections](./docs/usage/sections.md) (`Servers`, `Operations`, `Messages`, `Schemas`, `Info`, `AsyncAPIProvider`)
+- [Configuration](./docs/configuration/config.md) (`ConfigInterface`: theme, show flags, sidebar, sidePanel, etc.)
 - [Web Components](./docs/usage/with-webcomponents.md) (`<aui-asyncapi>`, `<aui-asyncapi-renderer>`, use apiuikit from any framework)
 - [Markdown export](./docs/usage/markdown-export.md) (making your docs AI-readable: `config.markdown.url`, `documentToMarkdown`, `documentToLlmsTxt`)
 - [Avro schemas](./docs/usage/avro.md)
