@@ -1,5 +1,10 @@
 # apiuikit
 
+[![npm version](https://img.shields.io/npm/v/apiuikit.svg)](https://www.npmjs.com/package/apiuikit)
+[![npm downloads](https://img.shields.io/npm/dm/apiuikit.svg)](https://www.npmjs.com/package/apiuikit)
+[![npm version](https://img.shields.io/npm/v/@apiuikit/web-component.svg?label=%40apiuikit%2Fweb-component)](https://www.npmjs.com/package/@apiuikit/web-component)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+
 React component library for rendering API specifications. Point it at an AsyncAPI or OpenAPI document and get a full interactive UI, which includes: servers, channels/endpoints, operations, messages, schemas, with no manual mapping required.
 
 > **Status:** AsyncAPI 3.x and OpenAPI 3.0/3.1 are both fully supported, see

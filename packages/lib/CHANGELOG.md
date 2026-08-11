@@ -1,5 +1,11 @@
 # apiuikit
 
+## 1.5.0
+
+### Minor Changes
+
+- Integrate `asyncsnippet` for AsyncAPI operation code samples (multi-language clients filtered by protocol), and replace the OpenAPI "Copy Markdown" control with an Agent Prompt sample via the existing `agent:prompt` entry backed by `openApiEndpointToMarkdown`.
+
 ## 1.4.0
 
 ### Minor Changes
