@@ -54,6 +54,7 @@
     "@asyncapi/specs": "^6.8.1",
     "@json-schema-tools/reference-resolver": "^1.2.6",
     "@readme/httpsnippet": "^11.4.0",
+    "asyncsnippet": "^0.3.0",
     "fuse.js": "^7.5.0",
     "highlight.js": "^11.11.1",
     "isomorphic-dompurify": "^2.24.0",

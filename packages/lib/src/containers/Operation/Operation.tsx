@@ -13,6 +13,7 @@ import { Tag } from "../../types/asyncapi/Tag";
 import { Message } from "../Messages/Message";
 import { Reply } from "../../components/Reply";
 import Markdown from "../../components/Markdown";
+import { AsyncCodeSample } from "../../components/AsyncCodeSample";
 
 interface OperationProps {
   op: OperationInterface;
@@ -77,6 +78,8 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
           <p className="text-sm text-foreground-secondary">{op.summary}</p>
         </div>
       )}
+
+      <AsyncCodeSample operationId={id} />
 
       {/* Security */}
       {security && security.length > 0 && (
