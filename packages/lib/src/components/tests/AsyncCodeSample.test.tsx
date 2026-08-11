@@ -166,9 +166,9 @@ describe("AsyncCodeSample", () => {
 
   it("resets selection when operationId changes across protocols without remounting", () => {
     // Mirrors Operations' SidePanel: same AsyncCodeSample instance, new op id.
-    // Spy guards the render-phase reset: snippet derivation must use the new
-    // default immediately, never the previous op's python:websockets with the
-    // new kafka operationId (which would generate null and flash an empty panel).
+    // Spy guards the identity-scoped override: snippet derivation must use the
+    // new default immediately, never the previous op's python:websockets with
+    // the new kafka operationId (which would generate null and flash an empty panel).
     const generateSpy = vi.spyOn(asyncCodeSampleHelpers, "generateAsyncCodeSample");
     const { rerender } = render(withContext(wsDocument, true, <AsyncCodeSample operationId="sendMessage" />));
 

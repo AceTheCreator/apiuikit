@@ -7,10 +7,15 @@ import {
   OpenAPIServerData,
 } from "../types/openapi";
 
-/** The dropdown opens on httpsnippet's "agent" target: a plain-text prompt
- * describing the request, meant to be pasted into an AI assistant rather than
- * run. It's language-agnostic, so it's the one option that's useful to every
- * reader regardless of what they're building in. */
+/** The dropdown opens on httpsnippet's "agent" target: a prompt meant to be
+ * pasted into an AI assistant rather than run. It's language-agnostic, so
+ * it's the one option that's useful to every reader regardless of what
+ * they're building in. `CodeSamples.tsx` overrides this specific
+ * target/client's generated content with the constructed endpoint Markdown
+ * (`openApiEndpointToMarkdown`) rather than httpsnippet's own terser
+ * built-in agent prompt — the target/client catalog entry (key, title,
+ * position in the dropdown) still comes from httpsnippet's registry below,
+ * only the generated snippet body is swapped out. */
 export const DEFAULT_CODE_SAMPLE_TARGET = "agent";
 export const DEFAULT_CODE_SAMPLE_CLIENT = "prompt";
 

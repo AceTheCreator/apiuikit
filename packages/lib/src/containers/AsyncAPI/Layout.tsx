@@ -75,7 +75,6 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
         selectedKey={selected.operations}
         onSelectKey={(key) => setSelectedKey("operations", key)}
         focusSection={focusSection}
-        showCopyMarkdown={show.copyMarkdown !== false}
       />
     ) : effectiveTab === "messages" ? (
       <Messages

@@ -1,15 +1,11 @@
 import { ChannelAddress } from "../../components/ChannelAddress";
 import Section from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
-import CopyMarkdownButton from "../../components/CopyMarkdownButton";
 import MethodBadge from "../../components/MethodBadge";
-import { useAsyncAPIDocument } from "../../contexts";
 import { Operation_TEXT } from "../../contants";
 import { Channel } from "../../types/asyncapi/Channel";
 import { Parameter } from "../../types/asyncapi/Parameter";
 import { Operation as OperationType } from "../../types/asyncapi/Operation";
-import { AsyncAPIDocumentData } from "../../types/schema";
-import { asyncApiOperationToMarkdown } from "../../helpers/toMarkdown";
 import Operation from "./Operation";
 
 interface OperationsProps {
@@ -18,13 +14,10 @@ interface OperationsProps {
   onSelectKey?: (key: string | null) => void;
   /** Which collapsed section of the selected operation search navigated to. */
   focusSection?: string | null;
-  showCopyMarkdown?: boolean;
 }
 
-export default function Operations({ operations, selectedKey = null, onSelectKey, focusSection = null, showCopyMarkdown }: OperationsProps) {
+export default function Operations({ operations, selectedKey = null, onSelectKey, focusSection = null }: OperationsProps) {
   const setSelectedKey = (key: string | null) => onSelectKey?.(key);
-  const { document, deref } = useAsyncAPIDocument();
-  const doc = document as AsyncAPIDocumentData;
 
   if (!Object.keys(operations).length) {
     return null;
@@ -125,14 +118,6 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
         side="right"
         onClose={() => setSelectedKey(null)}
         title={panelTitle}
-        headerActions={
-          selectedOp && selectedKey && showCopyMarkdown ? (
-            <CopyMarkdownButton
-              getMarkdown={() => asyncApiOperationToMarkdown(doc, selectedKey, deref)}
-              label="Copy operation for LLM"
-            />
-          ) : undefined
-        }
       >
         {selectedOp && <Operation op={selectedOp} id={selectedKey} focusSection={focusSection} />}
       </SidePanel>

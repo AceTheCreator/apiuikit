@@ -34,25 +34,27 @@ export function AsyncCodeSample({ operationId }: AsyncCodeSampleProps) {
     () => (operationId ? getAvailableAsyncCodeSampleTargets(document, operationId) : []),
     [document, operationId],
   );
-  const [selection, setSelection] = useState(() =>
-    pickDefaultAsyncCodeSampleSelection(document, operationId, targets),
+  const defaultSelection = useMemo(
+    () => pickDefaultAsyncCodeSampleSelection(document, operationId, targets),
+    [document, operationId, targets],
   );
-  // useState initializers only run on mount. Operations reuses this component
-  // when the selected op changes (no remount key), so reset whenever the
-  // document or operation identity changes — otherwise a stale target/client
-  // (e.g. javascript:ws after switching to Kafka) blanks the panel. Adjusted
-  // during render; the computed `activeSelection` is what this pass uses so
-  // snippet generation never sees the pre-reset value.
-  const [selectionSource, setSelectionSource] = useState({ document, operationId });
-  const selectionNeedsReset =
-    selectionSource.document !== document || selectionSource.operationId !== operationId;
-  const activeSelection = selectionNeedsReset
-    ? pickDefaultAsyncCodeSampleSelection(document, operationId, targets)
-    : selection;
-  if (selectionNeedsReset) {
-    setSelectionSource({ document, operationId });
-    setSelection(activeSelection);
-  }
+  // Operations reuses this component when the selected op changes (no remount
+  // key). Store the user's dropdown choice scoped to the document+operation it
+  // was picked for; when those identities change the override no longer
+  // matches and we fall back to `defaultSelection` for this same render —
+  // otherwise a stale target/client (e.g. javascript:ws after switching to
+  // Kafka) would blank the panel. Derived rather than setState-during-render
+  // or a useEffect reset, so render stays pure and snippet generation never
+  // sees the previous op's selection.
+  const [override, setOverride] = useState<{
+    document: unknown;
+    operationId: string | null;
+    selection: string;
+  } | null>(null);
+  const activeSelection =
+    override?.document === document && override.operationId === operationId
+      ? override.selection
+      : defaultSelection;
   const [targetKey, clientKey] = activeSelection.split(":");
   const hljsLanguage = hljsLanguageForTarget(targetKey);
 
@@ -87,7 +89,9 @@ export function AsyncCodeSample({ operationId }: AsyncCodeSampleProps) {
         <select
           id={selectId}
           value={activeSelection}
-          onChange={(event) => setSelection(event.target.value)}
+          onChange={(event) =>
+            setOverride({ document, operationId, selection: event.target.value })
+          }
           aria-label="Code sample language"
           className="text-xs font-medium rounded-md border border-border bg-surface px-2 py-1 text-foreground-secondary focus:border-secondary-500 focus:ring-secondary-500"
         >

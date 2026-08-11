@@ -81,7 +81,6 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
         securitySchemes={openapi.components?.securitySchemes}
         selectedKey={selected.endpoints}
         onSelectKey={(key) => setSelectedKey("endpoints", key)}
-        showCopyMarkdown={show.copyMarkdown !== false}
       />
     ) : effectiveTab === "webhooks" ? (
       <Paths
@@ -92,7 +91,6 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
         onSelectKey={(key) => setSelectedKey("webhooks", key)}
         columnLabel="Webhook"
         idPrefix="webhook"
-        showCopyMarkdown={show.copyMarkdown !== false}
       />
     ) : effectiveTab === "schemas" ? (
       <Schemas

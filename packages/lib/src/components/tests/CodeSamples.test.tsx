@@ -15,6 +15,18 @@ const testDocument: OpenAPIDocumentData = {
       apiKeyAuth: { type: "apiKey", in: "header", name: "X-API-Key" },
     },
   },
+  // openApiEndpointToMarkdown (backing the default "agent:prompt" selection
+  // below) looks the operation up here, independently of the `parameters`
+  // prop CodeSamples is rendered with.
+  paths: {
+    "/pets/{petId}": {
+      get: {
+        summary: "Get a pet",
+        parameters: [{ name: "petId", in: "path", required: true, example: "abc-123" }],
+        security: [{ apiKeyAuth: [] }],
+      },
+    },
+  },
 };
 
 const PANEL_ID = "endpoint-get /pets/{petId}-code-samples";
@@ -53,12 +65,16 @@ const renderCodeSamples = (showCodeSamples = true) =>
   );
 
 describe("CodeSamples", () => {
-  it("renders the agent prompt by default with the resolved URL and auth header", () => {
+  it("renders the constructed endpoint Markdown for the default agent prompt selection", () => {
+    // The "agent:prompt" entry is overridden to use `openApiEndpointToMarkdown`
+    // (the same builder behind the document's "Copy for LLM" export) rather
+    // than httpsnippet's own terser built-in agent prompt.
     renderCodeSamples();
 
     const panel = within(document.getElementById(PANEL_ID)!);
-    expect(panel.getByText("https://api.example.com/v1/pets/abc-123", { exact: false })).toBeInTheDocument();
-    expect(panel.getByText("X-API-Key", { exact: false })).toBeInTheDocument();
+    expect(panel.getByText("**Version:** 1.0.0", { exact: false })).toBeInTheDocument();
+    expect(panel.getByText("GET `/pets/{petId}`", { exact: false })).toBeInTheDocument();
+    expect(panel.getByText("API Key (header: `X-API-Key`)", { exact: false })).toBeInTheDocument();
 
     const select = screen.getByRole("combobox", { name: "Code sample language" });
     expect(select).toHaveValue("agent:prompt");

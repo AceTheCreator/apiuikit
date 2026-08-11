@@ -57,9 +57,20 @@ describe("OpenAPI", () => {
     render(<OpenAPI openapi={asDoc(exampleDoc)} />);
 
     fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
-    await screen.findByLabelText("Code sample language");
+    const select = await screen.findByLabelText("Code sample language");
+    fireEvent.change(select, { target: { value: "shell:curl" } });
     const codeSamples = within(document.getElementById("endpoint-get /pets-code-samples")!);
     expect(codeSamples.getByText("https://api.example.com/v1/pets", { exact: false })).toBeInTheDocument();
+  });
+
+  it("renders the constructed endpoint Markdown for the default agent prompt selection", async () => {
+    render(<OpenAPI openapi={asDoc(exampleDoc)} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
+    await screen.findByLabelText("Code sample language");
+    const codeSamples = within(document.getElementById("endpoint-get /pets-code-samples")!);
+    expect(codeSamples.getByText("Petstore API", { exact: false })).toBeInTheDocument();
+    expect(codeSamples.getByText("GET `/pets`", { exact: false })).toBeInTheDocument();
   });
 
   it("hides the code samples panel when show.codeSamples is false", () => {

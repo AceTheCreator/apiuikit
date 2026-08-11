@@ -2,20 +2,16 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import Section from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
 import { ChannelAddress, ChannelAddressParameterDetail } from "../../components/ChannelAddress";
-import CopyMarkdownButton from "../../components/CopyMarkdownButton";
 import MethodBadge from "../../components/MethodBadge";
 import IconArrowRight from "../../icons/ArrowRight";
 import IconArrowDown from "../../icons/ArrowDown";
-import { useAsyncAPIDocument } from "../../contexts";
 import {
   flattenEndpoints,
-  OpenAPIDocumentData,
   OpenAPIParameterData,
   OpenAPIPathItemData,
   OpenAPISecuritySchemeData,
   resolveOperationParameters,
 } from "../../types/openapi";
-import { openApiEndpointToMarkdown } from "../../helpers/toMarkdown";
 import PathOperation from "./PathOperation";
 
 interface PathsProps {
@@ -25,7 +21,6 @@ interface PathsProps {
   selectedKey?: string | null;
   onSelectKey?: (key: string | null) => void;
   focusSection?: string | null;
-  showCopyMarkdown?: boolean;
   /** Heading for the identifier column. "Webhook" for OpenAPI 3.1 webhooks, whose keys are event names rather than URL paths. */
   columnLabel?: string;
   /** Prefix for this list's DOM anchor ids, keeping webhook anchors distinct from endpoint ones for search and sidebar navigation. */
@@ -65,13 +60,10 @@ export default function Paths({
   securitySchemes,
   selectedKey = null,
   onSelectKey,
-  showCopyMarkdown,
   columnLabel = "Path",
   idPrefix = "endpoint",
 }: PathsProps) {
   const setSelectedKey = (key: string | null) => onSelectKey?.(key);
-  const { document, deref } = useAsyncAPIDocument();
-  const doc = document as OpenAPIDocumentData;
 
   const endpoints = useMemo(() => flattenEndpoints(paths), [paths]);
 
@@ -288,14 +280,6 @@ export default function Paths({
         side="right"
         onClose={() => setSelectedKey(null)}
         title={panelTitle}
-        headerActions={
-          selected && selectedOp && showCopyMarkdown ? (
-            <CopyMarkdownButton
-              getMarkdown={() => openApiEndpointToMarkdown(doc, selected.method, selected.path, deref)}
-              label="Copy endpoint for LLM"
-            />
-          ) : undefined
-        }
       >
         {selected && selectedOp && (
           <PathOperation

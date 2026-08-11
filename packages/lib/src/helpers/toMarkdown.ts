@@ -1,13 +1,13 @@
 /**
  * Serializes a resolved AsyncAPI/OpenAPI document (or a single OpenAPI
  * endpoint) into Markdown, for the "Copy for LLM" / "View as Markdown"
- * export button (components/MarkdownExportMenu.tsx) and the per-endpoint
- * copy button (components/CopyMarkdownButton.tsx, wired up in
- * containers/Path/Paths.tsx). Mirrors the field names each section
- * component (Information, Servers, Operations, Messages, Schemas / Paths)
- * already renders, just emitting Markdown instead of JSX. Schemas are
- * embedded as fully-dereferenced fenced ```json code blocks rather than
- * flattened into nested headings.
+ * export button (components/MarkdownExportMenu.tsx) and, for a single
+ * endpoint, the "Agent Prompt" entry in OpenAPI's code-sample dropdown
+ * (components/CodeSamples.tsx, via `openApiEndpointToMarkdown`). Mirrors the
+ * field names each section component (Information, Servers, Operations,
+ * Messages, Schemas / Paths) already renders, just emitting Markdown instead
+ * of JSX. Schemas are embedded as fully-dereferenced fenced ```json code
+ * blocks rather than flattened into nested headings.
  */
 import { AsyncAPIDocumentData, SchemaNodeData } from "../types/schema";
 import {
@@ -300,8 +300,10 @@ export function asyncApiToMarkdown(doc: AsyncAPIDocumentData, deref: Deref = cre
  * and fully-dereferenced payload/headers as JSON code blocks. Unlike the
  * full-document export's terser Operations loop (which just lists message
  * names, leaving payload detail to the separate Messages section), this
- * inlines everything so the snippet stands alone — used by the per-operation
- * copy button in the Operations side panel (Operations.tsx).
+ * inlines everything so the snippet stands alone. Exposed publicly via
+ * `asyncApiOperationToMarkdown` (see `helpers/specAdapters.ts`); AsyncAPI's
+ * own code-sample dropdown doesn't use it — its Agent Prompt comes from
+ * `asyncsnippet` instead (see `helpers/asyncCodeSample.ts`).
  */
 function operationSectionToMarkdown(key: string, op: Operation, deref: Deref): string {
   const channel = op.channel as unknown as Channel | undefined;
@@ -330,8 +332,8 @@ function operationSectionToMarkdown(key: string, op: Operation, deref: Deref): s
 
 /** Builds a self-contained Markdown snippet for a single AsyncAPI operation:
  * doc info + servers, followed by that one operation's section (see
- * `operationSectionToMarkdown`). Used by the per-operation copy button, as
- * opposed to `asyncApiToMarkdown`'s whole-document export. */
+ * `operationSectionToMarkdown`), as opposed to `asyncApiToMarkdown`'s
+ * whole-document export. */
 export function asyncApiOperationToMarkdown(doc: AsyncAPIDocumentData, key: string, deref: Deref = createDocumentDeref(doc)): string {
   const op = doc.operations?.[key];
   if (!op) return "";
@@ -504,9 +506,9 @@ export function openApiToMarkdown(doc: OpenAPIDocumentData, deref: Deref = creat
  * Builds a self-contained Markdown snippet for a single OpenAPI endpoint:
  * doc info + servers (so the snippet stands alone without the rest of the
  * document) followed by that one endpoint's fully-dereferenced parameters,
- * request body, and responses. Used by the per-endpoint copy button in the
- * Endpoints side panel (Paths.tsx), as opposed to `openApiToMarkdown`'s
- * whole-document export.
+ * request body, and responses, as opposed to `openApiToMarkdown`'s
+ * whole-document export. Backs the "Agent Prompt" entry in the endpoint's
+ * code-sample dropdown (components/CodeSamples.tsx).
  */
 export function openApiEndpointToMarkdown(doc: OpenAPIDocumentData, method: HttpMethod, path: string, deref: Deref = createDocumentDeref(doc)): string {
   const op = doc.paths?.[path]?.[method];
