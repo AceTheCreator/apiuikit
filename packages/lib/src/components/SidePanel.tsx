@@ -37,26 +37,45 @@ export const SidePanel = forwardRef<HTMLDivElement, ISidePanelProps>(function Si
   // dependency and is covered by `.transition-transform`'s `transition-property` list.
   const closedTransform = side === "right" ? "translateX(100%)" : "translateX(-100%)";
 
-  const { portalHost, rootElement } = useAsyncAPIDocument();
+  const { portalHost, rootElement, sidePanelContainment } = useAsyncAPIDocument();
+  const containToComponent = sidePanelContainment === "component";
 
   useEffect(() => {
     if (!isOpen || !portalHost) return;
     return lockScroll(getScrollLockTarget(portalHost));
   }, [isOpen, portalHost]);
 
-  // Stays full viewport height (`top: 0` / `height: 100vh`) so it's always visible
-  // regardless of page scroll, same as before — but only horizontally scoped to
-  // Layout's own root element, so it slides in from the widget's own left/right
-  // edge instead of the browser window's. (Unlike vertical position, an element's
-  // horizontal bounds don't shift as the page is scrolled, so this doesn't need to
-  // track the widget's full — possibly much taller than the viewport — rect.top.)
-  // Tracked continuously (not gated on isOpen) — the panel keeps animating for
-  // `duration-300` after isOpen flips false, so it still needs a correct rect
-  // during the close transition, not an immediate reset to the fallback.
-  const rect = useElementRect(rootElement, true);
-  const overlayStyle: React.CSSProperties = rect
-    ? { position: "fixed", top: 0, left: rect.left, width: rect.width, height: "100vh" }
-    : { position: "fixed", inset: 0 };
+  // Tracked continuously (not gated on isOpen) when containing to the widget —
+  // the panel keeps animating for `duration-300` after isOpen flips false, so it
+  // still needs a correct rect during the close transition, not an immediate
+  // reset to the fallback.
+  //
+  // `"component"`: clip the overlay to the *visible* intersection of the widget's
+  // root element and the browser viewport. Using the raw root rect would put
+  // `top` negative (and the panel header above the screen) whenever the widget
+  // is taller than the viewport and has been scrolled — which is the usual case
+  // in full-page hosts like the playground. Clamping keeps the panel on-screen
+  // while still staying inside the widget's horizontal/vertical bounds (e.g.
+  // embed cards).
+  // `"viewport"`: cover the full browser viewport edge-to-edge.
+  const rect = useElementRect(rootElement, containToComponent);
+  const overlayStyle: React.CSSProperties = (() => {
+    if (!containToComponent) return { position: "fixed", inset: 0 };
+    if (!rect) return { position: "fixed", inset: 0 };
+
+    const top = Math.max(0, rect.top);
+    const left = Math.max(0, rect.left);
+    const bottom = Math.min(window.innerHeight, rect.bottom);
+    const right = Math.min(window.innerWidth, rect.right);
+
+    return {
+      position: "fixed",
+      top,
+      left,
+      width: Math.max(0, right - left),
+      height: Math.max(0, bottom - top),
+    };
+  })();
 
   if (!portalHost) return null;
 
@@ -73,9 +92,22 @@ export const SidePanel = forwardRef<HTMLDivElement, ISidePanelProps>(function Si
         style={{ pointerEvents: isOpen ? "auto" : "none" }}
       />
 
+      {/*
+        `shadow-xl` is applied only while `isOpen`, not unconditionally. `box-shadow`'s
+        blur radius paints well outside the element's own border box (shadow-xl's blur is
+        25px, extending the visible paint area ~10-12px past each edge) — and that extra
+        paint area is not reliably clipped by the portal overlay's `overflow: hidden` once
+        this panel is a `transform`-animated, composited layer. Translating the panel
+        further off-screen doesn't fix it either (the shadow still bleeds through at any
+        offset up to very large ones, well past what's practical to use as a margin) —
+        confirmed by testing offsets up to 32px with no change, while box-shadow: none
+        removes the bleed immediately regardless of position. Since a closed, off-screen
+        panel has no visible edge to cast a shadow from anyway, the simplest fix is to not
+        render the shadow at all except while actually open.
+      */}
       <div
         ref={ref}
-        className={`absolute top-0 ${panelPosition} h-full ${width} max-w-[100cqw] bg-background shadow-xl flex flex-col transition-transform duration-300 ease-in-out`}
+        className={`absolute top-0 ${panelPosition} h-full ${width} max-w-[100cqw] bg-background ${isOpen ? "shadow-xl" : ""} flex flex-col transition-transform duration-300 ease-in-out`}
         style={{ transform: isOpen ? "translateX(0)" : closedTransform }}
       >
         {/* Header */}

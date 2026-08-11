@@ -64,6 +64,29 @@ describe("standalone section components", () => {
     expect(() => render(<Operations />)).toThrow(/needs a `document` prop/);
     spy.mockRestore();
   });
+
+  it("drops the reserved side column when layout=\"stacked\"", () => {
+    const { rerender } = render(<Operations document={asDoc(doc)} />);
+    expect(screen.getByTestId("section-side-column")).toBeInTheDocument();
+
+    rerender(<Operations document={asDoc(doc)} layout="stacked" />);
+    expect(screen.queryByTestId("section-side-column")).not.toBeInTheDocument();
+    expect(document.body.textContent).toContain("smartylighting/measured");
+  });
+
+  it("stacks Info side content when layout=\"stacked\"", () => {
+    const withLicense = {
+      ...doc,
+      info: {
+        ...doc.info,
+        license: { name: "Apache 2.0", url: "https://www.apache.org/licenses/LICENSE-2.0" },
+      },
+    };
+    render(<Info document={asDoc(withLicense)} layout="stacked" />);
+    expect(screen.queryByTestId("section-side-column")).not.toBeInTheDocument();
+    expect(screen.getByText("Streetlights")).toBeInTheDocument();
+    expect(screen.getByText(/Apache 2.0/)).toBeInTheDocument();
+  });
 });
 
 describe("standalone OpenAPI webhooks section", () => {

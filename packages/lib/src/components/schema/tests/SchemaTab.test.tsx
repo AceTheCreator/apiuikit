@@ -16,6 +16,7 @@ function Providers({ children }: { children: ReactNode }) {
         deref: () => undefined,
         portalHost: null,
         rootElement: null,
+        sidePanelContainment: "component",
         defaultSchemaExpanded: true,
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,

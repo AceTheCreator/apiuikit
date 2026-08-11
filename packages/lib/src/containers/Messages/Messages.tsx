@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Section from "../../components/Section";
+import Section, { type SectionLayout } from "../../components/Section";
 import { MessageDetails } from "./MessageDetails";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
 import { CorrelationId } from "../../types/asyncapi/CorrelationId";
@@ -9,6 +9,7 @@ interface MessagesProps {
   selectedKey?: string | null;
   /** Which collapsed section ("payload" | "headers") search navigated to. */
   focusSection?: string | null;
+  layout?: SectionLayout;
 }
 
 function MessageRow({ messageKey, message, first, isSelected, focusSection }: { messageKey: string; message: MessageObject; first: boolean; isSelected?: boolean; focusSection?: string | null }) {
@@ -89,7 +90,7 @@ function MessageRow({ messageKey, message, first, isSelected, focusSection }: { 
   );
 }
 
-export default function Messages({ messages, selectedKey, focusSection }: MessagesProps) {
+export default function Messages({ messages, selectedKey, focusSection, layout }: MessagesProps) {
   const messageEntries = Object.entries(messages);
 
   const content = messageEntries.length ? (
@@ -121,7 +122,7 @@ export default function Messages({ messages, selectedKey, focusSection }: Messag
 
   return (
     <div className="flex justify-center w-full">
-      <Section content={content} stickySideContent={false} />
+      <Section content={content} stickySideContent={false} layout={layout} />
     </div>
   );
 }

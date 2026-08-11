@@ -1,3 +1,4 @@
+import type { SectionLayout } from "../../components/Section";
 import InformationSection from "./InformationSection";
 import { OpenAPIExternalDocsData, OpenAPIInfoData, OpenAPITagData } from "../../types/openapi";
 
@@ -6,9 +7,10 @@ interface OpenAPIInformationProps {
   /** OpenAPI keeps tags/externalDocs at the document root, not on `info` (unlike AsyncAPI), so they are passed in separately. */
   tags?: OpenAPITagData[];
   externalDocs?: OpenAPIExternalDocsData;
+  layout?: SectionLayout;
 }
 
-export default function OpenAPIInformation({ info, tags, externalDocs }: OpenAPIInformationProps) {
+export default function OpenAPIInformation({ info, tags, externalDocs, layout }: OpenAPIInformationProps) {
   const { title, description, license, contact } = info;
 
   return (
@@ -20,6 +22,7 @@ export default function OpenAPIInformation({ info, tags, externalDocs }: OpenAPI
       externalDocs={externalDocs}
       tags={tags}
       extensionsSource={info}
+      layout={layout}
     />
   );
 }

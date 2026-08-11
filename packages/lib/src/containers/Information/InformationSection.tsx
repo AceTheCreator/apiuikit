@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { logoLoader } from "x-tensions";
-import Section from "../../components/Section";
+import Section, { type SectionLayout } from "../../components/Section";
 import Markdown from "../../components/Markdown";
 import InfoMetadata from "../../components/InfoMetadata";
 import { RenderExtensions, getExtension } from "../../components/RenderExtensions";
@@ -16,6 +16,7 @@ interface InformationSectionProps {
   tags?: unknown[];
   /** The raw `info` object, scanned for x-* extensions (`x-logo` plus the x-tensions catalog). */
   extensionsSource?: object;
+  layout?: SectionLayout;
 }
 
 export default function InformationSection({
@@ -26,6 +27,7 @@ export default function InformationSection({
   externalDocs,
   tags,
   extensionsSource,
+  layout,
 }: InformationSectionProps) {
   const logoValue = getExtension(extensionsSource, "x-logo");
 
@@ -62,6 +64,7 @@ export default function InformationSection({
         reverseLayoutOnMobile={true}
         info={true}
         mobileLeadContent={logo}
+        layout={layout}
       />
     </div>
   );

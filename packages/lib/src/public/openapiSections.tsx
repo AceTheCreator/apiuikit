@@ -9,6 +9,7 @@ import OpenAPIServersContainer from "../containers/Server/OpenAPIServers";
 import PathsContainer from "../containers/Path/Paths";
 import SchemasContainer from "../containers/Schema/Schemas";
 import OpenAPIInformation from "../containers/Information/OpenAPIInformation";
+import type { SectionLayout } from "../components/Section";
 import { createSectionRoot } from "./createSectionRoot";
 
 /**
@@ -23,6 +24,12 @@ export interface OpenAPISectionProps {
   /** The OpenAPI document. Required standalone; unnecessary (and ignored) when rendered inside <OpenAPIProvider>. */
   document?: OpenAPIDocumentData;
   config?: ConfigInterface;
+  /**
+   * `"columns"` (default) — reserved right gutter at large breakpoints.
+   * `"stacked"` — full-width single column; no prose max-width and no empty
+   * side space. For Info/Servers, side content stacks below the main content.
+   */
+  layout?: SectionLayout;
 }
 
 export function OpenAPIProvider({
@@ -58,23 +65,23 @@ function useDocument(): OpenAPIDocumentData {
 
 // --- Servers ---------------------------------------------------------------
 
-function OpenAPIServersBody() {
+function OpenAPIServersBody({ layout }: { layout?: SectionLayout }) {
   const document = useDocument();
   if (!document.servers || document.servers.length === 0) return null;
-  return <OpenAPIServersContainer servers={document.servers} />;
+  return <OpenAPIServersContainer servers={document.servers} layout={layout} />;
 }
 
-export function OpenAPIServers(props: OpenAPISectionProps) {
+export function OpenAPIServers({ layout, ...providerProps }: OpenAPISectionProps) {
   return (
-    <SectionRoot {...props}>
-      <OpenAPIServersBody />
+    <SectionRoot {...providerProps}>
+      <OpenAPIServersBody layout={layout} />
     </SectionRoot>
   );
 }
 
 // --- Endpoints ---------------------------------------------------------------
 
-function OpenAPIEndpointsBody() {
+function OpenAPIEndpointsBody({ layout }: { layout?: SectionLayout }) {
   const document = useDocument();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   return (
@@ -84,21 +91,22 @@ function OpenAPIEndpointsBody() {
       securitySchemes={document.components?.securitySchemes}
       selectedKey={selectedKey}
       onSelectKey={setSelectedKey}
+      layout={layout}
     />
   );
 }
 
-export function OpenAPIEndpoints(props: OpenAPISectionProps) {
+export function OpenAPIEndpoints({ layout, ...providerProps }: OpenAPISectionProps) {
   return (
-    <SectionRoot {...props}>
-      <OpenAPIEndpointsBody />
+    <SectionRoot {...providerProps}>
+      <OpenAPIEndpointsBody layout={layout} />
     </SectionRoot>
   );
 }
 
 // --- Webhooks ----------------------------------------------------------------
 
-function OpenAPIWebhooksBody() {
+function OpenAPIWebhooksBody({ layout }: { layout?: SectionLayout }) {
   const document = useDocument();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const webhooks = document.webhooks ?? {};
@@ -112,46 +120,54 @@ function OpenAPIWebhooksBody() {
       onSelectKey={setSelectedKey}
       columnLabel="Webhook"
       idPrefix="webhook"
+      layout={layout}
     />
   );
 }
 
 /** OpenAPI 3.1 `webhooks`. Renders nothing for a document that declares none. */
-export function OpenAPIWebhooks(props: OpenAPISectionProps) {
+export function OpenAPIWebhooks({ layout, ...providerProps }: OpenAPISectionProps) {
   return (
-    <SectionRoot {...props}>
-      <OpenAPIWebhooksBody />
+    <SectionRoot {...providerProps}>
+      <OpenAPIWebhooksBody layout={layout} />
     </SectionRoot>
   );
 }
 
 // --- Schemas ---------------------------------------------------------------
 
-function OpenAPISchemasBody() {
+function OpenAPISchemasBody({ layout }: { layout?: SectionLayout }) {
   const document = useDocument();
-  return <SchemasContainer schemas={document.components?.schemas ?? {}} />;
+  return <SchemasContainer schemas={document.components?.schemas ?? {}} layout={layout} />;
 }
 
-export function OpenAPISchemas(props: OpenAPISectionProps) {
+export function OpenAPISchemas({ layout, ...providerProps }: OpenAPISectionProps) {
   return (
-    <SectionRoot {...props}>
-      <OpenAPISchemasBody />
+    <SectionRoot {...providerProps}>
+      <OpenAPISchemasBody layout={layout} />
     </SectionRoot>
   );
 }
 
 // --- Info --------------------------------------------------------------------
 
-function OpenAPIInfoBody() {
+function OpenAPIInfoBody({ layout }: { layout?: SectionLayout }) {
   const document = useDocument();
   if (!document.info) return null;
-  return <OpenAPIInformation info={document.info} tags={document.tags} externalDocs={document.externalDocs} />;
+  return (
+    <OpenAPIInformation
+      info={document.info}
+      tags={document.tags}
+      externalDocs={document.externalDocs}
+      layout={layout}
+    />
+  );
 }
 
-export function OpenAPIInfo(props: OpenAPISectionProps) {
+export function OpenAPIInfo({ layout, ...providerProps }: OpenAPISectionProps) {
   return (
-    <SectionRoot {...props}>
-      <OpenAPIInfoBody />
+    <SectionRoot {...providerProps}>
+      <OpenAPIInfoBody layout={layout} />
     </SectionRoot>
   );
 }

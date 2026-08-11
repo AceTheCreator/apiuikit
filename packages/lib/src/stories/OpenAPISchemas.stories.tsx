@@ -1,17 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Messages } from "../public/sections";
-import type { AsyncAPIDocumentData } from "../types/schema";
-import rawExample from "../config/examples/example1.json";
+import { OpenAPISchemas } from "../public/openapiSections";
+import type { OpenAPIDocumentData } from "../types/openapi";
+import rawExample from "../config/examples/openapi-petstore.json";
 import { centeredDecorator } from "./documentContextDecorator";
 
-// The public `Messages` section: pass a `document` and it renders that
-// document's messages table standalone. Each row expands independently to
-// reveal its payload/headers.
-const document = rawExample as unknown as AsyncAPIDocumentData;
+const document = rawExample as unknown as OpenAPIDocumentData;
 
 const meta = {
-  title: "Components/Messages",
-  component: Messages,
+  title: "Components/OpenAPISchemas",
+  component: OpenAPISchemas,
   decorators: [centeredDecorator],
   tags: ["autodocs"],
   argTypes: {
@@ -22,7 +19,7 @@ const meta = {
         '`"columns"` (default) reserves a right gutter. `"stacked"` drops it for full-width standalone use.',
     },
   },
-} satisfies Meta<typeof Messages>;
+} satisfies Meta<typeof OpenAPISchemas>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
