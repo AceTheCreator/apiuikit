@@ -47,6 +47,37 @@ function scopeSelectorList(selectorList) {
   }).processSync(selectorList)
 }
 
+/**
+ * Tailwind wraps structural utilities such as `divide-x` and `space-y-*` in
+ * `:where()`. When the `important` root is included inside that pseudo, it
+ * contributes no specificity, so our scoped preflight can reset their border
+ * or margin back to zero. Pull the generated selector out of `:where()` so
+ * these utilities keep the same root specificity as ordinary utilities.
+ */
+function restoreStructuralUtilitySpecificity(selectorList) {
+  return selectorParser((selectors) => {
+    selectors.each((selector) => {
+      if (selector.nodes.length !== 1) return
+
+      const where = selector.first
+      if (
+        where.type !== 'pseudo' ||
+        where.value !== ':where' ||
+        where.nodes?.length !== 1
+      ) {
+        return
+      }
+
+      const innerSelector = where.nodes[0]
+      const firstNode = innerSelector.first
+      if (firstNode?.type !== 'class' || firstNode.value !== ROOT) return
+
+      selector.removeAll()
+      for (const node of innerSelector.nodes) selector.append(node.clone())
+    })
+  }).processSync(selectorList)
+}
+
 /** Scope selectors emitted by dependencies that Tailwind's `important`
  * selector does not cover: Preflight, property fallbacks, theme roots, and
  * Highlight.js. Preflight is unlayered after scoping so ordinary unlayered
@@ -57,6 +88,8 @@ function scopeLibraryGlobals() {
     postcssPlugin: 'apiuikit-scope-library-globals',
     Rule(rule) {
       if (!rule.selector) return
+
+      rule.selector = restoreStructuralUtilitySpecificity(rule.selector)
 
       if (
         isInLayer(rule, PREFLIGHT_LAYER) ||

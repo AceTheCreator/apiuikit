@@ -40,7 +40,7 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
 
   const isSend = op.action === OperationAction.SEND;
   const messageList = (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       {messages.map((msg, i) => (
         <Message key={i} message={msg} messageId={msg.name} i={i} />
       ))}
@@ -48,7 +48,7 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
   );
 
   return (
-    <div className="space-y-6" id={`operation-${id}-detail`}>
+    <div className="flex flex-col gap-6" id={`operation-${id}-detail`}>
       <div className="flex items-center gap-2">
         <span
           className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono bg-primary-50 text-primary-600 border border-primary-200`}
@@ -68,11 +68,11 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
           </a>
         )}
       </div>
-        {op.description && (
-          <div>
-            <Markdown>{op.description}</Markdown>
-          </div>
-        )}
+      {op.description && (
+        <div>
+          <Markdown>{op.description}</Markdown>
+        </div>
+      )}
       {op.summary && (
         <div>
           <p className="text-sm text-foreground-secondary">{op.summary}</p>

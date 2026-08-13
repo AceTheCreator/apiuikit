@@ -23,6 +23,22 @@ describe("AsyncAPI", () => {
     expect(bodyText).not.toContain("$ref");
   });
 
+  it("spaces operation details consistently with OpenAPI endpoint details", () => {
+    render(<AsyncAPI asyncapi={asDoc(exampleDoc)} />);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /receive.*lighting\.measured/i,
+      }),
+    );
+
+    expect(document.getElementById("operation-receiveLightMeasurement-detail")).toHaveClass(
+      "flex",
+      "flex-col",
+      "gap-6",
+    );
+  });
+
   it("hides the servers section when show.servers is false", () => {
     render(<AsyncAPI asyncapi={asDoc(exampleDoc)} config={{ show: { servers: false } }} />);
 
