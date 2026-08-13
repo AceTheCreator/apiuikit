@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import AsyncAPI from "../AsyncAPI";
 import type { AsyncAPIDocumentData } from "../../../types/schema";
@@ -59,6 +59,47 @@ describe("AsyncAPI", () => {
     const widgetRoot = container.firstElementChild as HTMLElement;
     expect(widgetRoot).not.toHaveClass("pt-14");
     expect(widgetRoot.children[1]).not.toHaveClass("pt-14");
+  });
+
+  it("moves the complete document toolbar as one unit while scrolling", async () => {
+    const { container } = render(<AsyncAPI asyncapi={asDoc(exampleDoc)} />);
+    const widgetRoot = container.firstElementChild as HTMLElement;
+    const toolbar = screen.getByLabelText("Document toolbar");
+    let top = 0;
+
+    vi.spyOn(widgetRoot, "getBoundingClientRect").mockImplementation(
+      () =>
+        ({
+          x: 100,
+          y: top,
+          top,
+          left: 100,
+          right: 700,
+          bottom: top + 1000,
+          width: 600,
+          height: 1000,
+          toJSON: () => ({}),
+        }) as DOMRect,
+    );
+
+    top = -20;
+    fireEvent.scroll(window);
+
+    await waitFor(() => {
+      expect(toolbar).toHaveStyle({ position: "fixed", transform: "translateY(-150%)" });
+    });
+    expect(toolbar.querySelector(".document-logo")).not.toBeNull();
+    expect(within(toolbar).getByRole("button", { name: "Search" })).toBeInTheDocument();
+    expect(
+      within(toolbar).getByRole("button", { name: "Copy as Markdown" }),
+    ).toBeInTheDocument();
+
+    top = -10;
+    fireEvent.scroll(window);
+
+    await waitFor(() => {
+      expect(toolbar).toHaveStyle({ position: "fixed", transform: "translateY(0px)" });
+    });
   });
 
   it("applies the host top offset to the sticky content tabs", () => {

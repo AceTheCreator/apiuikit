@@ -78,13 +78,35 @@
     stop-color: var(--color-secondary-light);
   }
 
-/* Base offsets for the floating toggle buttons that share this class: search
-   at left:12px (see SearchPanel.tsx), copy-as-markdown at left:60px when search
-   is shown (12 + 40 width + 8 gap) or 12px when it isn't (see Layouts). */
-.apiuikit-root .panel-toggle-btn {
+/* Branding and document actions share one positioned surface so the complete
+   masthead follows the same hide/reveal behavior while scrolling. */
+.apiuikit-root .document-topbar {
   position: absolute;
   top: 10px;
-  left: 12px;
+  left: 16px;
+  right: 16px;
+  z-index: 40;
+  height: 40px;
+  pointer-events: none;
+  transition: transform 0.3s ease-in-out;
+}
+
+.apiuikit-root .document-topbar-inner {
+  display: flex;
+  height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgb(var(--color-background) / 1);
+}
+
+.apiuikit-root .document-topbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.apiuikit-root .panel-toggle-btn {
   width: 40px;
   height: 40px;
   display: flex;
@@ -93,11 +115,25 @@
   border-radius: 8px;
   cursor: pointer;
   color: #64748b;
-  z-index: 51;
   pointer-events: auto;
-  /* Panel-follow and hide/reveal both move via transform; `left` must not
-     transition or the absolute<->fixed swap would animate horizontally. */
-  transition: background 0.2s ease, color 0.2s ease, transform 0.3s ease-in-out;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* Keep large source images inside the masthead's 40px-high row. */
+.apiuikit-root .document-logo {
+  display: flex;
+  height: 40px;
+  max-width: 120px;
+  align-items: center;
+}
+
+.apiuikit-root .document-logo:empty {
+  display: none;
+}
+
+.apiuikit-root .document-logo img {
+  max-height: 40px;
+  max-width: 120px;
 }
 
 .apiuikit-root .panel-toggle-btn:hover {

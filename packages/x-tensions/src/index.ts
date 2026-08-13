@@ -1,6 +1,7 @@
 import type { ExtensionCatalog, ExtensionLoader } from "./types";
 
 export type { ExtensionComponent, ExtensionComponentProps, ExtensionLoader, ExtensionCatalog } from "./types";
+export { resolveLogo } from "./extensions/logoValue";
 
 /**
  * Known spec extensions this library can render inline (e.g. in an icon
@@ -15,8 +16,7 @@ export const catalog: ExtensionCatalog = {
 };
 
 /**
- * x-logo renders at the top of the info metadata section rather than in the
- * generic icon row, so it's consumed directly by callers instead of through
- * `catalog`.
+ * x-logo renders as document branding rather than in the generic icon row,
+ * so it's consumed directly by callers instead of through `catalog`.
  */
 export const logoLoader: ExtensionLoader = () => import("./extensions/LogoExtension");

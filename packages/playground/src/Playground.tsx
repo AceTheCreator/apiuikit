@@ -22,6 +22,8 @@ import { netlifyTheme } from './themes/netlify'
 
 const DEFAULT_DOC_TEXT = DEFAULT_SUGGESTED_SCHEMA.content
 const UI_MODE_STORAGE_KEY = 'apiuikit-playground-ui-mode'
+const PLAYGROUND_FONT_FAMILY =
+  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
 const MARKDOWN_CANDIDATES_BY_LENGTH = new Map<number, Array<{ content: string; path: string }>>()
 for (const { content, markdownPath } of SUGGESTED_SCHEMAS) {
   if (content === undefined || markdownPath === undefined) continue
@@ -149,7 +151,16 @@ export function Playground({
   const { containerRef, splitPercent, handlePointerDown, nudge } = useResizableSplit()
 
   return (
-    <div ref={containerRef} style={{ display: 'flex', height, position: 'relative', background: palette.chromeBg }}>
+    <div
+      ref={containerRef}
+      style={{
+        display: 'flex',
+        height,
+        position: 'relative',
+        background: palette.chromeBg,
+        fontFamily: PLAYGROUND_FONT_FAMILY,
+      }}
+    >
       <div
         className="playground-preview-scroll"
         style={{ width: editorExpanded ? `${splitPercent}%` : '100%', overflow: 'auto' }}

@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import IconCopy from "../icons/Copy";
 import IconCheck from "../icons/Check";
 import IconExternalLink from "../icons/ExternalLink";
 import IconArrowDown from "../icons/ArrowDown";
 import { useAsyncAPIDocument } from "../contexts";
-import { useAutoHideOnScroll } from "../utils/useAutoHideOnScroll";
-import { useElementRect } from "../utils/useElementRect";
 
 interface MarkdownExportMenuProps {
   /** Builds the Markdown string for the whole document, given `deref` (from
@@ -15,48 +12,30 @@ interface MarkdownExportMenuProps {
    * when a menu item is clicked — serialization isn't free for large
    * documents, so it shouldn't run on every render/open. */
   serialize: (deref: (ref: string) => unknown) => string;
-  /** Left offset (px) for this floating button. Layouts pass 60 when search is
-   * shown (12 + 40 width + 8 gap) or 12 when it isn't — see index.css. */
-  leftOffset: number;
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
-export default function MarkdownExportMenu({ serialize, leftOffset }: MarkdownExportMenuProps) {
+export default function MarkdownExportMenu({
+  serialize,
+  onOpenChange,
+}: MarkdownExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const {
-    portalHost,
-    rootElement,
-    deref,
-    document: specDocument,
-    markdownUrl,
-    topOffset = 0,
-  } = useAsyncAPIDocument();
+  const { deref, document: specDocument, markdownUrl } = useAsyncAPIDocument();
   const getMarkdown = () => serialize(deref);
-
-  const toggleMode = useAutoHideOnScroll(rootElement, isOpen);
-  const isPinnedToViewport = toggleMode !== "docked";
-  const rootRect = useElementRect(rootElement, isPinnedToViewport);
-
-  const toggleStyle: React.CSSProperties = {
-    left: isPinnedToViewport ? (rootRect?.left ?? 0) + leftOffset : leftOffset,
-    transform: `translateY(${toggleMode === "hidden" ? "-150%" : "0px"})`,
-    zIndex: 40,
-    ...(isPinnedToViewport
-      ? {
-          position: "fixed",
-          top: topOffset + 10,
-          pointerEvents: toggleMode === "hidden" ? "none" : undefined,
-        }
-      : {}),
-  };
 
   useEffect(() => {
     return () => {
       if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+    return () => onOpenChange?.(false);
+  }, [isOpen, onOpenChange]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -136,7 +115,7 @@ export default function MarkdownExportMenu({ serialize, leftOffset }: MarkdownEx
   };
 
   return (
-    <>
+    <div ref={menuRef} className="relative">
       <button
         type="button"
         onClick={() => setIsOpen((v) => !v)}
@@ -148,7 +127,6 @@ export default function MarkdownExportMenu({ serialize, leftOffset }: MarkdownEx
         aria-haspopup="menu"
         aria-expanded={isOpen}
         className="panel-toggle-btn panel-toggle-btn--labeled bg-neutral-100 hover:bg-neutral-200"
-        style={toggleStyle}
       >
         {copied ? (
           <IconCheck className="w-4 h-4 shrink-0 text-green-600" />
@@ -161,46 +139,36 @@ export default function MarkdownExportMenu({ serialize, leftOffset }: MarkdownEx
         />
       </button>
 
-      {isOpen &&
-        portalHost &&
-        createPortal(
-          <div
-            ref={menuRef}
-            role="menu"
-            style={{
-              position: isPinnedToViewport ? "fixed" : "absolute",
-              top: isPinnedToViewport ? topOffset + 54 : 54,
-              left: toggleStyle.left,
-              zIndex: 41,
-            }}
-            className="w-56 overflow-hidden rounded-lg border border-border bg-surface shadow-xl"
+      {isOpen && (
+        <div
+          role="menu"
+          className="absolute right-0 top-11 z-[41] w-56 overflow-hidden rounded-lg border border-border bg-surface shadow-xl"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleCopy}
+            className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-neutral-100"
           >
-            <button
-              type="button"
-              role="menuitem"
-              onClick={handleCopy}
-              className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left hover:bg-neutral-100"
-            >
-              <span className="text-sm font-medium text-foreground">
-                {copied ? "Copied!" : "Copy for LLM"}
-              </span>
-              <span className="text-xs text-foreground-muted">Copy page as Markdown</span>
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={handleViewAsMarkdown}
-              className="flex w-full items-start justify-between gap-2 px-3 py-2 text-left hover:bg-neutral-100 border-t border-border"
-            >
-              <span className="flex flex-col items-start gap-0.5">
-                <span className="text-sm font-medium text-foreground">View as Markdown</span>
-                <span className="text-xs text-foreground-muted">Open this page as Markdown</span>
-              </span>
-              <IconExternalLink className="w-3.5 h-3.5 mt-0.5 shrink-0 text-foreground-muted" />
-            </button>
-          </div>,
-          portalHost,
-        )}
-    </>
+            <span className="text-sm font-medium text-foreground">
+              {copied ? "Copied!" : "Copy for LLM"}
+            </span>
+            <span className="text-xs text-foreground-muted">Copy page as Markdown</span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleViewAsMarkdown}
+            className="flex w-full items-start justify-between gap-2 px-3 py-2 text-left hover:bg-neutral-100 border-t border-border"
+          >
+            <span className="flex flex-col items-start gap-0.5">
+              <span className="text-sm font-medium text-foreground">View as Markdown</span>
+              <span className="text-xs text-foreground-muted">Open this page as Markdown</span>
+            </span>
+            <IconExternalLink className="w-3.5 h-3.5 mt-0.5 shrink-0 text-foreground-muted" />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

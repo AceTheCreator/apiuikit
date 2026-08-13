@@ -3,6 +3,9 @@ import { ReactNode } from "react";
 /** Doc section column geometry. Default `"columns"` keeps the reserved right gutter. */
 export type SectionLayout = "columns" | "stacked";
 
+/** Shared width used by full document sections and their top toolbar. */
+export const SECTION_COLUMNS_WIDTH = "@lg:mx-auto @lg:max-w-[calc(70ch+28rem)]";
+
 interface SectionProps {
   title?: string;
   content?: ReactNode;
@@ -45,7 +48,7 @@ export default function Section({
   return (
     <div
       className={`w-full mt-6 ${
-        stacked ? "" : "@lg:mx-auto @lg:max-w-[calc(70ch+28rem)]"
+        stacked ? "" : SECTION_COLUMNS_WIDTH
       }`}
     >
       {mobileLeadContent && (

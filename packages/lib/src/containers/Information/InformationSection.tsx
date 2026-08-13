@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { logoLoader } from "x-tensions";
+import { logoLoader, resolveLogo } from "x-tensions";
 import Section, { type SectionLayout } from "../../components/Section";
 import Markdown from "../../components/Markdown";
 import InfoMetadata from "../../components/InfoMetadata";
@@ -17,6 +17,27 @@ interface InformationSectionProps {
   /** The raw `info` object, scanned for x-* extensions (`x-logo` plus the x-tensions catalog). */
   extensionsSource?: object;
   layout?: SectionLayout;
+  /** Full document layouts render the logo in their masthead instead. */
+  showLogo?: boolean;
+}
+
+interface InformationLogoProps {
+  source?: object;
+}
+
+export const hasInformationLogo = (source?: object): boolean =>
+  resolveLogo(getExtension(source, "x-logo")) !== null;
+
+/** Renders the special `info.x-logo` extension outside the generic extension row. */
+export function InformationLogo({ source }: InformationLogoProps) {
+  const value = getExtension(source, "x-logo");
+  if (!resolveLogo(value)) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <LazyLogo value={value} path="info.x-logo" />
+    </Suspense>
+  );
 }
 
 export default function InformationSection({
@@ -28,14 +49,9 @@ export default function InformationSection({
   tags,
   extensionsSource,
   layout,
+  showLogo = true,
 }: InformationSectionProps) {
-  const logoValue = getExtension(extensionsSource, "x-logo");
-
-  const logo = logoValue !== undefined && (
-    <Suspense fallback={null}>
-      <LazyLogo value={logoValue} path="info.x-logo" />
-    </Suspense>
-  );
+  const logo = showLogo ? <InformationLogo source={extensionsSource} /> : null;
 
   const content = (
     <div className="mt-4 w-full">

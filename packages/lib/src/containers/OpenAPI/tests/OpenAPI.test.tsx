@@ -167,13 +167,11 @@ describe("OpenAPI", () => {
     };
     render(<OpenAPI openapi={asDoc(doc)} />);
 
-    // Rendered twice (once for the mobile lead position, once atop the
-    // desktop sidebar), with only one visible per breakpoint via CSS.
-    const logos = await screen.findAllByRole("img", { name: "logo" });
-    expect(logos.length).toBeGreaterThan(0);
-    for (const logo of logos) {
-      expect(logo).toHaveAttribute("src", "https://example.com/logo.svg");
-    }
+    const masthead = screen.getByLabelText("Document toolbar");
+    const logo = await within(masthead).findByRole("img", { name: "logo" });
+    expect(logo).toHaveAttribute("src", "https://example.com/logo.svg");
+    expect(screen.getAllByRole("img", { name: "logo" })).toHaveLength(1);
+    expect(within(document.getElementById("info-panel")!).queryByRole("img")).not.toBeInTheDocument();
     expect(await screen.findByRole("link", { name: /@PetstoreAPI on X/i })).toBeInTheDocument();
   });
 

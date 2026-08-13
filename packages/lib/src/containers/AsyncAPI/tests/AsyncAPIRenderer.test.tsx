@@ -59,26 +59,31 @@ describe("AsyncAPIRenderer", () => {
     expect(schemasPanel.getByText("avro 1.9.0")).toBeInTheDocument();
   });
 
-  it("renders info.x-logo at the top of the info metadata section", async () => {
+  it("renders info.x-logo once in the top-left masthead", async () => {
     render(<AsyncAPIRenderer raw={raw} />);
     await screen.findByRole("heading", { name: "Streetlights Kafka API" });
 
     const infoPanel = document.getElementById("info-panel")!;
-    // Rendered twice (once for the mobile lead position, once atop the
-    // desktop sidebar), with only one visible per breakpoint via CSS.
-    const logos = await within(infoPanel).findAllByRole("img", { name: "logo" });
-    expect(logos.length).toBeGreaterThan(0);
+    expect(within(infoPanel).queryByRole("img", { name: "logo" })).not.toBeInTheDocument();
 
-    // "Top of the metadata section": each logo's container precedes the
-    // license/external-docs/tags definition lists, not the other way round.
-    const dl = infoPanel.querySelector("dl")!;
-    for (const logo of logos) {
-      expect(logo).toHaveAttribute(
-        "src",
-        "https://cdn.prod.website-files.com/60e49b51af3305d435c286ab/60e78065113f2f12904a43b1_aklivity-logo.svg",
-      );
-      expect(logo.compareDocumentPosition(dl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    }
+    const masthead = screen.getByLabelText("Document toolbar");
+    const logo = await within(masthead).findByRole("img", { name: "logo" });
+    expect(logo).toHaveAttribute(
+      "src",
+      "https://cdn.prod.website-files.com/60e49b51af3305d435c286ab/60e78065113f2f12904a43b1_aklivity-logo.svg",
+    );
+    expect(screen.getAllByRole("img", { name: "logo" })).toHaveLength(1);
+    expect(masthead).toHaveStyle({ left: "16px", right: "16px" });
+    expect(masthead.firstElementChild).toHaveClass(
+      "@lg:max-w-[calc(70ch+28rem)]",
+    );
+    const search = within(masthead).getByRole("button", { name: "Search" });
+    const copyMarkdown = within(masthead).getByRole("button", {
+      name: "Copy as Markdown",
+    });
+    expect(
+      search.compareDocumentPosition(copyMarkdown) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("re-parses when raw changes and reflects the new document", async () => {

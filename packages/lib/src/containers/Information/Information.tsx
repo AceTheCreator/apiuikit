@@ -3,7 +3,10 @@ import type { SectionLayout } from "../../components/Section";
 import InformationSection from "./InformationSection";
 import { Info as AsyncAPIMetadata } from "../../types/asyncapi/Info";
 
-type InformationProps = AsyncAPIMetadata & { layout?: SectionLayout };
+type InformationProps = AsyncAPIMetadata & {
+  layout?: SectionLayout;
+  showLogo?: boolean;
+};
 
 const Information: React.FunctionComponent<InformationProps> = ({
   title,
@@ -13,6 +16,7 @@ const Information: React.FunctionComponent<InformationProps> = ({
   contact,
   tags,
   layout,
+  showLogo,
   ...extensionsSource
 }) => {
   return (
@@ -28,6 +32,7 @@ const Information: React.FunctionComponent<InformationProps> = ({
       tags={tags}
       extensionsSource={extensionsSource}
       layout={layout}
+      showLogo={showLogo}
     />
   );
 };
