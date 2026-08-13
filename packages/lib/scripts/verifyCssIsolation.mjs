@@ -39,6 +39,12 @@ root.walkRules((rule) => {
         `[apiuikit] CSS isolation check failed: unscoped selector ${selector}`,
       )
     }
+
+    if (selector.includes(`:where(${ROOT}`)) {
+      throw new Error(
+        `[apiuikit] CSS isolation check failed: ${ROOT} loses specificity inside :where() in ${selector}`,
+      )
+    }
   }
 
   rules.push({ rule, selectors, layered: isLayered(rule) })
@@ -57,6 +63,14 @@ const requiredRules = [
   { selector: `${ROOT} .\\@sm\\:block`, property: 'display', value: 'block' },
   { selector: `${ROOT} .flex-col`, property: 'flex-direction', value: 'column' },
   { selector: `${ROOT} .\\@lg\\:flex-row`, property: 'flex-direction', value: 'row' },
+  {
+    selector: `${ROOT} .divide-x>:not(:last-child)`,
+    property: 'border-inline-end-width',
+  },
+  {
+    selector: `${ROOT} .space-y-6>:not(:last-child)`,
+    property: 'margin-block-end',
+  },
   { selector: `${ROOT} .hljs` },
   // Unlike optional font tokens, spacing is referenced by generated layout
   // utilities and therefore proves the scoped Tailwind theme was emitted.
