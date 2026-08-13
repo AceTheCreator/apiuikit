@@ -2,6 +2,11 @@ import type { AsyncAPIDocumentData } from "../types/schema";
 import type { HttpMethod, OpenAPIDocumentData } from "../types/openapi";
 
 export interface ConfigInterface {
+  /**
+   * Host-page safe area in pixels above fixed and sticky widget controls.
+   * Set this to the height of a fixed/sticky site navbar. Defaults to `0`.
+   */
+  topOffset?: number;
   show?: ShowConfig;
   expand?: ExpandConfig;
   sidebar?: SideBarConfig;
@@ -23,6 +28,12 @@ export interface SidePanelConfig {
    * `"component"` — overlay is clipped to the widget's root element.
    */
   containment?: SidePanelContainment;
+  /**
+   * Optional override for the widget-wide `topOffset` on component-contained
+   * panels. Defaults to `ConfigInterface.topOffset` and has no effect when
+   * `containment` is `"viewport"`.
+   */
+  topOffset?: number;
 }
 
 type MarkdownDocument = AsyncAPIDocumentData | OpenAPIDocumentData;

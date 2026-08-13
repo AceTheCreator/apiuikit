@@ -10,6 +10,7 @@ See the definition of the object that you must pass to the `config` prop to modi
 
 ```ts
 interface ConfigInterface {
+  topOffset?: number;
   show?: {
     sidebar?: boolean;
     info?: boolean;
@@ -29,6 +30,7 @@ interface ConfigInterface {
   };
   sidePanel?: {
     containment?: "component" | "viewport";
+    topOffset?: number;
   };
   theme?: {
     colors?: ThemeColors;
@@ -73,6 +75,10 @@ interface ThemeModeColors {
 
   `search` controls whether the search panel is shown. `schemas` and `messageExamples` default to `false`. All other fields default to `true`.
 
+- **topOffset?: number**
+
+  Reserves a host-page safe area above the widget's fixed and sticky controls. Set it to the height of a fixed or sticky site navbar. The navigation spine/popover, search, Copy-as-Markdown, search overlay, sticky content tabs, and component-contained side panels all respect it. Defaults to `0`.
+
 - **sidebar?: Partial\<SideBarConfig\>**
 
   Controls the behaviour of the side navigation panel.
@@ -84,6 +90,8 @@ interface ThemeModeColors {
   Controls where SidePanel overlays (opened from Operations / endpoints) are clipped.
 
   `containment`: `"viewport"` (default) covers the full browser viewport edge-to-edge, preserving the existing behavior. `"component"` clips the overlay to the widget's root element — useful for contained embeds and standalone sections.
+
+  `topOffset`: optionally overrides the widget-wide `topOffset` for component-contained panels. It does not affect `"viewport"` containment.
 
 - **expand?: Partial\<ExpandConfig\>**
 

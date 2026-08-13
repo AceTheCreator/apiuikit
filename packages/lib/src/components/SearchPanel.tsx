@@ -30,7 +30,7 @@ export default function SearchPanel({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
   const resultsId = "asyncapi-search-results";
-  const { portalHost, rootElement } = useAsyncAPIDocument();
+  const { portalHost, rootElement, topOffset = 0 } = useAsyncAPIDocument();
 
   // Same "hide on scroll down, reveal on scroll up, pin while open" behavior
   // as the sidebar toggle button, just anchored a bit further right.
@@ -48,7 +48,7 @@ export default function SearchPanel({
     ...(isPinnedToViewport
       ? {
           position: "fixed",
-          top: 10,
+          top: topOffset + 10,
           pointerEvents: toggleMode === "hidden" ? "none" : undefined,
         }
       : {}),
@@ -233,7 +233,10 @@ export default function SearchPanel({
           // z-[60] — above this search toggle, the nav spine (z-51), and the
           // nav popover (z-52), so the backdrop dims them along with the rest
           // of the page instead of leaving them floating on top of it.
-          <div className="fixed inset-0 z-[60] flex justify-center px-4 pt-24">
+          <div
+            className="fixed inset-0 z-[60] flex justify-center px-4 pt-24"
+            style={{ top: topOffset }}
+          >
             <div className="absolute inset-0 bg-black/30" />
             <div
               ref={modalRef}

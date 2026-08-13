@@ -81,7 +81,7 @@ export default function Navigation({
   const [open, setOpen] = useState(false);
   const [hovering, setHovering] = useState(false);
   const isVisible = open || hovering;
-  const { rootElement, portalHost } = useAsyncAPIDocument();
+  const { rootElement, portalHost, topOffset = 0 } = useAsyncAPIDocument();
   const toggleRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -224,7 +224,9 @@ export default function Navigation({
   // the rect is null there anyway, so everything below degrades to hidden.
   const viewportWidth = typeof window === "undefined" ? 0 : window.innerWidth;
   const viewportHeight = typeof window === "undefined" ? 0 : window.innerHeight;
-  const widgetInView = !!rootRect && rootRect.bottom > 0 && rootRect.top < viewportHeight;
+  const widgetInView = !!rootRect && rootRect.bottom > topOffset && rootRect.top < viewportHeight;
+  const availableViewportHeight = Math.max(0, viewportHeight - topOffset);
+  const viewportContentCenter = topOffset + availableViewportHeight / 2;
 
   // The spine lives in the left gutter that Section's centered content leaves
   // on wide layouts. Below this width there is no gutter (content runs edge
@@ -243,7 +245,7 @@ export default function Navigation({
 
   const spineStyle: React.CSSProperties = {
     position: "fixed",
-    top: "50%",
+    top: viewportContentCenter,
     left: (rootRect?.left ?? 0) + NAV_LEFT_OFFSET,
     transform: "translateY(-50%)",
     zIndex: 51,
@@ -279,9 +281,10 @@ export default function Navigation({
       }
     : {
         position: "fixed",
-        top: "50%",
+        top: viewportContentCenter,
         left: (rootRect?.left ?? 0) + NAV_LEFT_OFFSET,
         transform: "translateY(-50%)",
+        maxHeight: `calc(100vh - ${topOffset + 32}px)`,
         zIndex: 52,
       };
 
@@ -409,7 +412,7 @@ export default function Navigation({
   // whichever end holds the active tick) the item ticks are downsampled to fit:
   // a shorter rail that still spans every section beats a full-length one whose
   // ends are off screen.
-  const tickBudget = spineTickBudget(viewportHeight, spineSections.length);
+  const tickBudget = spineTickBudget(availableViewportHeight, spineSections.length);
 
   // Same reasoning as `sectionList`: keep the tick elements stable across the
   // scroll-driven repositioning re-renders.

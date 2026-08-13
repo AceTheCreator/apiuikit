@@ -28,6 +28,7 @@ const isOpenAPITabKey = (value: string): value is OpenAPITabKey =>
 
 export default function Layout({ openapi, config }: OpenAPILayoutProps) {
   const show = config.show ?? {};
+  const hasTopControls = show.search !== false || show.copyMarkdown !== false;
 
   // Webhooks are 3.1-only and rare, so unlike the other tabs this one appears
   // only when the document actually declares some — an always-empty Webhooks
@@ -101,12 +102,8 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
     ) : null;
 
   return (
-    <OpenAPIDocumentProvider
-      document={openapi}
-      config={config}
-      className={show.sidebar !== false ? "pt-14" : ""}
-    >
-      <div className="px-4">
+    <OpenAPIDocumentProvider document={openapi} config={config}>
+      <div className={`px-4 ${hasTopControls && tabs.length > 0 ? "pt-14" : ""}`}>
         {show.search !== false && (
           <SearchPanel
             query={searchQuery}

@@ -35,6 +35,41 @@ describe("AsyncAPI", () => {
     expect(screen.queryByPlaceholderText("Search document...")).not.toBeInTheDocument();
   });
 
+  it("keeps search available when the sidebar is hidden", () => {
+    const { container } = render(
+      <AsyncAPI asyncapi={asDoc(exampleDoc)} config={{ show: { sidebar: false } }} />,
+    );
+
+    expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+    const widgetRoot = container.firstElementChild as HTMLElement;
+    expect(widgetRoot).not.toHaveClass("pt-14");
+    expect(widgetRoot.children[1]).toHaveClass("pt-14");
+  });
+
+  it("does not reserve the content-bar row when no content tabs are visible", () => {
+    const { container } = render(
+      <AsyncAPI
+        asyncapi={asDoc(exampleDoc)}
+        config={{ show: { operations: false, messages: false, schemas: false } }}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: "AsyncAPI sections" })).not.toBeInTheDocument();
+    const widgetRoot = container.firstElementChild as HTMLElement;
+    expect(widgetRoot).not.toHaveClass("pt-14");
+    expect(widgetRoot.children[1]).not.toHaveClass("pt-14");
+  });
+
+  it("applies the host top offset to the sticky content tabs", () => {
+    render(<AsyncAPI asyncapi={asDoc(exampleDoc)} config={{ topOffset: 64 }} />);
+
+    const tabBar = screen
+      .getByRole("tablist", { name: "AsyncAPI sections" })
+      .closest(".sticky") as HTMLElement;
+    expect(tabBar.style.top).toBe("64px");
+  });
+
   it("opens the search modal via Ctrl+K/Cmd+K when the widget is hovered", () => {
     const { container } = render(<AsyncAPI asyncapi={asDoc(exampleDoc)} />);
     expect(screen.queryByRole("combobox", { name: "Search document" })).not.toBeInTheDocument();

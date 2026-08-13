@@ -7,7 +7,7 @@ import { OpenAPIDocumentData } from "../../types/openapi";
 export interface OpenAPIDocumentProviderProps {
   document: OpenAPIDocumentData;
   config?: ConfigInterface;
-  /** Extra classes merged onto the root surface (e.g. Layout's sidebar `pt-14`). */
+  /** Extra classes merged onto the root surface. */
   className?: string;
   children: ReactNode;
 }
@@ -26,7 +26,7 @@ export function OpenAPIDocumentProvider({
       <div
         ref={setRootElement}
         style={themeVars as React.CSSProperties}
-        className={`relative @container bg-background text-foreground p-2 ${className}`}
+        className={`relative @container bg-background text-foreground ${className}`}
       >
         <div ref={setPortalHost} className="openapi-portal-root" />
         {children}

@@ -25,7 +25,14 @@ export default function MarkdownExportMenu({ serialize, leftOffset }: MarkdownEx
   const [copied, setCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const { portalHost, rootElement, deref, document: specDocument, markdownUrl } = useAsyncAPIDocument();
+  const {
+    portalHost,
+    rootElement,
+    deref,
+    document: specDocument,
+    markdownUrl,
+    topOffset = 0,
+  } = useAsyncAPIDocument();
   const getMarkdown = () => serialize(deref);
 
   const toggleMode = useAutoHideOnScroll(rootElement, isOpen);
@@ -39,7 +46,7 @@ export default function MarkdownExportMenu({ serialize, leftOffset }: MarkdownEx
     ...(isPinnedToViewport
       ? {
           position: "fixed",
-          top: 10,
+          top: topOffset + 10,
           pointerEvents: toggleMode === "hidden" ? "none" : undefined,
         }
       : {}),
@@ -162,7 +169,7 @@ export default function MarkdownExportMenu({ serialize, leftOffset }: MarkdownEx
             role="menu"
             style={{
               position: isPinnedToViewport ? "fixed" : "absolute",
-              top: isPinnedToViewport ? 54 : 54,
+              top: isPinnedToViewport ? topOffset + 54 : 54,
               left: toggleStyle.left,
               zIndex: 41,
             }}

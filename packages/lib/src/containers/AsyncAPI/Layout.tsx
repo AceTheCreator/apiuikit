@@ -30,6 +30,7 @@ const isAsyncAPITabKey = (value: string): value is AsyncAPITabKey =>
 
 export default function Layout({ asyncapi, config }: LayoutProps) {
   const show = config.show ?? {};
+  const hasTopControls = show.search !== false || show.copyMarkdown !== false;
 
   const tabs: ContentTabItem[] = [
     ...(show.operations !== false ? [{ id: "operations", name: "Operations", icon: IconOperation }] : []),
@@ -91,12 +92,8 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
     ) : null;
 
   return (
-    <AsyncAPIDocumentProvider
-      document={asyncapi}
-      config={config}
-      className={show.sidebar !== false ? "pt-14" : ""}
-    >
-      <div className="px-4">
+    <AsyncAPIDocumentProvider document={asyncapi} config={config}>
+      <div className={`px-4 ${hasTopControls && tabs.length > 0 ? "pt-14" : ""}`}>
         {show.search !== false && (
           <SearchPanel
             query={searchQuery}
