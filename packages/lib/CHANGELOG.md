@@ -1,5 +1,11 @@
 # apiuikit
 
+## 1.5.1
+
+### Patch Changes
+
+- b75a103: Isolate APIUIkit's Tailwind utilities and resets from host styles, add a widget-wide top offset for host navigation, improve contained side-panel and sticky-tab behavior, keep search available independently of sidebar visibility, unify document branding and search/Markdown actions in a responsive scrolling top bar, improve responsive information-title placement, and improve Markdown contrast across themes.
+
 ## 1.5.0
 
 ### Minor Changes
