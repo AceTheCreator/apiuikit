@@ -1,10 +1,7 @@
-/* Keep every import before @config/@tailwind. PostCSS otherwise leaves later
-   imports unresolved and the built package loses Tailwind theme/Preflight. */
-@layer theme, base, components, utilities;
-@import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/preflight.css' layer(base);
 @import 'highlight.js/styles/night-owl.css';
 @config '../tailwind.config.js';
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
 @tailwind utilities;
 
 .apiuikit-root {
@@ -114,7 +111,7 @@
   white-space: nowrap;
 }
 
-.apiuikit-root ::highlight(search-match) {
+.apiuikit-root :highlight(search-match) {
   background-color: yellow;
   color: black;
 }
