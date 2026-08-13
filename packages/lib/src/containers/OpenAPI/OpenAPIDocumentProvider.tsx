@@ -26,7 +26,7 @@ export function OpenAPIDocumentProvider({
       <div
         ref={setRootElement}
         style={themeVars as React.CSSProperties}
-        className={`relative @container bg-background text-foreground ${className}`}
+        className={`apiuikit-root relative @container bg-background text-foreground ${className}`}
       >
         <div ref={setPortalHost} className="openapi-portal-root" />
         {children}

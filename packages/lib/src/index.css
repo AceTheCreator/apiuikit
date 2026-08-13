@@ -1,22 +1,27 @@
+/* Keep every import before @config/@tailwind. PostCSS otherwise leaves later
+   imports unresolved and the built package loses Tailwind theme/Preflight. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
 @import 'highlight.js/styles/night-owl.css';
-@import 'tailwindcss';
-
 @config '../tailwind.config.js';
+@tailwind utilities;
 
-html,
-body {
-  padding: 0;
-  margin: 0;
+.apiuikit-root {
+  position: relative;
+  container-type: inline-size;
+  color: rgb(var(--color-text-primary) / 1);
+  background-color: rgb(var(--color-background) / 1);
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 }
 
-a {
+.apiuikit-root a {
   color: inherit;
   text-decoration: none;
 }
 
-  :root {
+.apiuikit-root {
 
   --color-background: 248 250 252;
   --color-surface: 255 255 255;
@@ -64,18 +69,18 @@ a {
   }
   
   
-  .primary-gradient-color-stop {
+.apiuikit-root .primary-gradient-color-stop {
     stop-color: var(--color-primary);
   }
   
-  .secondary-gradient-color-stop {
+.apiuikit-root .secondary-gradient-color-stop {
     stop-color: var(--color-secondary-light);
   }
 
 /* Base offsets for the floating toggle buttons that share this class: search
    at left:12px (see SearchPanel.tsx), copy-as-markdown at left:60px when search
    is shown (12 + 40 width + 8 gap) or 12px when it isn't (see Layouts). */
-.panel-toggle-btn {
+.apiuikit-root .panel-toggle-btn {
   position: absolute;
   top: 10px;
   left: 12px;
@@ -94,13 +99,13 @@ a {
   transition: background 0.2s ease, color 0.2s ease, transform 0.3s ease-in-out;
 }
 
-.panel-toggle-btn:hover {
+.apiuikit-root .panel-toggle-btn:hover {
   color: #334155;
 }
 
 /* Labelled variant: same floating placement and height as the square toggles
    it sits beside, but sized to its own text rather than to a 40px box. */
-.panel-toggle-btn--labeled {
+.apiuikit-root .panel-toggle-btn--labeled {
   width: auto;
   gap: 8px;
   padding: 0 12px;
@@ -109,7 +114,7 @@ a {
   white-space: nowrap;
 }
 
-::highlight(search-match) {
+.apiuikit-root ::highlight(search-match) {
   background-color: yellow;
   color: black;
 }
