@@ -22,13 +22,6 @@ import { netlifyTheme } from './themes/netlify'
 
 const DEFAULT_DOC_TEXT = DEFAULT_SUGGESTED_SCHEMA.content
 const UI_MODE_STORAGE_KEY = 'apiuikit-playground-ui-mode'
-const MARKDOWN_CANDIDATES_BY_LENGTH = new Map<number, Array<{ content: string; path: string }>>()
-for (const { content, markdownPath } of SUGGESTED_SCHEMAS) {
-  if (content === undefined || markdownPath === undefined) continue
-  const candidates = MARKDOWN_CANDIDATES_BY_LENGTH.get(content.length) ?? []
-  candidates.push({ content, path: markdownPath })
-  MARKDOWN_CANDIDATES_BY_LENGTH.set(content.length, candidates)
-}
 
 function readStoredUiMode(): UiMode | null {
   try {
@@ -118,32 +111,16 @@ export function Playground({
   // forwards the branch matching the current mode, ignoring whichever theme.light/theme.dark
   // the user's own edited config also defines for the other mode. Brand `colors` scales
   // and `depthColors` aren't mode-specific, so they always pass through untouched.
-  // Bundled examples are rendered to Markdown at build time, so when the editor
-  // holds one verbatim, "View as Markdown" can open that real URL instead of a
-  // blob. Derived from the text rather than tracked as state on load, so the
-  // first edit invalidates it on its own: an edited document no longer matches
-  // the file being served, and pointing at it would be a lie.
-  const exampleMarkdownPath = useMemo(() => {
-    // Index by length first: almost every edit invalidates the hosted twin
-    // without comparing the full (potentially multi-megabyte) document.
-    return (
-      MARKDOWN_CANDIDATES_BY_LENGTH.get(docText.length)?.find(({ content }) => content === docText)?.path ?? null
-    )
-  }, [docText])
-
   const previewConfig = useMemo<ConfigInterface>(
     () => ({
       ...config.value,
-      // The config editor stays authoritative: this only fills in when the user
-      // hasn't set `markdown` themselves.
-      markdown: config.value.markdown ?? { url: () => exampleMarkdownPath },
       theme: {
         colors: config.value.theme?.colors,
         depthColors: config.value.theme?.depthColors,
         ...(uiMode === 'dark' ? { dark: config.value.theme?.dark } : { light: config.value.theme?.light }),
       },
     }),
-    [config.value, uiMode, exampleMarkdownPath],
+    [config.value, uiMode],
   )
 
   const { containerRef, splitPercent, handlePointerDown, nudge } = useResizableSplit()

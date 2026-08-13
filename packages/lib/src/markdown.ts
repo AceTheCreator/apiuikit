@@ -4,6 +4,7 @@
  */
 export { documentToLlmsTxt, documentToMarkdown, listDocumentTargets, targetSlug } from "./helpers/llmsTxt";
 export type { DocumentTarget, LlmsTxtLink, LlmsTxtOptions } from "./helpers/llmsTxt";
+export { markdownForLlm } from "./helpers/markdownForLlm";
 export {
   asyncApiOperationToMarkdown,
   asyncApiToMarkdown,

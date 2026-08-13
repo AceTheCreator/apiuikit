@@ -22,7 +22,7 @@ interface DocumentContextBase {
   showExtensions: boolean;
   /** Whether to render per-operation / per-endpoint code samples. Defaults to true. */
   showCodeSamples: boolean;
-  /** Resolves the hosted URL serving a target as Markdown, if the consumer serves one (config.markdown.url). Undefined means "View as Markdown" falls back to a generated `blob:` URL. */
+  /** Resolves the hosted URL serving a target as Markdown, if the consumer serves one (config.markdown.url). */
   markdownUrl?: MarkdownUrlResolver;
 }
 

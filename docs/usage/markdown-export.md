@@ -6,31 +6,33 @@ Everything here serves one goal: making a docs site built with apiuikit readable
 
 Every rendered document carries a floating **Copy as Markdown** button with two actions:
 
-- **Copy for LLM**: writes the whole document, serialized as Markdown, to the clipboard.
-- **View as Markdown**: opens that same Markdown in a new tab.
+- **Copy for LLM**: writes the whole document, serialized as Markdown with agent instructions, to the clipboard.
+- **View as Markdown**: opens that same Markdown (including agent instructions) in a new tab as a generated `blob:` URL.
 
 Hide the button entirely with `show: { copyMarkdown: false }`.
 
-## Why "View as Markdown" may want a URL
+Both actions always serialize in the browser so the output is identical and includes the agent-instructions block. They do not navigate to `config.markdown.url` — that option is for linking to Markdown you publish separately (see below).
 
-By default, "View as Markdown" serializes in the browser and opens the result as a `blob:` URL. That works, but a blob URL is a dead end: it's revoked on reload, can't be shared with anyone, can't be bookmarked, and no crawler or AI agent can ever fetch it.
+## Why you may still want a hosted Markdown URL
 
-If you're publishing real documentation, you probably want the Markdown to live at a real URL, the way `docs.example.com/api.md` sits next to `docs.example.com/api`. The library can't create that URL itself, since it has no server and doesn't own your routes. What it can do is link to yours.
+By default, the in-browser export opens a `blob:` URL. That works for previewing and copying, but a blob URL is a dead end: it's revoked on reload, can't be shared with anyone, can't be bookmarked, and no crawler or AI agent can ever fetch it.
+
+If you're publishing real documentation, you probably want the Markdown to live at a real URL, the way `docs.example.com/api.md` sits next to `docs.example.com/api`. The library can't create that URL itself, since it has no server and doesn't own your routes. What it can do is help you produce and link to yours.
 
 ## `config.markdown.url`
+
+`config.markdown.url` tells *your* app where hosted Markdown lives. The export menu does not open it — use it when you need stable links in `llms.txt`, sitemaps, or your own UI.
 
 ```tsx
 <OpenAPI openapi={doc} config={{ markdown: { url: "/docs/api.md" } }} />
 ```
 
-With that set, "View as Markdown" opens `/docs/api.md` instead of generating a blob. Serialization is skipped entirely, so it also costs nothing on click.
-
-| Value | What "View as Markdown" does |
+| Value | Use |
 |---|---|
-| unset | Serializes in the browser and opens a `blob:` URL |
-| a string | Opens that URL |
-| a function returning a URL | Opens that URL |
-| a function returning `null` | Falls back to the `blob:` URL |
+| unset | No hosted URL resolver is available to your app |
+| a string | Every target resolves to that URL |
+| a function returning a URL | Opens that URL when *you* link to it |
+| a function returning `null` | Target has no hosted twin |
 
 The function form is for apps where only some documents have a hosted twin:
 

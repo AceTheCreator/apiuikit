@@ -67,11 +67,16 @@ describe("MarkdownExportMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy as Markdown" }));
     fireEvent.click(screen.getByRole("menuitem", { name: /Copy for LLM/ }));
 
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith("# Serialized Doc"));
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalled();
+      const copied = writeText.mock.calls[0][0] as string;
+      expect(copied).toContain("> ## Agent Instructions");
+      expect(copied).toContain("# Serialized Doc");
+    });
     expect(serialize).toHaveBeenCalled();
   });
 
-  it("opens the serialized markdown as a blob in a new tab", () => {
+  it("opens the serialized markdown as a blob in a new tab", async () => {
     const createObjectURL = vi.fn().mockReturnValue("blob:mock-url");
     const revokeObjectURL = vi.fn();
     Object.assign(URL, { createObjectURL, revokeObjectURL });
@@ -82,11 +87,13 @@ describe("MarkdownExportMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy as Markdown" }));
     fireEvent.click(screen.getByRole("menuitem", { name: /View as Markdown/ }));
 
-    expect(createObjectURL).toHaveBeenCalled();
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    expect(await blob.text()).toContain("> ## Agent Instructions");
+    expect(await blob.text()).toContain("# Serialized Doc");
     expect(open).toHaveBeenCalledWith("blob:mock-url", "_blank");
   });
 
-  it("opens the configured hosted URL instead of building a blob", () => {
+  it("opens a blob even when a hosted URL is configured", async () => {
     const createObjectURL = vi.fn().mockReturnValue("blob:mock-url");
     Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
     const open = vi.fn();
@@ -97,21 +104,11 @@ describe("MarkdownExportMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy as Markdown" }));
     fireEvent.click(screen.getByRole("menuitem", { name: /View as Markdown/ }));
 
-    expect(open).toHaveBeenCalledWith("/docs/api.md", "_blank");
-    expect(createObjectURL).not.toHaveBeenCalled();
-    // Serialization is the expensive part, so a hosted URL should skip it.
-    expect(serialize).not.toHaveBeenCalled();
-  });
-
-  it("passes the document-level target to the resolver", () => {
-    vi.stubGlobal("open", vi.fn());
-    const markdownUrl = vi.fn(() => "/docs/api.md");
-
-    renderMenu(() => "# Doc", markdownUrl);
-    fireEvent.click(screen.getByRole("button", { name: "Copy as Markdown" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: /View as Markdown/ }));
-
-    expect(markdownUrl).toHaveBeenCalledWith({ kind: "document", document: specDocument });
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    expect(await blob.text()).toContain("> ## Agent Instructions");
+    expect(await blob.text()).toContain("# Serialized Doc");
+    expect(open).toHaveBeenCalledWith("blob:mock-url", "_blank");
+    expect(serialize).toHaveBeenCalled();
   });
 
   it("falls back to the blob when the resolver declines", () => {
@@ -136,6 +133,11 @@ describe("MarkdownExportMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy as Markdown" }));
     fireEvent.click(screen.getByRole("menuitem", { name: /Copy for LLM/ }));
 
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith("# Serialized Doc"));
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalled();
+      const copied = writeText.mock.calls[0][0] as string;
+      expect(copied).toContain("> ## Agent Instructions");
+      expect(copied).toContain("# Serialized Doc");
+    });
   });
 });

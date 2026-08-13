@@ -14,6 +14,7 @@ export type { ConfigInterface, MarkdownConfig, MarkdownTarget, MarkdownUrlResolv
 // version key, so the same code path handles AsyncAPI and OpenAPI.
 export { documentToLlmsTxt, documentToMarkdown, listDocumentTargets, targetSlug } from './helpers/llmsTxt';
 export type { DocumentTarget, LlmsTxtLink, LlmsTxtOptions } from './helpers/llmsTxt';
+export { markdownForLlm } from './helpers/markdownForLlm';
 
 // Spec-specific serializers, if you already know which spec you have. `deref`
 // defaults to resolving JSON Pointers against the document itself, so

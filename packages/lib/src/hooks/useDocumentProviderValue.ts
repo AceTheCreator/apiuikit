@@ -47,7 +47,6 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
     if (typeof configuredMarkdownUrl === "string") return () => configuredMarkdownUrl;
     return undefined;
   }, [configuredMarkdownUrl]);
-
   const contextValue = useMemo(
     () => ({
       specType,

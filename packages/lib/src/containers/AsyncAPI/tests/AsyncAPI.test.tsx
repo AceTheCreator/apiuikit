@@ -240,7 +240,7 @@ describe("AsyncAPI", () => {
     expect(schemasPanel.getByText(/↩/)).toBeInTheDocument();
   });
 
-  it("links \"View as Markdown\" at a hosted URL given as a plain string in config", () => {
+  it("opens View as Markdown as a blob even when config.markdown.url is set", async () => {
     const open = vi.fn();
     vi.stubGlobal("open", open);
     const createObjectURL = vi.fn().mockReturnValue("blob:mock-url");
@@ -251,8 +251,9 @@ describe("AsyncAPI", () => {
     fireEvent.click(screen.getByRole("button", { name: "Copy as Markdown" }));
     fireEvent.click(screen.getByRole("menuitem", { name: /View as Markdown/ }));
 
-    expect(open).toHaveBeenCalledWith("/docs/streetlights.md", "_blank");
-    expect(createObjectURL).not.toHaveBeenCalled();
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    expect(await blob.text()).toContain("> ## Agent Instructions");
+    expect(open).toHaveBeenCalledWith("blob:mock-url", "_blank");
 
     vi.unstubAllGlobals();
   });
