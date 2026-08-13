@@ -1,5 +1,11 @@
 # apiuikit
 
+## 1.5.2
+
+### Patch Changes
+
+- 3644b18: Restore tab dividers and structural spacing after CSS isolation, and keep AsyncAPI operation content consistently spaced.
+
 ## 1.5.1
 
 ### Patch Changes

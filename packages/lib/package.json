@@ -1,6 +1,6 @@
 {
   "name": "apiuikit",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "A React UI library for rendering your API specifications",
   "license": "Apache-2.0",
   "bugs": {
