@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/postcss'
 import selectorParser from 'postcss-selector-parser'
 
 const ROOT = 'apiuikit-root'
+const PREFLIGHT_LAYER = 'apiuikit-preflight'
 
 function isInLayer(rule, layerName) {
   let parent = rule.parent
@@ -48,14 +49,20 @@ function scopeSelectorList(selectorList) {
 
 /** Scope selectors emitted by dependencies that Tailwind's `important`
  * selector does not cover: Preflight, property fallbacks, theme roots, and
- * Highlight.js. */
+ * Highlight.js. Preflight is unlayered after scoping so ordinary unlayered
+ * host element rules cannot override the widget reset merely by being outside
+ * a cascade layer. */
 function scopeLibraryGlobals() {
   return {
     postcssPlugin: 'apiuikit-scope-library-globals',
     Rule(rule) {
       if (!rule.selector) return
 
-      if (isInLayer(rule, 'base') || isInLayer(rule, 'properties')) {
+      if (
+        isInLayer(rule, PREFLIGHT_LAYER) ||
+        isInLayer(rule, 'base') ||
+        isInLayer(rule, 'properties')
+      ) {
         rule.selector = scopeSelectorList(rule.selector)
         return
       }
@@ -78,6 +85,12 @@ function scopeLibraryGlobals() {
           }
         })
       }).processSync(rule.selector)
+    },
+    OnceExit(root) {
+      root.walkAtRules('layer', (layer) => {
+        if (layer.params !== PREFLIGHT_LAYER || !layer.nodes) return
+        layer.replaceWith(...layer.nodes)
+      })
     },
   }
 }

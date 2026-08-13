@@ -1,7 +1,11 @@
-@import 'highlight.js/styles/night-owl.css';
-@config '../tailwind.config.js';
+/* CSS imports must precede @config/@tailwind. The temporary preflight layer
+   lets PostCSS identify and scope the reset, then unwrap it so unlayered host
+   element rules cannot override the widget's reset by cascade-layer priority. */
 @layer theme, base, components, utilities;
 @import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(apiuikit-preflight);
+@import 'highlight.js/styles/night-owl.css';
+@config '../tailwind.config.js';
 @tailwind utilities;
 
 .apiuikit-root {
@@ -111,7 +115,7 @@
   white-space: nowrap;
 }
 
-.apiuikit-root :highlight(search-match) {
+.apiuikit-root ::highlight(search-match) {
   background-color: yellow;
   color: black;
 }
