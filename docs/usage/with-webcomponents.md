@@ -6,10 +6,10 @@ Use apiuikit from Vue, Angular, Svelte, plain HTML, or any other environment tha
 
 | Element | When to use |
 |---|---|
-| `<aui-asyncapi-renderer>` | You have a raw AsyncAPI YAML or JSON string |
-| `<aui-asyncapi>` | You already have a parsed AsyncAPI document object |
-| `<aui-openapi-renderer>` | You have a raw OpenAPI YAML or JSON string |
-| `<aui-openapi>` | You already have a parsed OpenAPI document object |
+| `<apiuikit-asyncapi-renderer>` | You have a raw AsyncAPI YAML or JSON string |
+| `<apiuikit-asyncapi>` | You already have a parsed AsyncAPI document object |
+| `<apiuikit-openapi-renderer>` | You have a raw OpenAPI YAML or JSON string |
+| `<apiuikit-openapi>` | You already have a parsed OpenAPI document object |
 
 If you're building a React app, prefer the [React entry without parser](./no-parser.md) or [React entry with parser](./with-parser.md) according to your usecase instead.
 
@@ -35,7 +35,7 @@ No extra packages are required — React, ReactDOM, and parsing support are bund
 ```html
 <link rel="stylesheet" href="node_modules/@apiuikit/web-component/dist/web-component.css" />
 
-<aui-asyncapi-renderer id="doc"></aui-asyncapi-renderer>
+<apiuikit-asyncapi-renderer id="doc"></apiuikit-asyncapi-renderer>
 
 <script type="module" src="node_modules/@apiuikit/web-component/dist/web-component.es.js"></script>
 <script type="module">
@@ -46,7 +46,7 @@ No extra packages are required — React, ReactDOM, and parsing support are bund
 
 That's enough to render a document. The sections below cover props, configuration, and framework usage.
 
-## `<aui-asyncapi-renderer>`
+## `<apiuikit-asyncapi-renderer>`
 
 Pass a raw AsyncAPI document as a string. The element parses it and renders the UI.
 
@@ -60,13 +60,13 @@ Pass a raw AsyncAPI document as a string. The element parses it and renders the 
 import "@apiuikit/web-component";
 import "@apiuikit/web-component/style.css";
 
-const el = document.querySelector("aui-asyncapi-renderer");
+const el = document.querySelector("apiuikit-asyncapi-renderer");
 el.spec = rawYaml;
 el.config = { theme: { dark: { background: "#1a1b26", surface: "#24283b", textPrimary: "#c0caf5" } } };
 el.onDiagnostics = (diagnostics) => console.log(diagnostics);
 ```
 
-## `<aui-asyncapi>`
+## `<apiuikit-asyncapi>`
 
 Pass an already-parsed AsyncAPI document object. Use this when your backend or build step has already resolved the document.
 
@@ -80,22 +80,22 @@ Pass an already-parsed AsyncAPI document object. Use this when your backend or b
 import "@apiuikit/web-component";
 import "@apiuikit/web-component/style.css";
 
-const el = document.querySelector("aui-asyncapi");
+const el = document.querySelector("apiuikit-asyncapi");
 el.spec = parsedDocument;
 el.config = { show: { sidebar: true } };
 ```
 
 Because `spec` is an object, set it from JavaScript (`el.spec = ...`), not as an HTML attribute.
 
-## `<aui-openapi-renderer>` and `<aui-openapi>`
+## `<apiuikit-openapi-renderer>` and `<apiuikit-openapi>`
 
-Mirror `<aui-asyncapi-renderer>` and `<aui-asyncapi>` exactly (same prop names and types — `spec`, `config`, `onDiagnostics` on the renderer; `spec`, `resolved`, `config` on the no-parser element), just for OpenAPI documents:
+Mirror `<apiuikit-asyncapi-renderer>` and `<apiuikit-asyncapi>` exactly (same prop names and types — `spec`, `config`, `onDiagnostics` on the renderer; `spec`, `resolved`, `config` on the no-parser element), just for OpenAPI documents:
 
 ```js
 import "@apiuikit/web-component";
 import "@apiuikit/web-component/style.css";
 
-const el = document.querySelector("aui-openapi-renderer");
+const el = document.querySelector("apiuikit-openapi-renderer");
 el.spec = rawOpenApiYaml;
 el.onDiagnostics = (diagnostics) => console.log(diagnostics);
 ```
@@ -103,14 +103,14 @@ el.onDiagnostics = (diagnostics) => console.log(diagnostics);
 ## Setting props from HTML vs JavaScript
 
 - Strings can be attributes (`spec="..."` on the renderer) or properties.
-- Objects (`config`, and `spec` on `<aui-asyncapi>`) and functions (`onDiagnostics`) must be set as JavaScript properties.
+- Objects (`config`, and `spec` on `<apiuikit-asyncapi>`) and functions (`onDiagnostics`) must be set as JavaScript properties.
 - `config` can also be a JSON string attribute for simple static cases:
 
 ```html
-<aui-asyncapi-renderer
+<apiuikit-asyncapi-renderer
   spec='{"asyncapi":"3.0.0","info":{"title":"Demo","version":"1.0.0"}}'
   config='{"theme":{"dark":{"background":"#1a1b26","surface":"#24283b","textPrimary":"#c0caf5"}}}'
-></aui-asyncapi-renderer>
+></apiuikit-asyncapi-renderer>
 ```
 
 ## CDN / no bundler
@@ -121,7 +121,7 @@ Use the IIFE build with a normal script tag (no `type="module"` required):
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@apiuikit/web-component/dist/web-component.css" />
 <script src="https://cdn.jsdelivr.net/npm/@apiuikit/web-component/dist/web-component.iife.js"></script>
 
-<aui-asyncapi-renderer id="doc"></aui-asyncapi-renderer>
+<apiuikit-asyncapi-renderer id="doc"></apiuikit-asyncapi-renderer>
 <script>
   document.getElementById("doc").spec = `asyncapi: 3.0.0
 info:
@@ -134,7 +134,7 @@ Adjust the CDN URLs to the version you want to pin.
 
 ## In a framework (Vue example)
 
-Tell your framework to treat `aui-*` tags as native custom elements. In Vue with Vite:
+Tell your framework to treat `apiuikit-*` tags as native custom elements. In Vue with Vite:
 
 ```js
 // vite.config.js
@@ -143,7 +143,7 @@ export default {
     vue({
       template: {
         compilerOptions: {
-          isCustomElement: (tag) => tag.startsWith("aui-"),
+          isCustomElement: (tag) => tag.startsWith("apiuikit-"),
         },
       },
     }),
@@ -153,7 +153,7 @@ export default {
 
 ```vue
 <template>
-  <aui-asyncapi-renderer ref="el" />
+  <apiuikit-asyncapi-renderer ref="el" />
 </template>
 
 <script setup>

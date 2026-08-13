@@ -139,11 +139,9 @@ function buildHeaders(docs) {
 /**
  * The bundled example documents, rendered to Markdown at build time.
  *
- * This is what gives the playground a real URL to hand the library's
- * `config.markdown.url`: for a built-in example, "View as Markdown" opens a
- * static file that can be shared, bookmarked, and crawled, instead of a
- * throwaway `blob:` URL. Pasted documents have no such file and keep the blob
- * fallback, which is why the playground's resolver returns null for them.
+ * This is what gives the playground real Markdown files under `/examples/` for
+ * `llms.txt` and other published links. The export menu always opens an
+ * in-browser blob instead, so these files are not used by "View as Markdown".
  *
  * JSON only, and keyed by filename to match the `local://<file>` ids in
  * src/data/suggestedSchemas.ts. The YAML example is skipped rather than

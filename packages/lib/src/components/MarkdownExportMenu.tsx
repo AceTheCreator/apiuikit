@@ -4,6 +4,7 @@ import IconCheck from "../icons/Check";
 import IconExternalLink from "../icons/ExternalLink";
 import IconArrowDown from "../icons/ArrowDown";
 import { useAsyncAPIDocument } from "../contexts";
+import { markdownForLlm } from "../helpers/markdownForLlm";
 
 interface MarkdownExportMenuProps {
   /** Builds the Markdown string for the whole document, given `deref` (from
@@ -23,8 +24,8 @@ export default function MarkdownExportMenu({
   const [copied, setCopied] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const { deref, document: specDocument, markdownUrl } = useAsyncAPIDocument();
-  const getMarkdown = () => serialize(deref);
+  const { deref } = useAsyncAPIDocument();
+  const getMarkdownForLlm = () => markdownForLlm(serialize(deref));
 
   useEffect(() => {
     return () => {
@@ -58,7 +59,7 @@ export default function MarkdownExportMenu({
   }, [isOpen]);
 
   const handleCopy = async () => {
-    const markdown = getMarkdown();
+    const markdown = getMarkdownForLlm();
     console.log("[MarkdownExportMenu] Copy for LLM clicked", {
       markdownLength: markdown.length,
       hasClipboardApi: !!navigator.clipboard,
@@ -80,22 +81,7 @@ export default function MarkdownExportMenu({
   };
 
   const handleViewAsMarkdown = () => {
-    // A consumer serving this document as Markdown at a real URL gets linked
-    // there instead: a blob: URL is revoked on reload, can't be shared, and
-    // no crawler or agent can ever fetch it.
-    const hostedUrl = markdownUrl?.({ kind: "document", document: specDocument });
-    if (hostedUrl) {
-      const hostedTab = window.open(hostedUrl, "_blank");
-      if (!hostedTab) {
-        console.error(
-          "[MarkdownExportMenu] window.open returned null — the popup was likely blocked by the browser's popup blocker.",
-        );
-      }
-      setIsOpen(false);
-      return;
-    }
-
-    const markdown = getMarkdown();
+    const markdown = getMarkdownForLlm();
     const blob = new Blob([markdown], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     console.log("[MarkdownExportMenu] View as Markdown clicked", {
