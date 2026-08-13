@@ -6,8 +6,8 @@ Two custom elements are available:
 
 | Element | When to use |
 |---|---|
-| `<aui-asyncapi-renderer>` | You have a raw AsyncAPI YAML or JSON string |
-| `<aui-asyncapi>` | You already have a parsed AsyncAPI document object |
+| `<apiuikit-asyncapi-renderer>` | You have a raw AsyncAPI YAML or JSON string |
+| `<apiuikit-asyncapi>` | You already have a parsed AsyncAPI document object |
 
 If you're building a React app, use [apiuikit](https://www.npmjs.com/package/apiuikit) directly instead of this package.
 
@@ -31,7 +31,7 @@ No extra packages are required — React, ReactDOM, and parsing support are bund
 ```html
 <link rel="stylesheet" href="node_modules/@apiuikit/web-component/dist/web-component.css" />
 
-<aui-asyncapi-renderer id="doc"></aui-asyncapi-renderer>
+<apiuikit-asyncapi-renderer id="doc"></apiuikit-asyncapi-renderer>
 
 <script type="module" src="node_modules/@apiuikit/web-component/dist/web-component.es.js"></script>
 <script type="module">
@@ -46,7 +46,7 @@ No extra packages are required — React, ReactDOM, and parsing support are bund
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@apiuikit/web-component/dist/web-component.css" />
 <script src="https://cdn.jsdelivr.net/npm/@apiuikit/web-component/dist/web-component.iife.js"></script>
 
-<aui-asyncapi-renderer id="doc"></aui-asyncapi-renderer>
+<apiuikit-asyncapi-renderer id="doc"></apiuikit-asyncapi-renderer>
 <script>
   document.getElementById("doc").spec = `asyncapi: 3.0.0
 info:

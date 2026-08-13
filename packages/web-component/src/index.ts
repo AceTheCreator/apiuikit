@@ -4,7 +4,7 @@ import { AsyncApiElement, AsyncApiRendererElement, OpenApiElement, OpenApiRender
 import { defineOnce } from "./registerElement";
 
 defineOnce(
-  "aui-asyncapi",
+  "apiuikit-asyncapi",
   r2wc(AsyncApiElement, {
     props: {
       spec: undefined,
@@ -15,7 +15,7 @@ defineOnce(
 );
 
 defineOnce(
-  "aui-asyncapi-renderer",
+  "apiuikit-asyncapi-renderer",
   r2wc(AsyncApiRendererElement, {
     props: {
       spec: "string",
@@ -26,7 +26,7 @@ defineOnce(
 );
 
 defineOnce(
-  "aui-openapi",
+  "apiuikit-openapi",
   r2wc(OpenApiElement, {
     props: {
       spec: undefined,
@@ -37,7 +37,7 @@ defineOnce(
 );
 
 defineOnce(
-  "aui-openapi-renderer",
+  "apiuikit-openapi-renderer",
   r2wc(OpenApiRendererElement, {
     props: {
       spec: "string",

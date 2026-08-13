@@ -123,21 +123,21 @@ Sections and providers render without an error boundary of their own, unlike `Op
 
 ## Web components
 
-`@apiuikit/web-component` exposes `<aui-openapi>` and `<aui-openapi-renderer>`, mirroring `<aui-asyncapi>` / `<aui-asyncapi-renderer>`:
+`@apiuikit/web-component` exposes `<apiuikit-openapi>` and `<apiuikit-openapi-renderer>`, mirroring `<apiuikit-asyncapi>` / `<apiuikit-asyncapi-renderer>`:
 
 ```html
 <script type="module" src="https://unpkg.com/@apiuikit/web-component"></script>
 
-<aui-openapi id="doc"></aui-openapi>
+<apiuikit-openapi id="doc"></apiuikit-openapi>
 <script>
   document.getElementById("doc").spec = myResolvedOpenApiDocument;
 </script>
 ```
 
 ```html
-<aui-openapi-renderer spec="openapi: 3.0.3
+<apiuikit-openapi-renderer spec="openapi: 3.0.3
 info: { title: My API, version: 1.0.0 }
-paths: {}"></aui-openapi-renderer>
+paths: {}"></apiuikit-openapi-renderer>
 ```
 
 See [Web Components](./with-webcomponents.md) for the full attribute reference — the OpenAPI elements accept the same `spec` / `resolved` / `config` / `onDiagnostics` props as their AsyncAPI counterparts.

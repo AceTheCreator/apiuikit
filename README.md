@@ -99,7 +99,7 @@ See the full usage docs for props, configuration options, and more:
 - [With Parser](./docs/usage/with-parser.md) (`AsyncAPIRenderer` component, `parseAndRender` utility)
 - [Composable Sections](./docs/usage/sections.md) (`Servers`, `Operations`, `Messages`, `Schemas`, `Info`, `AsyncAPIProvider`)
 - [Configuration](./docs/configuration/config.md) (`ConfigInterface`: theme, show flags, sidebar, sidePanel, etc.)
-- [Web Components](./docs/usage/with-webcomponents.md) (`<aui-asyncapi>`, `<aui-asyncapi-renderer>`, use apiuikit from any framework)
+- [Web Components](./docs/usage/with-webcomponents.md) (`<apiuikit-asyncapi>`, `<apiuikit-asyncapi-renderer>`, use apiuikit from any framework)
 - [Markdown export](./docs/usage/markdown-export.md) (making your docs AI-readable: `config.markdown.url`, `documentToMarkdown`, `documentToLlmsTxt`)
 - [Avro schemas](./docs/usage/avro.md)
 - [Protobuf schemas](./docs/usage/protobuf.md)
@@ -116,7 +116,7 @@ npm install @apiuikit/web-component
 Load the custom elements and stylesheet once, then pass a raw AsyncAPI or OpenAPI document to the corresponding renderer:
 
 ```html
-<aui-asyncapi-renderer id="api-doc"></aui-asyncapi-renderer>
+<apiuikit-asyncapi-renderer id="api-doc"></apiuikit-asyncapi-renderer>
 ```
 
 ```js
@@ -127,7 +127,7 @@ const apiDoc = document.querySelector("#api-doc");
 apiDoc.spec = rawYamlOrJsonString;
 ```
 
-Use `<aui-openapi-renderer>` for raw OpenAPI documents. If the document is already parsed, use `<aui-asyncapi>` or `<aui-openapi>` and assign the object to its `spec` property.
+Use `<apiuikit-openapi-renderer>` for raw OpenAPI documents. If the document is already parsed, use `<apiuikit-asyncapi>` or `<apiuikit-openapi>` and assign the object to its `spec` property.
 
 See [Web Components](./docs/usage/with-webcomponents.md) for CDN usage, configuration, diagnostics, and framework integration.
 

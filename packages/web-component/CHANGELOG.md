@@ -1,5 +1,11 @@
 # @apiuikit/web-component
 
+## 1.4.0
+
+### Minor Changes
+
+- Rename custom element tags from `aui-*` to `apiuikit-*` (`<apiuikit-asyncapi>`, `<apiuikit-asyncapi-renderer>`, `<apiuikit-openapi>`, `<apiuikit-openapi-renderer>`). Update any markup that used the old `aui-*` tag names.
+
 ## 1.3.0
 
 ### Minor Changes
