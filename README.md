@@ -7,8 +7,10 @@
 
 React component library for rendering API specifications. Point it at an AsyncAPI or OpenAPI document and get a full interactive UI, which includes: servers, channels/endpoints, operations, messages, schemas, with no manual mapping required.
 
-> **Status:** AsyncAPI 3.x and OpenAPI 3.0/3.1 are both fully supported, see
-> [Coverage](./docs/usage/openapi.md#coverage) for the OpenAPI breakdown.
+> **Spec compatibility:** apiuikit renders AsyncAPI 3.x and OpenAPI 3.0/3.1
+> documents. Version compatibility does not imply that every specification
+> keyword has a dedicated UI; see [OpenAPI coverage](./docs/usage/openapi.md#coverage)
+> for the exact rendered features and deliberate limits.
 
 ## Install
 
