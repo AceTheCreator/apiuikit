@@ -32,8 +32,12 @@ function makeProviders(markdownUrl?: MarkdownUrlResolver) {
   };
 }
 
-const renderMenu = (serialize = () => "# Hello", markdownUrl?: MarkdownUrlResolver) =>
-  render(<MarkdownExportMenu serialize={serialize} leftOffset={60} />, {
+const renderMenu = (
+  serialize = () => "# Hello",
+  markdownUrl?: MarkdownUrlResolver,
+  onOpenChange?: (isOpen: boolean) => void,
+) =>
+  render(<MarkdownExportMenu serialize={serialize} onOpenChange={onOpenChange} />, {
     wrapper: makeProviders(markdownUrl),
   });
 
@@ -47,6 +51,18 @@ describe("MarkdownExportMenu", () => {
 
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
+  it("reports its open state to the shared document toolbar", () => {
+    const onOpenChange = vi.fn();
+    renderMenu(() => "# Hello", undefined, onOpenChange);
+    onOpenChange.mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy as Markdown" }));
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 
   it("closes on outside click", () => {

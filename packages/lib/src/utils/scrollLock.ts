@@ -18,6 +18,27 @@ export function getScrollLockTarget(from: Element | null): HTMLElement {
 }
 
 /**
+ * Finds a scroll lock target without escaping `boundary`. This is used by
+ * component-contained overlays: an ancestor owned by the host page must not
+ * be locked merely because the widget itself has no scroll container.
+ */
+export function getContainedScrollLockTarget(
+  from: Element | null,
+  boundary: Element | null,
+): HTMLElement | null {
+  if (!from || !boundary || !boundary.contains(from)) return null;
+
+  let el: Element | null = from;
+  while (el) {
+    if (isScrollable(el)) return el as HTMLElement;
+    if (el === boundary) break;
+    el = el.parentElement;
+  }
+
+  return null;
+}
+
+/**
  * Locks scroll on `target` and pads it to compensate for the scrollbar
  * that disappears, so surrounding content doesn't shift. Returns a
  * function that restores the original styles.

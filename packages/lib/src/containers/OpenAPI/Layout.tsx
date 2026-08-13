@@ -1,5 +1,7 @@
+import { useState } from "react";
 import OpenAPIDocumentProvider from "./OpenAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
+import DocumentTopBar from "../../components/DocumentTopBar";
 import { OpenAPINavigation, OpenAPINavTab } from "../../components/Navigation";
 import SearchPanel from "../../components/SearchPanel";
 import MarkdownExportMenu from "../../components/MarkdownExportMenu";
@@ -11,6 +13,10 @@ import IconConnection from "../../icons/Connection";
 import IconOperation from "../../icons/Operation";
 import IconSchema from "../../icons/Schema";
 import OpenAPIInformation from "../Information/OpenAPIInformation";
+import {
+  hasInformationLogo,
+  InformationLogo,
+} from "../Information/InformationSection";
 import OpenAPIServers from "../Server/OpenAPIServers";
 import Paths from "../Path/Paths";
 import Schemas from "../Schema/Schemas";
@@ -28,6 +34,11 @@ const isOpenAPITabKey = (value: string): value is OpenAPITabKey =>
 
 export default function Layout({ openapi, config }: OpenAPILayoutProps) {
   const show = config.show ?? {};
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMarkdownOpen, setIsMarkdownOpen] = useState(false);
+  const hasTopControls = show.search !== false || show.copyMarkdown !== false;
+  const hasTopLogo = show.info !== false && hasInformationLogo(openapi.info);
+  const hasMasthead = hasTopControls || hasTopLogo;
 
   // Webhooks are 3.1-only and rare, so unlike the other tabs this one appears
   // only when the document actually declares some — an always-empty Webhooks
@@ -101,31 +112,38 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
     ) : null;
 
   return (
-    <OpenAPIDocumentProvider
-      document={openapi}
-      config={config}
-      className={show.sidebar !== false ? "pt-14" : ""}
-    >
-      <div className="px-4">
-        {show.search !== false && (
-          <SearchPanel
-            query={searchQuery}
-            onQueryChange={setSearchQuery}
-            results={searchResults}
-            onSelectResult={handleSearchSelect}
-          />
-        )}
-        {show.copyMarkdown !== false && (
-          <MarkdownExportMenu
-            serialize={(deref) => openApiToMarkdown(openapi, deref)}
-            // Search toggle is at 12px; sit immediately to its right when it's shown
-            // (12 + 40 width + 8 gap), else take the vacated first slot.
-            leftOffset={show.search !== false ? 60 : 12}
-          />
+    <OpenAPIDocumentProvider document={openapi} config={config}>
+      <div className={`px-4 ${hasMasthead && tabs.length > 0 ? "pt-14" : ""}`}>
+        {hasMasthead && (
+          <DocumentTopBar
+            logo={hasTopLogo ? <InformationLogo source={openapi.info} /> : undefined}
+            forceVisible={isSearchOpen || isMarkdownOpen}
+          >
+            {show.search !== false && (
+              <SearchPanel
+                query={searchQuery}
+                onQueryChange={setSearchQuery}
+                results={searchResults}
+                onSelectResult={handleSearchSelect}
+                onOpenChange={setIsSearchOpen}
+              />
+            )}
+            {show.copyMarkdown !== false && (
+              <MarkdownExportMenu
+                serialize={(deref) => openApiToMarkdown(openapi, deref)}
+                onOpenChange={setIsMarkdownOpen}
+              />
+            )}
+          </DocumentTopBar>
         )}
         {show.info !== false && (
           <div id="info-panel">
-            <OpenAPIInformation info={openapi.info} tags={openapi.tags} externalDocs={openapi.externalDocs} />
+            <OpenAPIInformation
+              info={openapi.info}
+              tags={openapi.tags}
+              externalDocs={openapi.externalDocs}
+              showLogo={false}
+            />
           </div>
         )}
         {show.servers !== false && serverUrls.length > 0 && (

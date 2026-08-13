@@ -37,7 +37,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vite build --config vite.markdown.config.ts",
+    "build": "vite build && node scripts/verifyCssIsolation.mjs && vite build --config vite.markdown.config.ts && node scripts/verifyPackageExports.mjs",
     "watch": "vite build --watch",
     "prepublishOnly": "cp ../../README.md ./README.md && npm run build",
     "typecheck": "node scripts/typecheck.mjs",
@@ -112,6 +112,7 @@
     "jsdom": "^29.1.1",
     "marked-linkify-it": "^3.1.12",
     "postcss": "^8.4.49",
+    "postcss-selector-parser": "^6.0.10",
     "storybook": "^8.6.18",
     "tailwindcss": "^4.3.2",
     "tsx": "^4.21.0",

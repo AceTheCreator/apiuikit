@@ -1,7 +1,11 @@
 import { forwardRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useAsyncAPIDocument } from "../contexts";
-import { getScrollLockTarget, lockScroll } from "../utils/scrollLock";
+import {
+  getContainedScrollLockTarget,
+  getScrollLockTarget,
+  lockScroll,
+} from "../utils/scrollLock";
 import { useElementRect } from "../utils/useElementRect";
 
 export type SidePanelSide = "left" | "right";
@@ -37,13 +41,22 @@ export const SidePanel = forwardRef<HTMLDivElement, ISidePanelProps>(function Si
   // dependency and is covered by `.transition-transform`'s `transition-property` list.
   const closedTransform = side === "right" ? "translateX(100%)" : "translateX(-100%)";
 
-  const { portalHost, rootElement, sidePanelContainment } = useAsyncAPIDocument();
+  const {
+    portalHost,
+    rootElement,
+    sidePanelContainment,
+    sidePanelTopOffset = 0,
+  } = useAsyncAPIDocument();
   const containToComponent = sidePanelContainment === "component";
 
   useEffect(() => {
     if (!isOpen || !portalHost) return;
-    return lockScroll(getScrollLockTarget(portalHost));
-  }, [isOpen, portalHost]);
+    const target = containToComponent
+      ? getContainedScrollLockTarget(portalHost, rootElement)
+      : getScrollLockTarget(portalHost);
+    if (!target) return;
+    return lockScroll(target);
+  }, [containToComponent, isOpen, portalHost, rootElement]);
 
   // Tracked continuously (not gated on isOpen) when containing to the widget —
   // the panel keeps animating for `duration-300` after isOpen flips false, so it
@@ -63,7 +76,10 @@ export const SidePanel = forwardRef<HTMLDivElement, ISidePanelProps>(function Si
     if (!containToComponent) return { position: "fixed", inset: 0 };
     if (!rect) return { position: "fixed", inset: 0 };
 
-    const top = Math.max(0, rect.top);
+    // A fixed host navbar is outside the widget, so its height cannot be
+    // inferred from rootElement's rect. component-mode consumers can reserve
+    // that host-owned safe area with sidePanel.topOffset.
+    const top = Math.max(sidePanelTopOffset, rect.top);
     const left = Math.max(0, rect.left);
     const bottom = Math.min(window.innerHeight, rect.bottom);
     const right = Math.min(window.innerWidth, rect.right);
