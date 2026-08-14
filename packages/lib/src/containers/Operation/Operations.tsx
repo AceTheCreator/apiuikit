@@ -52,15 +52,14 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
           event.preventDefault();
           setSelectedKey(key);
         }}
-        className={`group cursor-pointer ${isSelected ? "bg-neutral-50" : ""}`}
+        className={`cursor-pointer hover:bg-neutral-50 ${isSelected ? "bg-neutral-50" : ""}`}
       >
-        <td className="px-6 py-4 max-w-0 w-full group-hover:bg-neutral-50">
+        <td className="px-6 py-4 max-w-0 w-full">
           {address && <ChannelAddress address={address} parameters={parameters} truncate />}
         </td>
-        <td className="px-6 py-4 w-32 group-hover:bg-neutral-50">
+        <td className="px-6 py-4 w-32">
           <MethodBadge method={op.action} className="w-24" />
         </td>
-        <td className="group-hover:bg-neutral-50" />
       </tr>
     );
   });
@@ -94,7 +93,6 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
             <th className="px-6 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
               Method
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider" />
           </tr>
         </thead>
         <tbody className="bg-surface divide-y divide-border">

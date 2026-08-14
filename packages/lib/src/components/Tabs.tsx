@@ -2,6 +2,7 @@ import { useId, useRef } from "react";
 import type { ComponentType } from "react";
 import type { KeyboardEvent } from "react";
 import classNames from "../helpers/classNames";
+import IconArrowDown from "../icons/ArrowDown";
 
 export type Tab = {
   id: string;
@@ -72,7 +73,7 @@ export default function Tabs({
 
   return (
     <div>
-      <div className="@sm:hidden">
+      <div className={classNames("@sm:hidden relative", hasIcons ? "mt-0" : "mt-4")}>
         <label htmlFor={selectId} className="sr-only">
           {selectLabel}
         </label>
@@ -81,10 +82,7 @@ export default function Tabs({
           name="tabs"
           value={selectValue}
           onChange={(ev) => onChange(ev.target.value)}
-          className={classNames(
-            "block w-full rounded-md border-neutral-300 bg-neutral-200 focus:border-secondary-500 focus:ring-secondary-500",
-            hasIcons ? "mt-0" : "mt-4"
-          )}
+          className="block w-full appearance-none rounded-md border border-border bg-surface py-2 pl-3 pr-9 text-sm text-foreground-secondary focus:border-secondary-500 focus:outline-none focus:ring-1 focus:ring-secondary-500"
         >
           {placeholder && (
             <option value="">
@@ -97,6 +95,7 @@ export default function Tabs({
             </option>
           ))}
         </select>
+        <IconArrowDown className="pointer-events-none absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 text-foreground-muted" />
       </div>
 
       <div className={classNames("hidden @sm:block", hasIcons ? "" : "mt-6")}>
