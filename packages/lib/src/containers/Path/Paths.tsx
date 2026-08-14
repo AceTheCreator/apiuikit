@@ -285,6 +285,10 @@ export default function Paths({
       >
         {selected && selectedOp && (
           <PathOperation
+            // Remounts on every operation switch so a `*.operation.tab` plugin
+            // tab (and its internal state) doesn't carry over to a different
+            // operation, and the panel always lands back on Documentation.
+            key={selected.key}
             method={selected.method}
             path={selected.path}
             op={{ ...selectedOp, parameters: operationParameters }}

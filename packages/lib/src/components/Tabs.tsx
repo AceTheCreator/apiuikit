@@ -17,6 +17,14 @@ interface TabsProps {
   selectLabel?: string;
   /** When set, the mobile `<select>` includes an empty option for no selection. */
   placeholder?: string;
+  /**
+   * `"segmented"` renders a compact, content-width pill toggle (small text,
+   * tight padding, active tab picked out with a light background) instead of
+   * the default full-width strip — for a control that switches *which panel
+   * you're looking at* rather than one that reads as a section of the page's
+   * own navigation. Omit to keep the existing icon/no-icon inference.
+   */
+  variant?: "segmented";
 }
 
 export default function Tabs({
@@ -26,6 +34,7 @@ export default function Tabs({
   ariaLabel = "Tabs",
   selectLabel = "Select a tab",
   placeholder,
+  variant,
 }: TabsProps) {
   const selectId = useId();
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -99,8 +108,43 @@ export default function Tabs({
         </select>
       </div>
 
-      <div className={classNames("hidden @sm:block", hasIcons ? "" : "mt-6")}>
-        {hasIcons ? (
+      <div className={classNames("hidden @sm:block", hasIcons || variant === "segmented" ? "" : "mt-6")}>
+        {variant === "segmented" ? (
+          <div
+            // Sized to read as the panel's primary mode switch (roughly
+            // 280-340px by 36-40px) rather than a minor filter control, while
+            // staying well short of the old full-width bar.
+            className="inline-flex h-9.5 w-77.5 items-center gap-1 rounded-lg bg-neutral-100 p-1"
+            role="tablist"
+            aria-label={ariaLabel}
+          >
+            {tabs.map((tab, tabIndex) => {
+              const isActive = tab.id === current;
+              return (
+                <button
+                  ref={(el) => { buttonRefs.current[tabIndex] = el; }}
+                  key={tab.id}
+                  id={`tab-${tab.id}`}
+                  type="button"
+                  role="tab"
+                  tabIndex={tabIndex === focusableIndex ? 0 : -1}
+                  aria-selected={isActive}
+                  aria-controls={`panel-${tab.id}`}
+                  onClick={() => onChange(tab.id)}
+                  onKeyDown={(event) => handleTabKeyDown(event, tabIndex)}
+                  className={classNames(
+                    "h-full flex-1 cursor-pointer rounded-md text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-surface text-foreground shadow-sm"
+                      : "text-foreground-muted hover:text-foreground-secondary"
+                  )}
+                >
+                  {tab.name}
+                </button>
+              );
+            })}
+          </div>
+        ) : hasIcons ? (
           <div
             className="border-b border-border"
             role="tablist"

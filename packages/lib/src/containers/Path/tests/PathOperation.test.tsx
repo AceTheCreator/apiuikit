@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import PathOperation from "../PathOperation";
 import { DocumentContext } from "../../../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../../../components/schema/depthColors";
+import { definePlugin } from "../../../plugins/types";
+import type { ApiuikitPlugin } from "../../../plugins/types";
 import type { OpenAPIDocumentData, OpenAPIOperationData, OpenAPISecuritySchemeData } from "../../../types/openapi";
 
 const baseOp: OpenAPIOperationData = {
@@ -13,7 +15,7 @@ const baseOp: OpenAPIOperationData = {
 // PathOperation renders ChannelAddress, which reads the shared document
 // context (for its hover-tooltip portal) — a minimal provider is enough for
 // these tests, which don't exercise that portal.
-function withContext(children: React.ReactNode) {
+function withContext(children: React.ReactNode, plugins?: ApiuikitPlugin[]) {
   return (
     <DocumentContext.Provider
       value={{
@@ -26,6 +28,7 @@ function withContext(children: React.ReactNode) {
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
         showCodeSamples: true,
+        plugins,
       }}
     >
       {children}
@@ -560,5 +563,130 @@ describe("PathOperation response headers", () => {
     render(withContext(<PathOperation method="get" path="/pets" op={op} id="get /pets" />));
 
     expect(screen.queryByRole("tab", { name: "Headers" })).not.toBeInTheDocument();
+  });
+});
+
+describe("PathOperation plugin tabs", () => {
+  const tryItPlugin = definePlugin({
+    name: "try-it-out",
+    slots: {
+      "openapi.operation.tab": {
+        label: "Try it",
+        component: ({ method, path }) => (
+          <div>
+            plugin content for {method} {path}
+          </div>
+        ),
+      },
+    },
+  });
+
+  it("shows no tab strip at all when no operation.tab plugin is registered", () => {
+    render(withContext(<PathOperation method="get" path="/pets" op={baseOp} id="get /pets" />));
+
+    expect(screen.queryByRole("tab", { name: "Reference" })).not.toBeInTheDocument();
+  });
+
+  it("adds a Reference tab plus one per registered plugin, opening on Reference", () => {
+    render(withContext(<PathOperation method="get" path="/pets" op={baseOp} id="get /pets" />, [tryItPlugin]));
+
+    expect(screen.getByRole("tab", { name: "Reference", selected: true })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Try it" })).toBeInTheDocument();
+    // Reference content (from `baseOp`) is showing, not the plugin's.
+    expect(screen.getByText("List pets")).toBeInTheDocument();
+    expect(screen.queryByText(/plugin content for/)).not.toBeInTheDocument();
+  });
+
+  it("hands the plugin the whole panel body when its tab is selected, hiding documentation content", () => {
+    render(withContext(<PathOperation method="get" path="/pets" op={baseOp} id="get /pets" />, [tryItPlugin]));
+
+    fireEvent.click(screen.getByRole("tab", { name: "Try it" }));
+
+    expect(screen.getByText("plugin content for get /pets")).toBeInTheDocument();
+    expect(screen.queryByText("List pets")).not.toBeInTheDocument();
+  });
+
+  it("switches back to full documentation content when Reference is reselected", () => {
+    render(withContext(<PathOperation method="get" path="/pets" op={baseOp} id="get /pets" />, [tryItPlugin]));
+
+    fireEvent.click(screen.getByRole("tab", { name: "Try it" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Reference" }));
+
+    expect(screen.getByText("List pets")).toBeInTheDocument();
+    expect(screen.queryByText(/plugin content for/)).not.toBeInTheDocument();
+  });
+
+  it("gives a callback's nested operation no tab strip, even with a plugin registered", () => {
+    const opWithCallback: OpenAPIOperationData = {
+      summary: "Create an order",
+      responses: {},
+      callbacks: {
+        orderStatusChanged: {
+          "{$request.body#/callbackUrl}": {
+            post: { summary: "Order status callback", responses: {} },
+          },
+        },
+      },
+    };
+
+    render(
+      withContext(
+        <PathOperation method="post" path="/orders" op={opWithCallback} id="post /orders" />,
+        [tryItPlugin],
+      ),
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "callbacks" }));
+    fireEvent.click(screen.getByRole("button", { expanded: false }));
+
+    // The parent operation has its own Reference/Try it strip; the nested
+    // callback operation renders inline with no tab strip of its own.
+    expect(screen.getAllByRole("tab", { name: "Reference" })).toHaveLength(1);
+    expect(screen.getByText("Order status callback")).toBeInTheDocument();
+  });
+});
+
+describe("PathOperation operation actions slot", () => {
+  it("renders nothing when no operation.actions plugin is registered", () => {
+    render(withContext(<PathOperation method="get" path="/pets" op={baseOp} id="get /pets" />));
+
+    expect(screen.queryByText(/annotation for/)).not.toBeInTheDocument();
+  });
+
+  it("renders a plugin's operation actions slot with the method/path context", () => {
+    const annotate = definePlugin({
+      name: "annotate",
+      slots: {
+        "openapi.operation.actions": ({ method, path }) => (
+          <div>
+            annotation for {method} {path}
+          </div>
+        ),
+      },
+    });
+
+    render(withContext(<PathOperation method="get" path="/pets" op={baseOp} id="get /pets" />, [annotate]));
+
+    expect(screen.getByText("annotation for get /pets")).toBeInTheDocument();
+  });
+
+  it("hides the actions slot while a plugin's own tab is active", () => {
+    const annotate = definePlugin({
+      name: "annotate",
+      slots: {
+        "openapi.operation.actions": ({ method, path }) => (
+          <div>
+            annotation for {method} {path}
+          </div>
+        ),
+        "openapi.operation.tab": { label: "Try it", component: () => <div>try it content</div> },
+      },
+    });
+
+    render(withContext(<PathOperation method="get" path="/pets" op={baseOp} id="get /pets" />, [annotate]));
+    expect(screen.getByText("annotation for get /pets")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Try it" }));
+    expect(screen.queryByText(/annotation for/)).not.toBeInTheDocument();
   });
 });

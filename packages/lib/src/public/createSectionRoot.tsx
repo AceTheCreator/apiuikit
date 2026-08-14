@@ -3,11 +3,14 @@ import type { ComponentType, ReactNode } from "react";
 import { DocumentContext, SpecType } from "../contexts";
 import { resolveDocument } from "../helpers/resolveDocument";
 import { ConfigInterface } from "../config";
+import type { ApiuikitPlugin } from "../plugins/types";
 
 export interface GenericSectionProps<T> {
   /** The document. Required standalone; unnecessary (and ignored) when rendered inside the matching provider. */
   document?: T;
   config?: ConfigInterface;
+  /** Third-party plugins. Only applied standalone (this section sets up its own provider); composed under an ambient provider, that provider's own `plugins` apply instead. */
+  plugins?: ApiuikitPlugin[];
 }
 
 /**
@@ -26,13 +29,14 @@ export interface GenericSectionProps<T> {
  * empty) rather than crashing the tree.
  */
 export function createSectionRoot<T>(
-  Provider: ComponentType<{ document: T; config?: ConfigInterface; children: ReactNode }>,
+  Provider: ComponentType<{ document: T; config?: ConfigInterface; plugins?: ApiuikitPlugin[]; children: ReactNode }>,
   specLabel: string,
   specType: SpecType,
 ) {
   return function SectionRoot({
     document,
     config,
+    plugins,
     children,
   }: GenericSectionProps<T> & { children: ReactNode }) {
     const ambient = useContext(DocumentContext);
@@ -64,7 +68,7 @@ export function createSectionRoot<T>(
     }
 
     return (
-      <Provider document={resolved} config={config}>
+      <Provider document={resolved} config={config} plugins={plugins}>
         {children}
       </Provider>
     );

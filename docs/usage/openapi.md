@@ -40,6 +40,7 @@ export default function App() {
 |-----------|------------------------|----------|-------------------------------------------------------|
 | `openapi` | `OpenAPIDocumentData`  | Yes      | A pre-resolved OpenAPI 3.0/3.1 document object         |
 | `config`  | `ConfigInterface`      | No       | UI configuration (theme, show flags, sidebar, etc.)    |
+| `plugins` | `ApiuikitPlugin[]`     | No       | Third-party plugins to render into the document's extension slots. See [Plugins](./plugins.md). |
 | `kind`    | `"resolved"`           | No       | Promise that `$ref`s are already inlined (verified)    |
 | `errorFallback` | `ReactNode \| (error, reset) => ReactNode` | No | Custom UI shown if rendering throws. Defaults to a built-in fallback |
 | `onError` | `(error, errorInfo) => void` | No     | Called once when a render error is caught, e.g. to report it to your own telemetry |
@@ -84,7 +85,7 @@ export default function App() {
 
 Diagnostics use the same shape as AsyncAPI's (`{ message, path, severity }`, `severity: 0` for errors), so a shared diagnostics panel works for both.
 
-`errorFallback` and `onError` are accepted here too and forwarded to the underlying `OpenAPI` component, so the raw-string entry point gets the same error boundary and the same customization.
+`errorFallback`, `onError`, and `plugins` are accepted here too and forwarded to the underlying `OpenAPI` component, so the raw-string entry point gets the same error boundary and the same customization.
 
 `parseAndRenderOpenAPI(raw, config)` is also available for imperative use, mirroring `parseAndRender`.
 
@@ -103,7 +104,7 @@ export default function EndpointsPage() {
 }
 ```
 
-`OpenAPIServers`, `OpenAPIEndpoints`, `OpenAPISchemas`, and `OpenAPIInfo` all work this way. To arrange several together, wrap them in `OpenAPIProvider` so the document is resolved once and shared:
+`OpenAPIServers`, `OpenAPIEndpoints`, `OpenAPISchemas`, and `OpenAPIInfo` all work this way. Standalone, they also accept `plugins` (same rule as `config`: applied only when the section sets up its own context). To arrange several together, wrap them in `OpenAPIProvider` so the document is resolved once and shared — put `plugins` on the provider, not on each section:
 
 ```tsx
 import { OpenAPIProvider, OpenAPIServers, OpenAPIEndpoints, OpenAPISchemas } from "apiuikit";

@@ -4,6 +4,7 @@ import { useDocumentContext } from "../contexts";
 import { OpenAPIDocumentProvider } from "../containers/OpenAPI/OpenAPIDocumentProvider";
 import { resolveDocument } from "../helpers/resolveDocument";
 import { ConfigInterface } from "../config";
+import type { ApiuikitPlugin } from "../plugins/types";
 import { OpenAPIDocumentData } from "../types/openapi";
 import OpenAPIServersContainer from "../containers/Server/OpenAPIServers";
 import PathsContainer from "../containers/Path/Paths";
@@ -24,6 +25,9 @@ export interface OpenAPISectionProps {
   /** The OpenAPI document. Required standalone; unnecessary (and ignored) when rendered inside <OpenAPIProvider>. */
   document?: OpenAPIDocumentData;
   config?: ConfigInterface;
+  /** Only applied when this section sets up its own context (standalone). When
+   * composed under <OpenAPIProvider>, that provider's own `plugins` apply. */
+  plugins?: ApiuikitPlugin[];
   /**
    * `"columns"` (default) — reserved right gutter at large breakpoints.
    * `"stacked"` — full-width single column; no prose max-width and no empty
@@ -35,15 +39,18 @@ export interface OpenAPISectionProps {
 export function OpenAPIProvider({
   document,
   config,
+  plugins,
   children,
 }: {
   document: OpenAPIDocumentData;
   config?: ConfigInterface;
+  /** Third-party plugins shared with sections inside. */
+  plugins?: ApiuikitPlugin[];
   children: ReactNode;
 }) {
   const resolved = useMemo(() => resolveDocument(document), [document]);
   return (
-    <OpenAPIDocumentProvider document={resolved} config={config}>
+    <OpenAPIDocumentProvider document={resolved} config={config} plugins={plugins}>
       {children}
     </OpenAPIDocumentProvider>
   );

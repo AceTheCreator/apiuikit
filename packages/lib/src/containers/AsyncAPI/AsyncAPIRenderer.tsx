@@ -4,6 +4,7 @@ import type { AsyncAPIDocumentData } from "../../types/schema";
 import type { ConfigInterface } from "../../config/config";
 import type { ErrorBoundaryFallbackRenderer } from "../../components/ErrorBoundary";
 import type { ErrorInfo, ReactNode } from "react";
+import type { ApiuikitPlugin } from "../../plugins/types";
 import { parseDocument } from "../../helpers/parser";
 
 interface AsyncAPIRendererProps {
@@ -11,6 +12,8 @@ interface AsyncAPIRendererProps {
   raw: string;
   /** UI configuration: theme, which sections to show, sidebar options, and more. */
   config?: ConfigInterface;
+  /** Third-party plugins (e.g. a "try it out" panel) to render into this document's extension slots. */
+  plugins?: ApiuikitPlugin[];
   /** Called with the parser's diagnostics (errors/warnings) after each parse attempt. */
   onDiagnostics?: (diagnostics: unknown[]) => void;
   /** Custom UI shown if rendering the parsed document throws. Defaults to a built-in fallback. */
@@ -25,7 +28,7 @@ interface AsyncAPIRendererProps {
  * document as text rather than a pre-parsed object, e.g. user-entered or
  * loaded from a file at runtime.
  */
-export function AsyncAPIRenderer({ raw, config, onDiagnostics, errorFallback, onError }: AsyncAPIRendererProps) {
+export function AsyncAPIRenderer({ raw, config, plugins, onDiagnostics, errorFallback, onError }: AsyncAPIRendererProps) {
   const [document, setDocument] = useState<AsyncAPIDocumentData | null>(null);
 
   // Keep the latest onDiagnostics without making the effect below re-run (and
@@ -54,6 +57,7 @@ export function AsyncAPIRenderer({ raw, config, onDiagnostics, errorFallback, on
       kind="resolved"
       asyncapi={document}
       config={config}
+      plugins={plugins}
       errorFallback={errorFallback}
       onError={onError}
     />

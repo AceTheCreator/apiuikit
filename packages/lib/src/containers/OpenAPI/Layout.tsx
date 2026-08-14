@@ -7,6 +7,7 @@ import { useOpenAPISearch } from "../../hooks/useOpenAPISearch";
 import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
 import { openApiToMarkdown } from "../../helpers/toMarkdown";
 import { ConfigInterface } from "../../config";
+import type { ApiuikitPlugin } from "../../plugins/types";
 import IconConnection from "../../icons/Connection";
 import IconOperation from "../../icons/Operation";
 import IconSchema from "../../icons/Schema";
@@ -19,6 +20,7 @@ import { OpenAPIDocumentData } from "../../types/openapi";
 export interface OpenAPILayoutProps {
   openapi: OpenAPIDocumentData;
   config: ConfigInterface;
+  plugins?: ApiuikitPlugin[];
 }
 
 type OpenAPITabKey = OpenAPINavTab;
@@ -26,7 +28,7 @@ type OpenAPITabKey = OpenAPINavTab;
 const isOpenAPITabKey = (value: string): value is OpenAPITabKey =>
   value === "endpoints" || value === "webhooks" || value === "schemas";
 
-export default function Layout({ openapi, config }: OpenAPILayoutProps) {
+export default function Layout({ openapi, config, plugins }: OpenAPILayoutProps) {
   const show = config.show ?? {};
 
   // Webhooks are 3.1-only and rare, so unlike the other tabs this one appears
@@ -104,6 +106,7 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
     <OpenAPIDocumentProvider
       document={openapi}
       config={config}
+      plugins={plugins}
       className={show.sidebar !== false ? "pt-14" : ""}
     >
       <div className="px-4">

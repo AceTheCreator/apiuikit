@@ -8,6 +8,7 @@ import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
 import { asyncApiToMarkdown } from "../../helpers/toMarkdown";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
 import { ConfigInterface } from "../../config";
+import type { ApiuikitPlugin } from "../../plugins/types";
 import IconMessage from "../../icons/Message";
 import IconOperation from "../../icons/Operation";
 import IconSchema from "../../icons/Schema";
@@ -21,6 +22,7 @@ import { AsyncAPIDocumentData } from "../../types/schema";
 export interface LayoutProps {
   asyncapi: AsyncAPIDocumentData;
   config: ConfigInterface;
+  plugins?: ApiuikitPlugin[];
 }
 
 type AsyncAPITabKey = NavTab;
@@ -28,7 +30,7 @@ type AsyncAPITabKey = NavTab;
 const isAsyncAPITabKey = (value: string): value is AsyncAPITabKey =>
   value === "operations" || value === "messages" || value === "schemas";
 
-export default function Layout({ asyncapi, config }: LayoutProps) {
+export default function Layout({ asyncapi, config, plugins }: LayoutProps) {
   const show = config.show ?? {};
 
   const tabs: ContentTabItem[] = [
@@ -94,6 +96,7 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
     <AsyncAPIDocumentProvider
       document={asyncapi}
       config={config}
+      plugins={plugins}
       className={show.sidebar !== false ? "pt-14" : ""}
     >
       <div className="px-4">

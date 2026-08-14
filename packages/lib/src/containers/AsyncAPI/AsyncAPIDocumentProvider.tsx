@@ -3,10 +3,13 @@ import { DocumentContext } from "../../contexts/index";
 import { ConfigInterface, defaultConfig } from "../../config";
 import { useDocumentProviderValue } from "../../hooks/useDocumentProviderValue";
 import { AsyncAPIDocumentData } from "../../types/schema";
+import type { ApiuikitPlugin } from "../../plugins/types";
 
 export interface AsyncAPIDocumentProviderProps {
   document: AsyncAPIDocumentData;
   config?: ConfigInterface;
+  /** Third-party plugins to register on this document's context. */
+  plugins?: ApiuikitPlugin[];
   /** Extra classes merged onto the root surface (e.g. Layout's sidebar `pt-14`). */
   className?: string;
   children: ReactNode;
@@ -15,10 +18,11 @@ export interface AsyncAPIDocumentProviderProps {
 export function AsyncAPIDocumentProvider({
   document: asyncapi,
   config = defaultConfig,
+  plugins,
   className = "",
   children,
 }: AsyncAPIDocumentProviderProps) {
-  const { contextValue, themeVars, setPortalHost, setRootElement } = useDocumentProviderValue("asyncapi", asyncapi, config);
+  const { contextValue, themeVars, setPortalHost, setRootElement } = useDocumentProviderValue("asyncapi", asyncapi, config, plugins);
 
   return (
     <DocumentContext.Provider value={contextValue}>
