@@ -8,9 +8,16 @@ interface OpenAPIInformationProps {
   tags?: OpenAPITagData[];
   externalDocs?: OpenAPIExternalDocsData;
   layout?: SectionLayout;
+  showLogo?: boolean;
 }
 
-export default function OpenAPIInformation({ info, tags, externalDocs, layout }: OpenAPIInformationProps) {
+export default function OpenAPIInformation({
+  info,
+  tags,
+  externalDocs,
+  layout,
+  showLogo,
+}: OpenAPIInformationProps) {
   const { title, description, license, contact } = info;
 
   return (
@@ -23,6 +30,7 @@ export default function OpenAPIInformation({ info, tags, externalDocs, layout }:
       tags={tags}
       extensionsSource={info}
       layout={layout}
+      showLogo={showLogo}
     />
   );
 }

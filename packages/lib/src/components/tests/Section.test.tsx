@@ -3,6 +3,28 @@ import { describe, expect, it } from "vitest";
 import Section from "../Section";
 
 describe("Section layout", () => {
+  it("keeps the title above reversed mobile metadata and constrained to the desktop main column", () => {
+    const { container } = render(
+      <Section
+        title="API title"
+        content={<div>main</div>}
+        sideContent={<div>metadata</div>}
+        stickySideContent={false}
+        reverseLayoutOnMobile
+        info
+      />,
+    );
+
+    const root = container.firstElementChild as HTMLElement;
+    const section = container.querySelector("section")!;
+    const title = screen.getByRole("heading", { name: "API title" });
+
+    expect(title.parentElement).toHaveClass("@lg:w-prose");
+    expect(title.parentElement?.nextElementSibling).toBe(section);
+    expect(section).not.toContainElement(title);
+    expect(root).toContainElement(section);
+  });
+
   it("reserves the right column by default (columns)", () => {
     render(<Section content={<div>main</div>} stickySideContent={false} />);
     expect(screen.getByTestId("section-side-column")).toBeInTheDocument();

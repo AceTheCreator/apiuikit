@@ -39,6 +39,72 @@ describe("OpenAPI", () => {
     expect(screen.queryByPlaceholderText("Search document...")).not.toBeInTheDocument();
   });
 
+  it("keeps search available when the sidebar is hidden", () => {
+    const { container } = render(
+      <OpenAPI openapi={asDoc(exampleDoc)} config={{ show: { sidebar: false } }} />,
+    );
+
+    expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+    const widgetRoot = container.firstElementChild as HTMLElement;
+    expect(widgetRoot).not.toHaveClass("pt-14");
+    expect(widgetRoot.children[1]).toHaveClass("pt-14");
+  });
+
+  it("does not reserve the content-bar row when no content tabs are visible", () => {
+    const { container } = render(
+      <OpenAPI
+        openapi={asDoc(exampleDoc)}
+        config={{ show: { endpoints: false, webhooks: false, schemas: false } }}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: "AsyncAPI sections" })).not.toBeInTheDocument();
+    const widgetRoot = container.firstElementChild as HTMLElement;
+    expect(widgetRoot).not.toHaveClass("pt-14");
+    expect(widgetRoot.children[1]).not.toHaveClass("pt-14");
+  });
+
+  it("applies the host top offset to sticky tabs and component-contained panels", () => {
+    render(
+      <OpenAPI
+        openapi={asDoc(exampleDoc)}
+        config={{ topOffset: 72, sidePanel: { containment: "component" } }}
+      />,
+    );
+
+    const tabBar = screen
+      .getByRole("tablist", { name: "AsyncAPI sections" })
+      .closest(".sticky") as HTMLElement;
+    expect(tabBar.style.top).toBe("72px");
+
+    fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
+    const overlay = document.querySelector(".openapi-portal-root > .z-50") as HTMLElement;
+    expect(overlay.style.top).toBe("72px");
+  });
+
+  it("sticks content tabs to the top of an embedded widget scroller", () => {
+    const config = { topOffset: 72 };
+    const { container, rerender } = render(
+      <OpenAPI openapi={asDoc(exampleDoc)} config={config} />,
+    );
+    const widgetRoot = container.firstElementChild as HTMLElement;
+    widgetRoot.style.overflowY = "auto";
+    Object.defineProperties(widgetRoot, {
+      clientHeight: { configurable: true, value: 400 },
+      scrollHeight: { configurable: true, value: 800 },
+    });
+
+    // Re-render after the host establishes its scrolling layout so the sticky
+    // bar resolves against the widget scroller rather than the document.
+    rerender(<OpenAPI openapi={asDoc(exampleDoc)} config={config} />);
+
+    const tabBar = screen
+      .getByRole("tablist", { name: "AsyncAPI sections" })
+      .closest(".sticky") as HTMLElement;
+    expect(tabBar.style.top).toBe("0px");
+  });
+
   it("opens an endpoint's detail panel with responses; its only parameter (a query param) surfaces via the address bar, not a Parameters tab", () => {
     render(<OpenAPI openapi={asDoc(exampleDoc)} />);
 
@@ -102,13 +168,11 @@ describe("OpenAPI", () => {
     };
     render(<OpenAPI openapi={asDoc(doc)} />);
 
-    // Rendered twice (once for the mobile lead position, once atop the
-    // desktop sidebar), with only one visible per breakpoint via CSS.
-    const logos = await screen.findAllByRole("img", { name: "logo" });
-    expect(logos.length).toBeGreaterThan(0);
-    for (const logo of logos) {
-      expect(logo).toHaveAttribute("src", "https://example.com/logo.svg");
-    }
+    const masthead = screen.getByLabelText("Document toolbar");
+    const logo = await within(masthead).findByRole("img", { name: "logo" });
+    expect(logo).toHaveAttribute("src", "https://example.com/logo.svg");
+    expect(screen.getAllByRole("img", { name: "logo" })).toHaveLength(1);
+    expect(within(document.getElementById("info-panel")!).queryByRole("img")).not.toBeInTheDocument();
     expect(await screen.findByRole("link", { name: /@PetstoreAPI on X/i })).toBeInTheDocument();
   });
 

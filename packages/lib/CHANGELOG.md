@@ -1,5 +1,23 @@
 # apiuikit
 
+## 1.5.3
+
+### Patch Changes
+
+- 31f1dfb: Fix responsive layout issues in the Operations table, Messages table, and Authorization dropdown: the Operations row no longer wastes space on a dead spacer column next to the method badge, the Messages table now scrolls horizontally instead of clipping its Details column, and the shared Tabs mobile `<select>` (used by Authorization and elsewhere) is now styled to match the rest of the design system instead of rendering as a bare native dropdown.
+
+## 1.5.2
+
+### Patch Changes
+
+- 3644b18: Restore tab dividers and structural spacing after CSS isolation, and keep AsyncAPI operation content consistently spaced.
+
+## 1.5.1
+
+### Patch Changes
+
+- b75a103: Isolate APIUIkit's Tailwind utilities and resets from host styles, add a widget-wide top offset for host navigation, improve contained side-panel and sticky-tab behavior, keep search available independently of sidebar visibility, unify document branding and search/Markdown actions in a responsive scrolling top bar, improve responsive information-title placement, and improve Markdown contrast across themes.
+
 ## 1.5.0
 
 ### Minor Changes

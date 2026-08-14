@@ -13,8 +13,12 @@ interface DocumentContextBase {
   portalHost: HTMLElement | null;
   /** The Layout component's own root element, used to scope viewport-fixed overlays (e.g. SidePanel) to where the <AsyncAPI> or <OpenAPI> widget is actually embedded, rather than the full browser viewport. */
   rootElement: HTMLElement | null;
+  /** Host-page safe area above fixed and sticky widget controls, in pixels. */
+  topOffset?: number;
   /** Where SidePanel overlays are clipped. Defaults to `"viewport"`. */
   sidePanelContainment: SidePanelContainment;
+  /** Host-page safe area above a component-contained SidePanel, in pixels. */
+  sidePanelTopOffset?: number;
   /** Whether schema tree nodes start expanded by default. Defaults to false. */
   defaultSchemaExpanded?: boolean;
   /** Resolved schema tree depth-line colors (config-provided or default), cycled by nesting depth. */

@@ -1,5 +1,7 @@
+import { useState } from "react";
 import AsyncAPIDocumentProvider from "./AsyncAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
+import DocumentTopBar from "../../components/DocumentTopBar";
 import { AsyncAPINavigation, NavTab } from "../../components/Navigation";
 import SearchPanel from "../../components/SearchPanel";
 import MarkdownExportMenu from "../../components/MarkdownExportMenu";
@@ -13,6 +15,10 @@ import IconMessage from "../../icons/Message";
 import IconOperation from "../../icons/Operation";
 import IconSchema from "../../icons/Schema";
 import Information from "../Information/Information";
+import {
+  hasInformationLogo,
+  InformationLogo,
+} from "../Information/InformationSection";
 import Messages from "../Messages/Messages";
 import Servers from "../Server/Servers";
 import Operations from "../Operation/Operations";
@@ -32,6 +38,11 @@ const isAsyncAPITabKey = (value: string): value is AsyncAPITabKey =>
 
 export default function Layout({ asyncapi, config, plugins }: LayoutProps) {
   const show = config.show ?? {};
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMarkdownOpen, setIsMarkdownOpen] = useState(false);
+  const hasTopControls = show.search !== false || show.copyMarkdown !== false;
+  const hasTopLogo = show.info !== false && hasInformationLogo(asyncapi.info);
+  const hasMasthead = hasTopControls || hasTopLogo;
 
   const tabs: ContentTabItem[] = [
     ...(show.operations !== false ? [{ id: "operations", name: "Operations", icon: IconOperation }] : []),
@@ -93,32 +104,33 @@ export default function Layout({ asyncapi, config, plugins }: LayoutProps) {
     ) : null;
 
   return (
-    <AsyncAPIDocumentProvider
-      document={asyncapi}
-      config={config}
-      plugins={plugins}
-      className={show.sidebar !== false ? "pt-14" : ""}
-    >
-      <div className="px-4">
-        {show.search !== false && (
-          <SearchPanel
-            query={searchQuery}
-            onQueryChange={setSearchQuery}
-            results={searchResults}
-            onSelectResult={handleSearchSelect}
-          />
-        )}
-        {show.copyMarkdown !== false && (
-          <MarkdownExportMenu
-            serialize={(deref) => asyncApiToMarkdown(asyncapi, deref)}
-            // Search toggle is at 12px; sit immediately to its right when it's shown
-            // (12 + 40 width + 8 gap), else take the vacated first slot.
-            leftOffset={show.search !== false ? 60 : 12}
-          />
+    <AsyncAPIDocumentProvider document={asyncapi} config={config} plugins={plugins}>
+      <div className={`px-4 ${hasMasthead && tabs.length > 0 ? "pt-14" : ""}`}>
+        {hasMasthead && (
+          <DocumentTopBar
+            logo={hasTopLogo ? <InformationLogo source={asyncapi.info} /> : undefined}
+            forceVisible={isSearchOpen || isMarkdownOpen}
+          >
+            {show.search !== false && (
+              <SearchPanel
+                query={searchQuery}
+                onQueryChange={setSearchQuery}
+                results={searchResults}
+                onSelectResult={handleSearchSelect}
+                onOpenChange={setIsSearchOpen}
+              />
+            )}
+            {show.copyMarkdown !== false && (
+              <MarkdownExportMenu
+                serialize={(deref) => asyncApiToMarkdown(asyncapi, deref)}
+                onOpenChange={setIsMarkdownOpen}
+              />
+            )}
+          </DocumentTopBar>
         )}
         {show.info !== false && (
           <div id="info-panel">
-            <Information {...asyncapi.info} />
+            <Information {...asyncapi.info} showLogo={false} />
           </div>
         )}
         {show.servers !== false && serverNames.length > 0 && (

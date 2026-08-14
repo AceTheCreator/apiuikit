@@ -24,7 +24,7 @@ interface InfoMetadataProps {
   externalDocs?: { description?: string; url?: string };
   contact?: { name?: string; url?: string; email?: string };
   tags?: unknown[];
-  /** `info.x-logo`, rendered above the metadata list. */
+  /** `info.x-logo`, used by standalone information sections. */
   logo?: ReactNode;
 }
 

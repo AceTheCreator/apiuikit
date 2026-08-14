@@ -57,7 +57,7 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
 
   const isSend = op.action === OperationAction.SEND;
   const messageList = (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       {messages.map((msg, i) => (
         <Message key={i} message={msg} messageId={msg.name} i={i} />
       ))}
@@ -71,7 +71,7 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
   const ActivePluginComponent = activePlugin?.Component;
 
   return (
-    <div className="space-y-6" id={`operation-${id}-detail`}>
+    <div className="flex flex-col gap-6" id={`operation-${id}-detail`}>
       {showTabs && (
         <Tabs
           variant="segmented"

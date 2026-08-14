@@ -10,7 +10,7 @@ export interface AsyncAPIDocumentProviderProps {
   config?: ConfigInterface;
   /** Third-party plugins to register on this document's context. */
   plugins?: ApiuikitPlugin[];
-  /** Extra classes merged onto the root surface (e.g. Layout's sidebar `pt-14`). */
+  /** Extra classes merged onto the root surface. */
   className?: string;
   children: ReactNode;
 }
@@ -29,7 +29,7 @@ export function AsyncAPIDocumentProvider({
       <div
         ref={setRootElement}
         style={themeVars as React.CSSProperties}
-        className={`relative @container bg-background text-foreground p-2 ${className}`}
+        className={`apiuikit-root relative @container bg-background text-foreground ${className}`}
       >
         <div ref={setPortalHost} className="asyncapi-portal-root" />
         {children}

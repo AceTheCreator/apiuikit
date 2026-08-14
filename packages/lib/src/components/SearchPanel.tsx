@@ -3,8 +3,6 @@ import { createPortal } from "react-dom";
 import { SearchEntry } from "../helpers/searchIndex";
 import SearchIcon from "../icons/Search";
 import { useAsyncAPIDocument } from "../contexts";
-import { useAutoHideOnScroll } from "../utils/useAutoHideOnScroll";
-import { useElementRect } from "../utils/useElementRect";
 import { getScrollLockTarget, lockScroll } from "../utils/scrollLock";
 
 interface SearchPanelProps {
@@ -12,52 +10,32 @@ interface SearchPanelProps {
   onQueryChange: (value: string) => void;
   results: SearchEntry[];
   onSelectResult: (entry: SearchEntry) => void;
+  onOpenChange?: (isOpen: boolean) => void;
 }
-
-// The nav's own toggle used to sit at left:12px (see .panel-toggle-btn in
-// index.css) before it moved to a viewport-centered spine — this now takes
-// over that vacated top-left spot instead of sitting beside it.
-const SEARCH_TOGGLE_LEFT = 12;
 
 export default function SearchPanel({
   query,
   onQueryChange,
   results,
   onSelectResult,
+  onOpenChange,
 }: SearchPanelProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
   const resultsId = "asyncapi-search-results";
-  const { portalHost, rootElement } = useAsyncAPIDocument();
-
-  // Same "hide on scroll down, reveal on scroll up, pin while open" behavior
-  // as the sidebar toggle button, just anchored a bit further right.
-  const toggleMode = useAutoHideOnScroll(rootElement, isModalOpen);
-  const isPinnedToViewport = toggleMode !== "docked";
-  const rootRect = useElementRect(rootElement, isPinnedToViewport);
-
-  const toggleStyle: React.CSSProperties = {
-    left: isPinnedToViewport ? (rootRect?.left ?? 0) + SEARCH_TOGGLE_LEFT : SEARCH_TOGGLE_LEFT,
-    transform: `translateY(${toggleMode === "hidden" ? "-150%" : "0px"})`,
-    // Below SidePanel's z-50 (unlike the sidebar's own toggle, this button
-    // doesn't shift alongside the nav panel when it opens) so the open panel
-    // — and its backdrop — covers this button instead of floating above it.
-    zIndex: 40,
-    ...(isPinnedToViewport
-      ? {
-          position: "fixed",
-          top: 10,
-          pointerEvents: toggleMode === "hidden" ? "none" : undefined,
-        }
-      : {}),
-  };
+  const { portalHost, rootElement, topOffset = 0 } = useAsyncAPIDocument();
 
   const closeModal = () => {
     setIsModalOpen(false);
     setActiveIndex(-1);
   };
+
+  useEffect(() => {
+    onOpenChange?.(isModalOpen);
+    return () => onOpenChange?.(false);
+  }, [isModalOpen, onOpenChange]);
 
   // "The widget is in focus" can't rely on document.activeElement alone —
   // most of the rendered content (headings, table rows, schema trees) isn't
@@ -222,7 +200,6 @@ export default function SearchPanel({
         title="Search"
         aria-label="Search"
         className="panel-toggle-btn bg-neutral-100"
-        style={toggleStyle}
       >
         <SearchIcon />
       </button>
@@ -233,7 +210,10 @@ export default function SearchPanel({
           // z-[60] — above this search toggle, the nav spine (z-51), and the
           // nav popover (z-52), so the backdrop dims them along with the rest
           // of the page instead of leaving them floating on top of it.
-          <div className="fixed inset-0 z-[60] flex justify-center px-4 pt-24">
+          <div
+            className="fixed inset-0 z-[60] flex justify-center px-4 pt-24"
+            style={{ top: topOffset }}
+          >
             <div className="absolute inset-0 bg-black/30" />
             <div
               ref={modalRef}

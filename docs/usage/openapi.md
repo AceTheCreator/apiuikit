@@ -2,7 +2,7 @@
 
 ## Overview
 
-apiuikit renders OpenAPI 3.0 and 3.1 documents with the same architecture as its AsyncAPI support: a no-parser entry for documents you already have as a JS object, a with-parser entry for raw YAML/JSON text, composable standalone sections, and web components. Rendering shows Info, Servers, Endpoints (paths grouped by method, with an inline parameters/request body/responses detail panel), Webhooks, and Schemas.
+apiuikit accepts OpenAPI 3.0 and 3.1 documents through a no-parser entry for documents you already have as a JS object, a with-parser entry for raw YAML/JSON text, composable standalone sections, and web components. Version compatibility is separate from UI coverage: the renderer does not claim a dedicated view for every keyword in the OpenAPI specification. The exact features currently rendered are listed below.
 
 ### Coverage
 

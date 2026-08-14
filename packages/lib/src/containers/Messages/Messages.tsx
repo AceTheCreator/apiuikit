@@ -95,24 +95,26 @@ export default function Messages({ messages, selectedKey, focusSection, layout }
 
   const content = messageEntries.length ? (
     <div className="bg-surface rounded-lg border border-border overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-neutral-100">
-          <tr>
-            <th className="px-6 py-5 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
-              Message
-            </th>
-            <th className="px-6 py-5 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
-              Summary
-            </th>
-            <th className="px-6 py-5 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
-              Details
-            </th>
-          </tr>
-        </thead>
-          {messageEntries.map(([messageKey, message], i) => (
-            <MessageRow key={messageKey} messageKey={messageKey} message={message} first={i === 0} isSelected={selectedKey === messageKey} focusSection={focusSection} />
-          ))}
-      </table>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-neutral-100">
+            <tr>
+              <th className="px-6 py-5 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
+                Message
+              </th>
+              <th className="px-6 py-5 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
+                Summary
+              </th>
+              <th className="px-6 py-5 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider">
+                Details
+              </th>
+            </tr>
+          </thead>
+            {messageEntries.map(([messageKey, message], i) => (
+              <MessageRow key={messageKey} messageKey={messageKey} message={message} first={i === 0} isSelected={selectedKey === messageKey} focusSection={focusSection} />
+            ))}
+        </table>
+      </div>
     </div>
   ) : (
     <div className="mt-10 rounded-xl border border-dashed border-neutral-300 bg-surface p-8 text-center text-sm text-foreground-muted">

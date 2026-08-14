@@ -39,8 +39,18 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
     : DEFAULT_DEPTH_COLORS;
   const showExtensions = config.show?.extensions !== false;
   const showCodeSamples = config.show?.codeSamples !== false;
+  const configuredTopOffset = config.topOffset;
+  const topOffset =
+    typeof configuredTopOffset === "number" && Number.isFinite(configuredTopOffset)
+      ? Math.max(0, configuredTopOffset)
+      : 0;
   const sidePanelContainment: SidePanelContainment =
     config.sidePanel?.containment ?? "viewport";
+  const configuredSidePanelTopOffset = config.sidePanel?.topOffset;
+  const sidePanelTopOffset =
+    typeof configuredSidePanelTopOffset === "number" && Number.isFinite(configuredSidePanelTopOffset)
+      ? Math.max(0, configuredSidePanelTopOffset)
+      : topOffset;
 
   // Both accepted forms collapse to a resolver here so consumers have one
   // shape to call. A bare string applies to every target; a function decides
@@ -58,7 +68,9 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
       deref,
       portalHost,
       rootElement,
+      topOffset,
       sidePanelContainment,
+      sidePanelTopOffset,
       defaultSchemaExpanded,
       depthColors,
       showExtensions,
@@ -73,7 +85,9 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
       deref,
       portalHost,
       rootElement,
+      topOffset,
       sidePanelContainment,
+      sidePanelTopOffset,
       defaultSchemaExpanded,
       depthColors,
       showExtensions,

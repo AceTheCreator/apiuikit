@@ -2,6 +2,10 @@ const colors = require('tailwindcss/colors')
 
 /** @type {import('tailwindcss').Config} */
 export default {
+  // APIUIkit is embedded into applications that may ship their own Tailwind
+  // utilities. Scope every generated utility beneath our root so equal-name
+  // host classes cannot override the widget (or vice versa).
+  important: '.apiuikit-root',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -97,6 +101,8 @@ export default {
   },
   plugins: [
     require('@tailwindcss/typography'),
-    require('@tailwindcss/forms'),
+    // Component libraries must not inject Forms' element-wide base reset into
+    // the host page. Our form controls already carry explicit utility styles.
+    require('@tailwindcss/forms')({ strategy: 'class' }),
   ],
 }
