@@ -1,0 +1,14 @@
+/* The shared `apiuikit` library intentionally stopped leaking a global
+   `html, body { margin: 0 }` reset onto its host page (see "fix: leaking
+   library style to host app"), since a consumer embedding the widget
+   shouldn't have its own page styles overridden. The standalone playground
+   app is that reset's only real consumer, so it needs its own copy: without
+   it, the browser's default 8px body margin pushes the `height: 100vh` app
+   shell past the viewport, producing a stray light-colored gutter (outside
+   `.apiuikit-root`, so it never picks up the dark theme) and an outer page
+   scrollbar. */
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
