@@ -47,7 +47,7 @@ A section's standalone `document` prop form also accepts `plugins`. Composed und
 
 Plugins currently work only through the React API. `@apiuikit/web-component`'s custom elements don't support `plugins` yet: it's a live array of component references, not something a JSON/string attribute can carry.
 
-See `packages/playground/src/plugins/tryItOutPlugin.tsx` in this repo for a worked example (not a published package — a dev fixture for exercising the plugin architecture in the playground): it fills `openapi.operation.tab` with a "Try it" tab that edits parameters/body, sends a `fetch()`, and shows the response. Requests run as a plain browser `fetch()` from wherever the docs are rendered, so normal CORS rules apply — the target API has to allow your origin. AsyncAPI documents are unaffected; an equivalent for WebSocket/Kafka/MQTT doesn't exist yet, though `asyncapi.operation.tab` is defined and ready for one.
+The playground ships two small, non-published dev fixtures for exercising the plugin architecture in `packages/playground/src/plugins/`: `operationTabDemoPlugin.tsx` fills `openapi.operation.tab`, and `operationActionsDemoPlugin.tsx` fills `openapi.operation.actions`. Neither does anything functional — each just renders a labeled placeholder, outlined so its slot's boundary is visible while clicking around the playground (see the screenshots below). Building an actual "try it out" plugin — one that edits parameters/body and sends a real `fetch()` — is covered below, under "Writing a plugin"; apiuikit doesn't ship a full one itself.
 
 ## Slots
 
@@ -86,6 +86,10 @@ export default definePlugin({
 });
 ```
 
+The playground's `operationTabDemoPlugin.tsx` outlines its own wrapper in a tinted, thick dotted border so it's obvious in a screenshot exactly how much space this slot hands you — the operation panel's *entire* body, not just the room its own content happens to need:
+
+![The `openapi.operation.tab` slot, outlined in the playground: the "Demo" tab's content fills the whole operation panel body](./images/plugins/operation-tab-slot.png)
+
 **`*.operation.actions`** is inline instead — your component renders alongside apiuikit's own content. Use this only for something small and secondary (e.g. a button) that belongs next to the documentation rather than replacing it. Multiple plugins filling the same actions slot stack in registration order. It takes a bare component, not a `{ label, component }` pair.
 
 ```tsx
@@ -96,6 +100,10 @@ export default definePlugin({
   },
 });
 ```
+
+The playground also has a small `operationActionsDemoPlugin.tsx` fixture filling this slot, outlined the same way, to make the contrast with `*.operation.tab` obvious — inline, amid the existing content, not a full panel:
+
+![The `openapi.operation.actions` slot, outlined in the playground: a small inline element sitting between the code samples and Authorization](./images/plugins/operation-actions-slot.png)
 
 More slots may be added over time; a plugin only needs to fill the ones it cares about.
 
@@ -137,7 +145,7 @@ export default definePlugin({
 });
 ```
 
-A plugin that needs to send a request resolves the operation's `parameters` / `requestBody` / `security` from `document`, then hands them to `buildHarRequest`. See `packages/playground/src/plugins/tryItOutPlugin.tsx` for the full version (parameter/body editing, `fetch()`, response display):
+A plugin that needs to send a request resolves the operation's `parameters` / `requestBody` / `security` from `document`, then hands them to `buildHarRequest`:
 
 ```tsx
 import { buildHarRequest } from "apiuikit/plugin";
@@ -173,7 +181,7 @@ const sendButtonStyle = {
 };
 ```
 
-This is how the playground's `tryItOutPlugin.tsx` picks its colors. For anything beyond color (or to read the config the host actually passed, unresolved), `useDocumentContext().config` has the raw `ConfigInterface`.
+For anything beyond color (or to read the config the host actually passed, unresolved), `useDocumentContext().config` has the raw `ConfigInterface`.
 
 ### Error isolation
 
@@ -196,4 +204,4 @@ Ship it as its own package with `apiuikit` (and `react` / `react-dom`) as **peer
 
 Mark `react`, `react-dom`, `react/jsx-runtime`, and `apiuikit` / `apiuikit/plugin` as external in your bundler config. This matters for more than bundle size: `apiuikit/plugin`'s `useDocumentContext` and `PluginSlot` are re-exported from the `apiuikit` package itself rather than bundled fresh, so every plugin's `DocumentContext` lookup resolves to the *same* context object the app's own `apiuikit` import provides. Bundling your own copy creates a second, disconnected instance — `useDocumentContext()` would then throw "must be used within a document provider" even when correctly nested under one, since React context lookups are keyed on object identity, not shape.
 
-`packages/playground/src/plugins/tryItOutPlugin.tsx` shows a real slot component end to end (parameter/body editing, `fetch()`, response display) — it just isn't packaged for publishing, since it's a playground dev fixture, not a shipped plugin. Use it as a reference for the component itself; follow the package layout above for the package that would ship it.
+The playground's own `operationTabDemoPlugin.tsx` and `operationActionsDemoPlugin.tsx` aren't packaged for publishing — they're dev fixtures for exercising the slot contract itself, not examples of a shippable plugin. Follow the package layout above for that.

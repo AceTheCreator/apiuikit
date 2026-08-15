@@ -148,7 +148,7 @@ import myPlugin from "@yourscope/apiuikit-plugin-whatever";
 <OpenAPI openapi={doc} plugins={[myPlugin]} />
 ```
 
-See [Plugins](./docs/usage/plugins.md) for the full reference, including how to write and publish your own — `packages/playground/src/plugins/tryItOutPlugin.tsx` is a worked example.
+See [Plugins](./docs/usage/plugins.md) for the full reference, including how to write and publish your own.
 
 ## Development
 

@@ -1,7 +1,8 @@
 import { AsyncAPIRenderer, OpenAPIRenderer, defaultConfig } from 'apiuikit'
 import type { ConfigInterface } from 'apiuikit'
 import 'apiuikit/style.css'
-import tryItOutPlugin from './plugins/tryItOutPlugin'
+import operationTabDemoPlugin from './plugins/operationTabDemoPlugin'
+import operationActionsDemoPlugin from './plugins/operationActionsDemoPlugin'
 import { useEffect, useMemo, useState } from 'react'
 import { DiagnosticsPanel } from './components/DiagnosticsPanel'
 import type { ParserDiagnostic } from './components/DiagnosticsPanel'
@@ -26,7 +27,7 @@ const DEFAULT_DOC_TEXT = DEFAULT_SUGGESTED_SCHEMA.content
 // take `plugins` as a prop, so a fresh array literal on every render would
 // otherwise re-trigger the plugin-derived parts of DocumentContext).
 // UNCOMMENT BELOW LINE WHEN YOU WANT TO TEST PLUGINS
-const PLUGINS = [tryItOutPlugin]
+const PLUGINS = [operationTabDemoPlugin, operationActionsDemoPlugin]
 const UI_MODE_STORAGE_KEY = 'apiuikit-playground-ui-mode'
 const PLAYGROUND_FONT_FAMILY =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
