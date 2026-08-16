@@ -52,6 +52,7 @@ export type {
 // are erased at build time and have no singleton-identity concern.
 export type {
   HttpMethod,
+  OpenAPIDocumentData,
   OpenAPIOperationData,
   OpenAPIParameterData,
   OpenAPIPathItemData,
@@ -59,10 +60,4 @@ export type {
   OpenAPISecuritySchemeData,
   OpenAPIServerData,
 } from "./types/openapi";
-
-// Request-building helpers already used by CodeSamples for OpenAPI code
-// samples — spec-shape-aware (server URL templating, auth placeholders,
-// example resolution), reused here so a "try it out"-style plugin doesn't
-// duplicate that logic to build its own fetch() calls.
-export { buildHarRequest, resolveServerBaseUrl } from "./helpers/codeSamples";
-export type { CodeSampleHarRequest } from "./helpers/codeSamples";
+export type { AsyncAPIDocumentData } from "./types/schema";

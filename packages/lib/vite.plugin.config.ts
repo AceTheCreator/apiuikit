@@ -1,39 +1,15 @@
-import { fileURLToPath } from 'node:url'
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 /**
  * Independent plugin-SDK build, mirroring vite.markdown.config.ts: kept out
  * of the UI's Rollup graph so consumers who never register a plugin don't
- * pull this surface into their bundle, while plugin authors (and this
- * package's own official plugins, e.g. @apiuikit/plugin-try-it-out-http) get
- * a small, typed entry point.
- *
- * Unlike markdown.ts, this entry re-exports `buildHarRequest` from
- * `helpers/codeSamples.ts`, which imports `@readme/httpsnippet` — so it needs
- * the same Node-builtin polyfills as the main UI build (vite.config.ts).
+ * pull this surface into their bundle, while plugin authors get a small,
+ * typed entry point.
  */
-function browserNodePolyfills(): Plugin {
-  const browserUtilInspect = fileURLToPath(new URL('./src/shims/utilInspect.ts', import.meta.url))
-  return {
-    name: 'apiuikit-plugin-browser-node-polyfills',
-    enforce: 'pre',
-    resolveId(source, importer) {
-      if (source === './util.inspect' && importer?.includes('/object-inspect/index.js')) {
-        return browserUtilInspect
-      }
-    },
-  }
-}
-
 export default defineConfig({
   publicDir: false,
-  resolve: {
-    alias: {
-      url: 'url',
-    },
-  },
-  plugins: [browserNodePolyfills(), react()],
+  plugins: [react()],
   build: {
     emptyOutDir: false,
     lib: {

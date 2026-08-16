@@ -29,8 +29,8 @@ export type PluginSlotName =
  * optional, often-absent `operationId` field). Deliberately unopinionated:
  * apiuikit doesn't pre-extract parameters/requestBody/security for you —
  * look those up from `document.paths[path][method]` yourself and resolve
- * whatever shape your plugin actually needs (e.g. via `buildHarRequest` from
- * `apiuikit/plugin`). This keeps the slot contract stable as the document
+ * whatever shape your plugin actually needs. This keeps the slot contract
+ * stable as the document
  * schema's own details evolve, and doesn't force every plugin through the
  * same request-shape assumptions a fixed set of fields would bake in.
  */
