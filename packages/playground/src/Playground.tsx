@@ -106,11 +106,25 @@ export function Playground({
     return head.startsWith('{') ? 'json' : 'yaml'
   }, [docText])
 
-  // Sniffs the document's own top-level key (JSON or YAML — either way it's a
-  // line matching `asyncapi:`/`openapi:`/`swagger:` near the top) to pick which
-  // renderer/parser to hand it to, rather than asking the user to choose.
-  // Defaults to AsyncAPI when neither key is found (e.g. mid-edit/empty doc).
+  // Sniffs the document's own top-level key to pick which renderer/parser to
+  // hand it to, rather than asking the user to choose. Defaults to AsyncAPI
+  // when neither key is found (e.g. mid-edit/empty doc).
   const specType = useMemo<'asyncapi' | 'openapi'>(() => {
+    // JSON docs are parsed directly rather than line-sniffed: minified/pasted
+    // JSON puts the top-level key right after `{` on the same line, which a
+    // line-anchored regex would never match.
+    if (docText.trimStart().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(docText)
+        if (parsed && typeof parsed === 'object') {
+          if ('asyncapi' in parsed) return 'asyncapi'
+          if ('openapi' in parsed || 'swagger' in parsed) return 'openapi'
+        }
+      } catch {
+        // Invalid/mid-edit JSON — fall through to the line sniff below.
+      }
+    }
+    // YAML has no such ambiguity: a top-level key always starts its own line.
     const match = docText.match(/^\s*["']?(asyncapi|openapi|swagger)["']?\s*:/m)
     if (!match) return 'asyncapi'
     return match[1] === 'asyncapi' ? 'asyncapi' : 'openapi'
