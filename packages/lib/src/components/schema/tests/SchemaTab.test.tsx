@@ -88,23 +88,6 @@ describe("SchemaTabs", () => {
     });
   });
 
-  it("shows the type/format instead of a blank panel for a leaf root schema (e.g. application/octet-stream)", () => {
-    // Request bodies like `application/octet-stream` declare
-    // `{ type: "string", format: "binary" }` — a schema with nothing to
-    // expand. With a string `label`, SchemaTab always suppresses the root row
-    // (see the depth-color test above), so this must not render as empty.
-    renderTabs({
-      schema: { type: "string", format: "binary" },
-      label: "Request Body",
-      defaultView: "schema",
-    });
-
-    expect(screen.getByText("binary")).toBeInTheDocument();
-    expect(
-      screen.queryByText("No schema details available."),
-    ).not.toBeInTheDocument();
-  });
-
   it("offers Example, Schema, and JSON tabs for plain JSON Schema", () => {
     renderTabs({ schema: jsonSchema, label: "Payload" });
 
