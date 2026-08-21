@@ -25,6 +25,7 @@ export default function SearchPanel({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
   const resultsId = "asyncapi-search-results";
+  const resultItemId = (index: number) => `asyncapi-search-result-${index}`;
   const { portalHost, rootElement, topOffset = 0 } = useAsyncAPIDocument();
 
   const closeModal = () => {
@@ -132,6 +133,15 @@ export default function SearchPanel({
     }
   }, [activeIndex, results.length]);
 
+  // Keeps the highlighted result in view as arrow keys move past the edge of
+  // the scrollable listbox — otherwise the active row can move behind the
+  // fold with nothing on screen to show it changed.
+  useEffect(() => {
+    if (activeIndex < 0) return;
+    document.getElementById(resultItemId(activeIndex))?.scrollIntoView({ block: "nearest" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex]);
+
   const showDropdown = isModalOpen && query.trim().length > 0;
 
   const handleSelectResult = (result: SearchEntry) => {
@@ -159,11 +169,7 @@ export default function SearchPanel({
     if (event.key === "ArrowUp") {
       event.preventDefault();
       setActiveIndex((current) =>
-        results.length === 0
-          ? -1
-          : current <= 0
-          ? results.length - 1
-          : current - 1
+        results.length === 0 ? -1 : Math.max(current - 1, 0)
       );
       return;
     }
@@ -191,7 +197,6 @@ export default function SearchPanel({
     }
   };
 
-  const resultItemId = (index: number) => `asyncapi-search-result-${index}`;
   const resultCountText = showDropdown
     ? `${results.length} result${results.length === 1 ? "" : "s"} found`
     : "";
