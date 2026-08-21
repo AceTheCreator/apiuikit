@@ -73,7 +73,25 @@ export default function SchemaTree({
           </div>
         );
       }
-      return null;
+
+      // A leaf schema (e.g. `{ type: "string", format: "binary" }`, as
+      // request bodies declare for application/octet-stream) has nothing to
+      // expand, but it still has a type/format/constraints worth showing —
+      // this must not fall through to an empty panel just because its parent
+      // already renders the heading this row would otherwise repeat.
+      return (
+        <div className={className}>
+          <SchemaTreeRow
+            path={initialPath}
+            depth={0}
+            schema={flattenedNode}
+            description={flattenedNode.description}
+            expandable={false}
+            expanded={false}
+            onToggle={() => undefined}
+          />
+        </div>
+      );
     }
 
     const arrayPath =

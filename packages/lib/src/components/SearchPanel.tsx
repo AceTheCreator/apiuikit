@@ -180,7 +180,11 @@ export default function SearchPanel({
       return;
     }
 
-    if (event.key === "Enter" && activeIndex >= 0 && results[activeIndex]) {
+    if (
+      (event.key === "Enter" || event.key === " ") &&
+      activeIndex >= 0 &&
+      results[activeIndex]
+    ) {
       event.preventDefault();
       handleSelectResult(results[activeIndex]);
       return;
@@ -288,15 +292,32 @@ export default function SearchPanel({
                   )}
                 </div>
               )}
-              <div className="flex items-center justify-center gap-1 px-4 py-1.5 text-xs text-foreground-muted">
-                Press
-                <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
-                  {isMac ? "⌘ Cmd" : "Ctrl"}
-                </kbd>
-                <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
-                  K
-                </kbd>
-                to search
+              <div className="flex flex-wrap items-center justify-center gap-3 px-4 py-1.5 text-xs text-foreground-muted">
+                <span className="flex items-center gap-1">
+                  <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
+                    ↑
+                  </kbd>
+                  <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
+                    ↓
+                  </kbd>
+                  to navigate
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
+                    ↵
+                  </kbd>
+                  to select
+                </span>
+                <span className="flex items-center gap-1">
+                  Press
+                  <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
+                    {isMac ? "⌘ Cmd" : "Ctrl"}
+                  </kbd>
+                  <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
+                    K
+                  </kbd>
+                  to search
+                </span>
               </div>
             </div>
           </div>,
