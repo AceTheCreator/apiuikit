@@ -14,6 +14,7 @@ Pass a plain JavaScript object that matches the AsyncAPI 3.0 document shape.
 |-----------|-------------------------|----------|-----------------------------------------------------|
 | `asyncapi`| `AsyncAPIDocumentData`  | Yes      | A pre-resolved AsyncAPI 3.0 document object         |
 | `config`  | `ConfigInterface`       | No       | UI configuration (theme, show flags, sidebar, etc.). See [Configuration](../configuration/config.md). |
+| `plugins` | `ApiuikitPlugin[]`      | No       | Third-party plugins to render into the document's extension slots. See [Plugins](./plugins.md). |
 | `errorFallback` | `ReactNode \| (error, reset) => ReactNode` | No | Custom UI shown if rendering throws. Defaults to a built-in fallback |
 | `onError` | `(error, errorInfo) => void` | No  | Called once when a render error is caught, e.g. to report it to your own telemetry |
 

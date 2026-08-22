@@ -1,6 +1,8 @@
 import { AsyncAPIRenderer, OpenAPIRenderer, defaultConfig } from 'apiuikit'
 import type { ConfigInterface } from 'apiuikit'
 import 'apiuikit/style.css'
+import operationTabDemoPlugin from './plugins/operationTabDemoPlugin'
+import operationActionsDemoPlugin from './plugins/operationActionsDemoPlugin'
 import { useEffect, useMemo, useState } from 'react'
 import { DiagnosticsPanel } from './components/DiagnosticsPanel'
 import type { ParserDiagnostic } from './components/DiagnosticsPanel'
@@ -21,6 +23,11 @@ import type { UiMode } from './theme'
 import { netlifyTheme } from './themes/netlify'
 
 const DEFAULT_DOC_TEXT = DEFAULT_SUGGESTED_SCHEMA.content
+// Module-level so the array identity is stable across renders (both renderers
+// take `plugins` as a prop, so a fresh array literal on every render would
+// otherwise re-trigger the plugin-derived parts of DocumentContext).
+// UNCOMMENT BELOW LINE WHEN YOU WANT TO TEST PLUGINS
+const PLUGINS = [operationTabDemoPlugin, operationActionsDemoPlugin]
 const UI_MODE_STORAGE_KEY = 'apiuikit-playground-ui-mode'
 const PLAYGROUND_FONT_FAMILY =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
@@ -168,12 +175,14 @@ export function Playground({
           <OpenAPIRenderer
             raw={debouncedDocText}
             config={previewConfig}
+            plugins={PLUGINS}
             onDiagnostics={(d) => setDiagnostics(d as ParserDiagnostic[])}
           />
         ) : (
           <AsyncAPIRenderer
             raw={debouncedDocText}
             config={previewConfig}
+            plugins={PLUGINS}
             onDiagnostics={(d) => setDiagnostics(d as ParserDiagnostic[])}
           />
         )}

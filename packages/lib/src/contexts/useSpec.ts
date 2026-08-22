@@ -1,7 +1,8 @@
 import { createContext, useContext } from "react";
 import type { AsyncAPIDocumentData } from "../types/schema";
 import type { OpenAPIDocumentData } from "../types/openapi";
-import type { MarkdownUrlResolver, SidePanelContainment } from "../config/config";
+import type { ConfigInterface, MarkdownUrlResolver, SidePanelContainment } from "../config/config";
+import type { ApiuikitPlugin } from "../plugins/types";
 
 /** Which spec produced the ambient document. The discriminant of DocumentContextValue. */
 export type SpecType = "asyncapi" | "openapi";
@@ -28,6 +29,10 @@ interface DocumentContextBase {
   showCodeSamples: boolean;
   /** Resolves the hosted URL serving a target as Markdown, if the consumer serves one (config.markdown.url). */
   markdownUrl?: MarkdownUrlResolver;
+  /** Third-party plugins registered on the nearest `<AsyncAPI>`/`<OpenAPI>` (or provider), consumed via `PluginSlot`. Undefined is equivalent to none registered. */
+  plugins?: ApiuikitPlugin[];
+  /** The host's as-given `config` prop, unmerged with defaults. For plugins; prefer the derived fields above for apiuikit's own UI. Theme colors: use the CSS custom properties on the document root (see Plugins docs), not `config.theme`. */
+  config?: ConfigInterface;
 }
 
 export interface AsyncAPIDocumentContextValue extends DocumentContextBase {

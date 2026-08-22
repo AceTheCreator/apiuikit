@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import AsyncAPI from "../AsyncAPI";
+import { definePlugin } from "../../../plugins/types";
 import type { AsyncAPIDocumentData } from "../../../types/schema";
 import exampleDoc from "../../../config/examples/example1.json";
 import avroDoc from "../../../config/examples/avro-streetlight.json";
@@ -348,5 +349,43 @@ describe("AsyncAPI", () => {
     expect(open).toHaveBeenCalledWith("blob:mock-url", "_blank");
 
     vi.unstubAllGlobals();
+  });
+
+  describe("plugins", () => {
+    it("wires a `plugins` prop through to an operation's actions slot", () => {
+      const annotate = definePlugin({
+        name: "annotate",
+        slots: {
+          "asyncapi.operation.actions": ({ operationId }) => <div>plugin annotation for {operationId}</div>,
+        },
+      });
+
+      render(<AsyncAPI asyncapi={asDoc(exampleDoc)} plugins={[annotate]} />);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "SEND smartylighting.streetlights.1.0.action.{streetlightId}.turn.on" }),
+      );
+      expect(screen.getByText("plugin annotation for turnOn")).toBeInTheDocument();
+    });
+
+    it("wires a `plugins` prop through to an operation's tab slot", () => {
+      const sendIt = definePlugin({
+        name: "send-it",
+        slots: {
+          "asyncapi.operation.tab": {
+            label: "Send it",
+            component: ({ operationId }) => <div>send it content for {operationId}</div>,
+          },
+        },
+      });
+
+      render(<AsyncAPI asyncapi={asDoc(exampleDoc)} plugins={[sendIt]} />);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "SEND smartylighting.streetlights.1.0.action.{streetlightId}.turn.on" }),
+      );
+      fireEvent.click(screen.getByRole("tab", { name: "Send it" }));
+      expect(screen.getByText("send it content for turnOn")).toBeInTheDocument();
+    });
   });
 });

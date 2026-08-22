@@ -10,6 +10,7 @@ import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
 import { asyncApiToMarkdown } from "../../helpers/toMarkdown";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
 import { ConfigInterface } from "../../config";
+import type { ApiuikitPlugin } from "../../plugins/types";
 import IconMessage from "../../icons/Message";
 import IconOperation from "../../icons/Operation";
 import IconSchema from "../../icons/Schema";
@@ -27,6 +28,7 @@ import { AsyncAPIDocumentData } from "../../types/schema";
 export interface LayoutProps {
   asyncapi: AsyncAPIDocumentData;
   config: ConfigInterface;
+  plugins?: ApiuikitPlugin[];
 }
 
 type AsyncAPITabKey = NavTab;
@@ -34,7 +36,7 @@ type AsyncAPITabKey = NavTab;
 const isAsyncAPITabKey = (value: string): value is AsyncAPITabKey =>
   value === "operations" || value === "messages" || value === "schemas";
 
-export default function Layout({ asyncapi, config }: LayoutProps) {
+export default function Layout({ asyncapi, config, plugins }: LayoutProps) {
   const show = config.show ?? {};
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMarkdownOpen, setIsMarkdownOpen] = useState(false);
@@ -102,7 +104,7 @@ export default function Layout({ asyncapi, config }: LayoutProps) {
     ) : null;
 
   return (
-    <AsyncAPIDocumentProvider document={asyncapi} config={config}>
+    <AsyncAPIDocumentProvider document={asyncapi} config={config} plugins={plugins}>
       <div className={`px-4 ${hasMasthead && tabs.length > 0 ? "pt-14" : ""}`}>
         {hasMasthead && (
           <DocumentTopBar

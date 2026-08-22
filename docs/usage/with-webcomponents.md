@@ -11,7 +11,7 @@ Use apiuikit from Vue, Angular, Svelte, plain HTML, or any other environment tha
 | `<apiuikit-openapi-renderer>` | You have a raw OpenAPI YAML or JSON string |
 | `<apiuikit-openapi>` | You already have a parsed OpenAPI document object |
 
-If you're building a React app, prefer the [React entry without parser](./no-parser.md) or [React entry with parser](./with-parser.md) according to your usecase instead.
+If you're building a React app, prefer the [React entry without parser](./no-parser.md) or [React entry with parser](./with-parser.md) according to your usecase instead. The `plugins` prop is React-only today — these custom elements don't accept it. See [Plugins](./plugins.md).
 
 Elements render into light DOM (no shadow root) — apiuikit's CSS applies globally, and your page's own CSS can just as easily reach inside the widget. Keep selectors in your page's stylesheet scoped (classes, not bare tag selectors like `p` or `h2`) so they don't accidentally style content apiuikit renders inside the element.
 

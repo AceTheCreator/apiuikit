@@ -119,7 +119,10 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
         onClose={() => setSelectedKey(null)}
         title={panelTitle}
       >
-        {selectedOp && <Operation op={selectedOp} id={selectedKey} focusSection={focusSection} />}
+        {selectedOp && (
+          // Remounts on every operation switch — see Paths.tsx's identical `key`.
+          <Operation key={selectedKey} op={selectedOp} id={selectedKey} focusSection={focusSection} />
+        )}
       </SidePanel>
     </>
   );

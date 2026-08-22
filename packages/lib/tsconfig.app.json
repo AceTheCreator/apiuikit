@@ -16,6 +16,18 @@
     "jsx": "react-jsx",
     "types": ["@testing-library/jest-dom"],
 
+    // plugin.ts self-imports from the package's own published name ("apiuikit")
+    // rather than relative source paths, to preserve runtime identity across
+    // separate Rollup builds (see vite.plugin.config.ts). That specifier
+    // normally resolves through the workspace symlink to dist/index.d.ts, which
+    // only exists after `vite build` — but `tsc -b` (typecheck) runs before the
+    // build step in CI. Map it to source here so typechecking doesn't depend on
+    // build order; emitted .d.ts output still preserves the "apiuikit" specifier
+    // text as written, so this has no effect on runtime resolution.
+    "paths": {
+      "apiuikit": ["./src/index.ts"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

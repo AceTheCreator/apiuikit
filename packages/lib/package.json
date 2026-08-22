@@ -29,6 +29,11 @@
       "import": "./dist/markdown.es.js",
       "require": "./dist/markdown.cjs"
     },
+    "./plugin": {
+      "types": "./dist/plugin.d.ts",
+      "import": "./dist/plugin.es.js",
+      "require": "./dist/plugin.cjs"
+    },
     "./style.css": "./dist/apiuikit.css"
   },
   "files": [
@@ -37,7 +42,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/verifyCssIsolation.mjs && vite build --config vite.markdown.config.ts && node scripts/verifyPackageExports.mjs",
+    "build": "vite build && node scripts/verifyCssIsolation.mjs && vite build --config vite.markdown.config.ts && vite build --config vite.plugin.config.ts && node scripts/verifyPackageExports.mjs",
     "watch": "vite build --watch",
     "prepublishOnly": "cp ../../README.md ./README.md && npm run build",
     "typecheck": "node scripts/typecheck.mjs",

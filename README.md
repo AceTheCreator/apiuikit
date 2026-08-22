@@ -105,6 +105,7 @@ See the full usage docs for props, configuration options, and more:
 - [Composable Sections](./docs/usage/sections.md) (`Servers`, `Operations`, `Messages`, `Schemas`, `Info`, `AsyncAPIProvider`)
 - [Configuration](./docs/configuration/config.md) (`ConfigInterface`: theme, show flags, sidebar, sidePanel, etc.)
 - [Web Components](./docs/usage/with-webcomponents.md) (`<apiuikit-asyncapi>`, `<apiuikit-asyncapi-renderer>`, use apiuikit from any framework)
+- [Plugins](./docs/usage/plugins.md) (`plugins` prop, `definePlugin`, writing and publishing your own)
 - [Markdown export](./docs/usage/markdown-export.md) (making your docs AI-readable: `config.markdown.url`, `documentToMarkdown`, `documentToLlmsTxt`)
 - [Avro schemas](./docs/usage/avro.md)
 - [Protobuf schemas](./docs/usage/protobuf.md)
@@ -136,6 +137,19 @@ Use `<apiuikit-openapi-renderer>` for raw OpenAPI documents. If the document is 
 
 See [Web Components](./docs/usage/with-webcomponents.md) for CDN usage, configuration, diagnostics, and framework integration.
 
+## Plugins
+
+Extend a rendered document with UI from a separately-installed package, without that code living in `apiuikit`'s own bundle — e.g. a "Try it" tab on OpenAPI operations for sending real requests:
+
+```tsx
+import { OpenAPI } from "apiuikit";
+import myPlugin from "@yourscope/apiuikit-plugin-whatever";
+
+<OpenAPI openapi={doc} plugins={[myPlugin]} />
+```
+
+See [Plugins](./docs/usage/plugins.md) for the full reference, including how to write and publish your own.
+
 ## Development
 
 This is a monorepo. The sections below are for contributors working on the library itself, skip these if you're just consuming the published package.
@@ -144,10 +158,10 @@ This is a monorepo. The sections below are for contributors working on the libra
 
 ```
 packages/
-  lib/            : the component library (published as "apiuikit")
-  web-component/  : framework-agnostic custom elements (published as "@apiuikit/web-component")
-  playground/     : local dev app that consumes the library as a real package would
-  x-tensions/     : catalog of x-* spec-extension renderers, bundled into lib (see its own README)
+  lib/                      : the component library (published as "apiuikit")
+  web-component/            : framework-agnostic custom elements (published as "@apiuikit/web-component")
+  playground/               : local dev app that consumes the library as a real package would
+  x-tensions/               : catalog of x-* spec-extension renderers, bundled into lib (see its own README)
 ```
 
 ### Commands
