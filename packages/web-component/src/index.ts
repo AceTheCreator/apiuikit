@@ -1,48 +1,16 @@
-import r2wc from "@r2wc/react-to-web-component";
-import "apiuikit/style.css";
-import { AsyncApiElement, AsyncApiRendererElement, OpenApiElement, OpenApiRendererElement } from "./adapters";
-import { defineOnce } from "./registerElement";
-
-defineOnce(
-  "apiuikit-asyncapi",
-  r2wc(AsyncApiElement, {
-    props: {
-      spec: undefined,
-      resolved: "boolean",
-      config: "json",
-    },
-  }),
-);
-
-defineOnce(
-  "apiuikit-asyncapi-renderer",
-  r2wc(AsyncApiRendererElement, {
-    props: {
-      spec: "string",
-      config: "json",
-      onDiagnostics: undefined,
-    },
-  }),
-);
-
-defineOnce(
-  "apiuikit-openapi",
-  r2wc(OpenApiElement, {
-    props: {
-      spec: undefined,
-      resolved: "boolean",
-      config: "json",
-    },
-  }),
-);
-
-defineOnce(
-  "apiuikit-openapi-renderer",
-  r2wc(OpenApiRendererElement, {
-    props: {
-      spec: "string",
-      config: "json",
-      onDiagnostics: undefined,
-    },
-  }),
-);
+// Convenience bundle: registers every element. Prefer importing only the
+// subpath(s) you need — e.g. "@apiuikit/web-component/asyncapi-renderer" or
+// "@apiuikit/web-component/openapi-endpoints" — to skip registering the rest.
+import "./elements/asyncapi";
+import "./elements/asyncapi-renderer";
+import "./elements/asyncapi-servers";
+import "./elements/asyncapi-operations";
+import "./elements/asyncapi-messages";
+import "./elements/asyncapi-info";
+import "./elements/openapi";
+import "./elements/openapi-renderer";
+import "./elements/openapi-servers";
+import "./elements/openapi-endpoints";
+import "./elements/openapi-webhooks";
+import "./elements/openapi-info";
+import "./elements/schemas";

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Use apiuikit from Vue, Angular, Svelte, plain HTML, or any other environment that supports custom elements. Four tags are available:
+Use apiuikit from Vue, Angular, Svelte, plain HTML, or any other environment that supports custom elements. Full-document tags:
 
 | Element | When to use |
 |---|---|
@@ -10,6 +10,8 @@ Use apiuikit from Vue, Angular, Svelte, plain HTML, or any other environment tha
 | `<apiuikit-asyncapi>` | You already have a parsed AsyncAPI document object |
 | `<apiuikit-openapi-renderer>` | You have a raw OpenAPI YAML or JSON string |
 | `<apiuikit-openapi>` | You already have a parsed OpenAPI document object |
+
+There are also standalone elements for individual document sections (servers, operations, messages, schemas, info) — see [Section elements](#section-elements) below.
 
 If you're building a React app, prefer the [React entry without parser](./no-parser.md) or [React entry with parser](./with-parser.md) according to your usecase instead.
 
@@ -30,6 +32,29 @@ import "@apiuikit/web-component/style.css";
 
 No extra packages are required — React, ReactDOM, and parsing support are bundled in.
 
+## Modular imports
+
+The default entry point above registers every element. If you only use a few, import just those instead — each subpath registers only its own element:
+
+```js
+import "@apiuikit/web-component/asyncapi-renderer";  // <apiuikit-asyncapi-renderer> only
+import "@apiuikit/web-component/asyncapi";            // <apiuikit-asyncapi> only
+import "@apiuikit/web-component/asyncapi-servers";    // <apiuikit-asyncapi-servers> only
+import "@apiuikit/web-component/asyncapi-operations"; // <apiuikit-asyncapi-operations> only
+import "@apiuikit/web-component/asyncapi-messages";   // <apiuikit-asyncapi-messages> only
+import "@apiuikit/web-component/asyncapi-info";       // <apiuikit-asyncapi-info> only
+import "@apiuikit/web-component/openapi-renderer";    // <apiuikit-openapi-renderer> only
+import "@apiuikit/web-component/openapi";             // <apiuikit-openapi> only
+import "@apiuikit/web-component/openapi-servers";     // <apiuikit-openapi-servers> only
+import "@apiuikit/web-component/openapi-endpoints";   // <apiuikit-openapi-endpoints> only
+import "@apiuikit/web-component/openapi-webhooks";    // <apiuikit-openapi-webhooks> only
+import "@apiuikit/web-component/openapi-info";        // <apiuikit-openapi-info> only
+import "@apiuikit/web-component/schemas";             // <apiuikit-schemas> only — shared by both spec types
+import "@apiuikit/web-component/style.css";
+```
+
+Mix and match as needed — e.g. `import "@apiuikit/web-component/asyncapi-operations"` alone if operations are the only thing your app renders. The stylesheet (`./style.css`) is the same regardless of which subpath(s) you import, so it's only ever loaded once.
+
 ## Quick start
 
 ```html
@@ -48,7 +73,7 @@ That's enough to render a document. The sections below cover props, configuratio
 
 ## `<apiuikit-asyncapi-renderer>`
 
-Pass a raw AsyncAPI document as a string. The element parses it and renders the UI.
+Pass a raw AsyncAPI document as a string. The element parses it and renders the UI. Available standalone via `@apiuikit/web-component/asyncapi-renderer`.
 
 | Name | How to set it | Type | Description |
 |---|---|---|---|
@@ -68,7 +93,7 @@ el.onDiagnostics = (diagnostics) => console.log(diagnostics);
 
 ## `<apiuikit-asyncapi>`
 
-Pass an already-parsed AsyncAPI document object. Use this when your backend or build step has already resolved the document.
+Pass an already-parsed AsyncAPI document object. Use this when your backend or build step has already resolved the document. Available standalone via `@apiuikit/web-component/asyncapi`.
 
 | Name | How to set it | Type | Description |
 |---|---|---|---|
@@ -89,7 +114,7 @@ Because `spec` is an object, set it from JavaScript (`el.spec = ...`), not as an
 
 ## `<apiuikit-openapi-renderer>` and `<apiuikit-openapi>`
 
-Mirror `<apiuikit-asyncapi-renderer>` and `<apiuikit-asyncapi>` exactly (same prop names and types — `spec`, `config`, `onDiagnostics` on the renderer; `spec`, `resolved`, `config` on the no-parser element), just for OpenAPI documents:
+Mirror `<apiuikit-asyncapi-renderer>` and `<apiuikit-asyncapi>` exactly (same prop names and types — `spec`, `config`, `onDiagnostics` on the renderer; `spec`, `resolved`, `config` on the no-parser element), just for OpenAPI documents. Available standalone via `@apiuikit/web-component/openapi-renderer` and `@apiuikit/web-component/openapi`.
 
 ```js
 import "@apiuikit/web-component";
@@ -99,6 +124,51 @@ const el = document.querySelector("apiuikit-openapi-renderer");
 el.spec = rawOpenApiYaml;
 el.onDiagnostics = (diagnostics) => console.log(diagnostics);
 ```
+
+## Section elements
+
+Instead of the whole `<apiuikit-asyncapi>` / `<apiuikit-openapi>` widget, render just one part of a document — useful for building your own layout around individual pieces (e.g. an operations table on its own page, a servers list in a sidebar).
+
+| Element | Renders |
+|---|---|
+| `<apiuikit-asyncapi-servers>` | AsyncAPI servers |
+| `<apiuikit-asyncapi-operations>` | AsyncAPI operations |
+| `<apiuikit-asyncapi-messages>` | AsyncAPI messages |
+| `<apiuikit-asyncapi-info>` | AsyncAPI info block (title, description, license) |
+| `<apiuikit-openapi-servers>` | OpenAPI servers |
+| `<apiuikit-openapi-endpoints>` | OpenAPI paths/endpoints |
+| `<apiuikit-openapi-webhooks>` | OpenAPI 3.1 webhooks (renders nothing if the document declares none) |
+| `<apiuikit-openapi-info>` | OpenAPI info block (title, description, tags, external docs) |
+| `<apiuikit-schemas>` | Component schemas — one element for **either** spec type (see below) |
+
+All nine take the same three props:
+
+| Name | How to set it | Type | Description |
+|---|---|---|---|
+| `spec` | property only | object | The **parsed** document (same shape as `<apiuikit-asyncapi>`/`<apiuikit-openapi>`'s `spec`) — not a raw YAML/JSON string |
+| `config` | property, or JSON string attribute | object | UI options |
+| `layout` | attribute or property | `"columns"` \| `"stacked"` | `"columns"` (default) reserves a right gutter at large breakpoints; `"stacked"` is full-width single column |
+
+```js
+import "@apiuikit/web-component/asyncapi-operations";
+import "@apiuikit/web-component/style.css";
+
+const el = document.querySelector("apiuikit-asyncapi-operations");
+el.spec = parsedAsyncApiDocument;
+el.layout = "stacked";
+```
+
+`<apiuikit-schemas>` is unsplit on purpose: `components.schemas` is the exact same shape on AsyncAPI and OpenAPI documents, so a parsed document of either type works:
+
+```js
+import "@apiuikit/web-component/schemas";
+import "@apiuikit/web-component/style.css";
+
+const el = document.querySelector("apiuikit-schemas");
+el.spec = parsedAsyncApiDocument; // or a parsed OpenAPI document — both work
+```
+
+Each element is standalone — it resolves its own copy of `spec` independently, so there's no shared-context "provider" mode across separate custom elements the way there is in the [React API](./with-parser.md). If you need several sections sharing one resolved document without each re-resolving it, or you're building a React app, use apiuikit's React `AsyncAPIProvider`/`OpenAPIProvider` and section components directly instead of the web components.
 
 ## Setting props from HTML vs JavaScript
 
