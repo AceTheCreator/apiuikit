@@ -18,6 +18,7 @@ const typedDocument = document as unknown as AsyncAPIDocumentData;
 
 const meta = {
   title: "Internal/SearchPanel",
+  tags: ["internal"],
   component: SearchPanel,
   decorators: [decorator],
   // query/onQueryChange/results are supplied live by useSpecSearch in render

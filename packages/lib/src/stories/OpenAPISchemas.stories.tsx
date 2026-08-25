@@ -7,7 +7,7 @@ import { centeredDecorator } from "./documentContextDecorator";
 const document = rawExample as unknown as OpenAPIDocumentData;
 
 const meta = {
-  title: "Components/OpenAPISchemas",
+  title: "OpenAPI/Schemas",
   component: OpenAPISchemas,
   decorators: [centeredDecorator],
   tags: ["autodocs"],

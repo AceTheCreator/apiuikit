@@ -6,7 +6,7 @@ import { Meta } from "@storybook/blocks";
 
 React components for building API documentation UIs: drop in the whole
 documentation widget, or compose individual sections into your own layout.
-Currently supports AsyncAPI specs, with more (like OpenAPI) planned.
+Supports AsyncAPI and OpenAPI.
 
 ## Three ways to use it
 
@@ -60,24 +60,20 @@ import { AsyncAPIProvider, Servers, Operations, Schemas } from "apiuikit";
 
 ## Finding components in this Storybook
 
-The sidebar is split into two groups:
+The sidebar is split by spec:
 
-- **Components**: `AsyncAPI`, `AsyncAPIRenderer`, `Servers`, `Operations`,
-  `Messages`, `Schemas`, `Info`, `OpenAPIEndpoints`, `OpenAPIServers`,
-  `OpenAPIInfo`, `OpenAPISchemas`, `OpenAPIWebhooks`, `SchemaTree`, and
-  `SchemaTab` each have stories here. Layout variants (`columns` / `stacked`)
-  are under each modular section. Everything exported from `apiuikit` is safe
-  to import and depend on directly.
-- **Internal**: the building blocks these are made of (`Authorization`,
-  `Bindings`, `ChannelAddress`, `Tabs`, and others). They're shown here for
-  development and visual regression testing, but **aren't exported** from the
-  package, so their props and behavior can change without notice. If you need
-  one of these standalone, ask for it to be promoted to the public Components rather
-  than reaching into the library's internals.
+- **AsyncAPI**: the full widget (`AsyncAPI`, `AsyncAPIRenderer`) and the
+  section components (`Servers`, `Operations`, `Messages`, `Schemas`, `Info`).
+- **OpenAPI**: the full widget (`OpenAPI`, `OpenAPIRenderer`) and the
+  section components (`Servers`, `Endpoints`, `Webhooks`, `Schemas`, `Info`).
+- **Shared**: `SchemaTree` and `SchemaTab` — JSON Schema views used by both
+  specs, and importable on their own.
+
+Layout variants (`columns` / `stacked`) live under each modular section.
 
 ## Schema-only usage
 
-If you just need to render a JSON Schema, not a full AsyncAPI document, use
+If you just need to render a JSON Schema, not a full document, use
 `SchemaTree` (the expandable tree view) or `SchemaTab` (adds the
 Schema/Example/JSON toggle) directly; neither needs a document or provider.
 

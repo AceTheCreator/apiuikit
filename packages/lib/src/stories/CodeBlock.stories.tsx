@@ -7,6 +7,7 @@ import { centeredDecorator } from "./documentContextDecorator";
 // string (callers stringify their own JSON).
 const meta = {
   title: "Internal/CodeBlock",
+  tags: ["internal"],
   component: CodeBlock,
   decorators: [centeredDecorator],
 } satisfies Meta<typeof CodeBlock>;
