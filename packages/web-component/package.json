@@ -1,7 +1,7 @@
 {
   "name": "@apiuikit/web-component",
   "version": "1.4.0",
-  "description": "Framework-agnostic web components for apiuikit — <apiuikit-asyncapi>, <apiuikit-asyncapi-renderer>, <apiuikit-openapi>, and <apiuikit-openapi-renderer> custom elements",
+  "description": "Framework-agnostic web components for apiuikit — full-document and per-section (servers, operations, messages, schemas, info) custom elements for AsyncAPI and OpenAPI",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -18,6 +18,58 @@
       "import": "./dist/web-component.es.js",
       "default": "./dist/web-component.iife.js"
     },
+    "./asyncapi": {
+      "types": "./dist/elements/asyncapi.d.ts",
+      "import": "./dist/elements/asyncapi.js"
+    },
+    "./asyncapi-renderer": {
+      "types": "./dist/elements/asyncapi-renderer.d.ts",
+      "import": "./dist/elements/asyncapi-renderer.js"
+    },
+    "./asyncapi-servers": {
+      "types": "./dist/elements/asyncapi-servers.d.ts",
+      "import": "./dist/elements/asyncapi-servers.js"
+    },
+    "./asyncapi-operations": {
+      "types": "./dist/elements/asyncapi-operations.d.ts",
+      "import": "./dist/elements/asyncapi-operations.js"
+    },
+    "./asyncapi-messages": {
+      "types": "./dist/elements/asyncapi-messages.d.ts",
+      "import": "./dist/elements/asyncapi-messages.js"
+    },
+    "./asyncapi-info": {
+      "types": "./dist/elements/asyncapi-info.d.ts",
+      "import": "./dist/elements/asyncapi-info.js"
+    },
+    "./openapi": {
+      "types": "./dist/elements/openapi.d.ts",
+      "import": "./dist/elements/openapi.js"
+    },
+    "./openapi-renderer": {
+      "types": "./dist/elements/openapi-renderer.d.ts",
+      "import": "./dist/elements/openapi-renderer.js"
+    },
+    "./openapi-servers": {
+      "types": "./dist/elements/openapi-servers.d.ts",
+      "import": "./dist/elements/openapi-servers.js"
+    },
+    "./openapi-endpoints": {
+      "types": "./dist/elements/openapi-endpoints.d.ts",
+      "import": "./dist/elements/openapi-endpoints.js"
+    },
+    "./openapi-webhooks": {
+      "types": "./dist/elements/openapi-webhooks.d.ts",
+      "import": "./dist/elements/openapi-webhooks.js"
+    },
+    "./openapi-info": {
+      "types": "./dist/elements/openapi-info.d.ts",
+      "import": "./dist/elements/openapi-info.js"
+    },
+    "./schemas": {
+      "types": "./dist/elements/schemas.d.ts",
+      "import": "./dist/elements/schemas.js"
+    },
     "./style.css": "./dist/web-component.css"
   },
   "files": [
@@ -27,9 +79,9 @@
     "access": "public"
   },
   "scripts": {
-    "build": "vite build",
-    "watch": "vite build --watch",
-    "prepublishOnly": "vite build",
+    "build": "vite build && vite build --config vite.elements.config.ts",
+    "watch": "vite build --watch & vite build --config vite.elements.config.ts --watch",
+    "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
     "demo": "npm run build && serve . -l 8735"

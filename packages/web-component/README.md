@@ -2,12 +2,16 @@
 
 Framework-agnostic web components for [apiuikit](https://www.npmjs.com/package/apiuikit) — use it from Vue, Angular, Svelte, plain HTML, or any environment that supports custom elements, with no React installation required on the consumer side.
 
-Two custom elements are available:
+Full-document elements:
 
 | Element | When to use |
 |---|---|
 | `<apiuikit-asyncapi-renderer>` | You have a raw AsyncAPI YAML or JSON string |
 | `<apiuikit-asyncapi>` | You already have a parsed AsyncAPI document object |
+| `<apiuikit-openapi-renderer>` | You have a raw OpenAPI YAML or JSON string |
+| `<apiuikit-openapi>` | You already have a parsed OpenAPI document object |
+
+Plus standalone elements for individual sections — `<apiuikit-asyncapi-servers>`, `-operations`, `-messages`, `-info`, their OpenAPI equivalents (`<apiuikit-openapi-servers>`, `-endpoints`, `-webhooks`, `-info`), and a single `<apiuikit-schemas>` shared by both spec types (`components.schemas` is the same shape either way) — for when you want just one part of a document rendered on its own. See [docs/usage/with-webcomponents.md](https://github.com/AceTheCreator/apiuikit/blob/master/docs/usage/with-webcomponents.md#section-elements) for the full prop reference.
 
 If you're building a React app, use [apiuikit](https://www.npmjs.com/package/apiuikit) directly instead of this package.
 
@@ -25,6 +29,22 @@ import "@apiuikit/web-component/style.css";
 ```
 
 No extra packages are required — React, ReactDOM, and parsing support are bundled in.
+
+### Modular imports
+
+Only need one or two elements? Import just those instead of the full bundle:
+
+```js
+import "@apiuikit/web-component/asyncapi-renderer";   // <apiuikit-asyncapi-renderer> only
+import "@apiuikit/web-component/asyncapi";             // <apiuikit-asyncapi> only
+import "@apiuikit/web-component/asyncapi-operations";  // <apiuikit-asyncapi-operations> only
+import "@apiuikit/web-component/openapi-renderer";     // <apiuikit-openapi-renderer> only
+import "@apiuikit/web-component/openapi";              // <apiuikit-openapi> only
+import "@apiuikit/web-component/openapi-endpoints";    // <apiuikit-openapi-endpoints> only
+import "@apiuikit/web-component/style.css";
+```
+
+(Every full-document and section element has a matching subpath — see the docs link above for the complete list.)
 
 ## Quick start
 

@@ -8,6 +8,7 @@ import { centeredDecorator } from "./documentContextDecorator";
 // block rather than throwing.
 const meta = {
   title: "Internal/Examples",
+  tags: ["internal"],
   component: Examples,
   decorators: [centeredDecorator],
 } satisfies Meta<typeof Examples>;

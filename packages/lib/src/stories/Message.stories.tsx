@@ -12,6 +12,7 @@ const [firstKey] = Object.entries(messages)[0];
 
 const meta = {
   title: "Internal/Message",
+  tags: ["internal"],
   component: Message,
   decorators: [decorator],
 } satisfies Meta<typeof Message>;

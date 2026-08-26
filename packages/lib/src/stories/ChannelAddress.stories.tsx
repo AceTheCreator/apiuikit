@@ -36,6 +36,7 @@ const withPortalHost = (Story: ComponentType) => {
 
 const meta = {
   title: "Internal/ChannelAddress",
+  tags: ["internal"],
   component: ChannelAddress,
   decorators: [withPortalHost],
 } satisfies Meta<typeof ChannelAddress>;

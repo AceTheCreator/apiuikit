@@ -8,7 +8,7 @@ import { NoCanvasDocsPage } from "./noCanvasDocsPage";
 const document = rawExample as unknown as OpenAPIDocumentData;
 
 const meta = {
-  title: "Components/OpenAPIEndpoints",
+  title: "OpenAPI/Endpoints",
   component: OpenAPIEndpoints,
   decorators: [centeredDecorator],
   tags: ["autodocs"],

@@ -5,6 +5,7 @@ import { centeredDecorator } from "./documentContextDecorator";
 
 const meta = {
   title: "Internal/Information",
+  tags: ["internal"],
   component: Information,
   decorators: [centeredDecorator],
 } satisfies Meta<typeof Information>;

@@ -8,7 +8,7 @@ import { centeredDecorator } from "./documentContextDecorator";
 const document = rawExample as unknown as AsyncAPIDocumentData;
 
 const meta = {
-  title: "Components/Schemas",
+  title: "AsyncAPI/Schemas",
   component: Schemas,
   decorators: [centeredDecorator],
   tags: ["autodocs"],

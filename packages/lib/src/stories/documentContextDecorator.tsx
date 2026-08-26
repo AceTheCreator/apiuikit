@@ -65,7 +65,7 @@ export function buildDocumentContext(rawDoc: unknown) {
           showCodeSamples: true,
         }}
       >
-        <div ref={setRootElement} className="relative">
+        <div ref={setRootElement} className="apiuikit-root relative @container bg-background text-foreground">
           <div ref={setPortalHost} />
           {centeredDecorator(Story)}
         </div>

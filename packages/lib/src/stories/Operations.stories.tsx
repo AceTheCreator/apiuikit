@@ -12,7 +12,7 @@ import { NoCanvasDocsPage } from "./noCanvasDocsPage";
 const document = rawExample as unknown as AsyncAPIDocumentData;
 
 const meta = {
-  title: "Components/Operations",
+  title: "AsyncAPI/Operations",
   component: Operations,
   decorators: [centeredDecorator],
   tags: ["autodocs"],

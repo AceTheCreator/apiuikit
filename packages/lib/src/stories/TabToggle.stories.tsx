@@ -9,6 +9,7 @@ import { centeredDecorator } from "./documentContextDecorator";
 // story owns `selected` to make switching interactive.
 const meta = {
   title: "Internal/TabToggle",
+  tags: ["internal"],
   component: TabToggle,
   decorators: [centeredDecorator],
 } satisfies Meta<typeof TabToggle>;

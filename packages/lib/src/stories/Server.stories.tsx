@@ -15,7 +15,7 @@ const oneServerDoc = {
 } as unknown as AsyncAPIDocumentData;
 
 const meta = {
-  title: "Components/Servers",
+  title: "AsyncAPI/Servers",
   component: Servers,
   decorators: [centeredDecorator],
   tags: ["autodocs"],
