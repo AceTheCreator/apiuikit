@@ -1,6 +1,6 @@
 import r2wc from "@r2wc/react-to-web-component";
 import "apiuikit/style.css";
-import { Servers } from "apiuikit";
+import { AsyncAPIServers } from "apiuikit";
 import type { ConfigInterface, AsyncAPIDocumentData, SectionLayout } from "apiuikit";
 import { defineOnce } from "../registerElement";
 
@@ -12,7 +12,7 @@ export interface AsyncApiServersElementProps {
 
 export function AsyncApiServersElement({ spec, config, layout }: AsyncApiServersElementProps) {
   if (!spec) return null;
-  return <Servers document={spec} config={config} layout={layout} />;
+  return <AsyncAPIServers document={spec} config={config} layout={layout} />;
 }
 
 defineOnce(

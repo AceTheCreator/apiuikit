@@ -48,11 +48,11 @@ export { OpenAPIRenderer } from './containers/OpenAPI/OpenAPIRenderer';
 // or several together under <AsyncAPIProvider>. See ./public/sections.
 export {
   AsyncAPIProvider,
-  Servers,
-  Operations,
-  Messages,
-  Schemas,
-  Info,
+  AsyncAPIServers,
+  AsyncAPIOperations,
+  AsyncAPIMessages,
+  AsyncAPISchemas,
+  AsyncAPIInfo,
 } from './public/sections';
 export type { SectionProps } from './public/sections';
 export type { SectionLayout } from './components/Section';

@@ -1,16 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Info } from "../public/sections";
+import { AsyncAPIInfo } from "../public/sections";
 import type { AsyncAPIDocumentData } from "../types/schema";
 import rawExample from "../config/examples/example1.json";
 import { centeredDecorator } from "./documentContextDecorator";
 
-// Public `Info` section — title, description, and metadata (license/contact)
+// Public `AsyncAPIInfo` section — title, description, and metadata (license/contact)
 // in the side column by default.
 const document = rawExample as unknown as AsyncAPIDocumentData;
 
 const meta = {
   title: "AsyncAPI/Info",
-  component: Info,
+  component: AsyncAPIInfo,
   decorators: [centeredDecorator],
   tags: ["autodocs"],
   argTypes: {
@@ -21,7 +21,7 @@ const meta = {
         '`"columns"` (default) puts license/contact metadata on the right. `"stacked"` places it below the description.',
     },
   },
-} satisfies Meta<typeof Info>;
+} satisfies Meta<typeof AsyncAPIInfo>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

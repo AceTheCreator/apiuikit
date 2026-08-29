@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AsyncAPIDocumentData } from "../../types/schema";
 import type { OpenAPIDocumentData } from "../../types/openapi";
-import { AsyncAPIProvider, Operations, Servers, Messages, Info } from "../sections";
+import { AsyncAPIProvider, AsyncAPIOperations, AsyncAPIServers, AsyncAPIMessages, AsyncAPIInfo } from "../sections";
 import { OpenAPIEndpoints, OpenAPIProvider, OpenAPIWebhooks } from "../openapiSections";
 
 const asDoc = (doc: unknown) => doc as AsyncAPIDocumentData;
@@ -31,45 +31,45 @@ const doc = {
 };
 
 describe("standalone section components", () => {
-  it("renders <Operations document={...}> on its own, without an ambient provider", () => {
-    render(<Operations document={asDoc(doc)} />);
+  it("renders <AsyncAPIOperations document={...}> on its own, without an ambient provider", () => {
+    render(<AsyncAPIOperations document={asDoc(doc)} />);
     // The operations table renders its channel address, proof it mounted with
     // a working document context (no useAsyncAPIDocument throw, $ref resolved).
     expect(document.body.textContent).toContain("smartylighting/measured");
     expect(document.body.textContent).not.toContain("$ref");
   });
 
-  it("renders <Info document={...}> on its own", () => {
-    render(<Info document={asDoc(doc)} />);
+  it("renders <AsyncAPIInfo document={...}> on its own", () => {
+    render(<AsyncAPIInfo document={asDoc(doc)} />);
     expect(screen.getByText("Streetlights")).toBeInTheDocument();
   });
 
   it("composes several sections under one <AsyncAPIProvider> (no per-section document)", () => {
     render(
       <AsyncAPIProvider document={asDoc(doc)}>
-        <Servers />
-        <Operations />
-        <Messages />
+        <AsyncAPIServers />
+        <AsyncAPIOperations />
+        <AsyncAPIMessages />
       </AsyncAPIProvider>,
     );
     const text = document.body.textContent ?? "";
-    expect(text).toContain("broker.example.com"); // Servers
-    expect(text).toContain("smartylighting/measured"); // Operations
-    expect(text).toContain("Light measured"); // Messages
+    expect(text).toContain("broker.example.com"); // AsyncAPIServers
+    expect(text).toContain("smartylighting/measured"); // AsyncAPIOperations
+    expect(text).toContain("Light measured"); // AsyncAPIMessages
   });
 
   it("throws a helpful error when used with neither a document prop nor a provider", () => {
     // Silence the expected React error boundary logging for this case.
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-    expect(() => render(<Operations />)).toThrow(/needs a `document` prop/);
+    expect(() => render(<AsyncAPIOperations />)).toThrow(/needs a `document` prop/);
     spy.mockRestore();
   });
 
   it("drops the reserved side column when layout=\"stacked\"", () => {
-    const { rerender } = render(<Operations document={asDoc(doc)} />);
+    const { rerender } = render(<AsyncAPIOperations document={asDoc(doc)} />);
     expect(screen.getByTestId("section-side-column")).toBeInTheDocument();
 
-    rerender(<Operations document={asDoc(doc)} layout="stacked" />);
+    rerender(<AsyncAPIOperations document={asDoc(doc)} layout="stacked" />);
     expect(screen.queryByTestId("section-side-column")).not.toBeInTheDocument();
     expect(document.body.textContent).toContain("smartylighting/measured");
   });
@@ -82,7 +82,7 @@ describe("standalone section components", () => {
         license: { name: "Apache 2.0", url: "https://www.apache.org/licenses/LICENSE-2.0" },
       },
     };
-    render(<Info document={asDoc(withLicense)} layout="stacked" />);
+    render(<AsyncAPIInfo document={asDoc(withLicense)} layout="stacked" />);
     expect(screen.queryByTestId("section-side-column")).not.toBeInTheDocument();
     expect(screen.getByText("Streetlights")).toBeInTheDocument();
     expect(screen.getByText(/Apache 2.0/)).toBeInTheDocument();
