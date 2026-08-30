@@ -47,7 +47,7 @@ export default function Section({
 
   return (
     <div
-      className={`w-full mt-6 ${
+      className={`w-full mt-6 mb-6 ${
         stacked ? "" : SECTION_COLUMNS_WIDTH
       }`}
     >
