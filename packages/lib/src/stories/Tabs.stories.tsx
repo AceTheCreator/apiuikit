@@ -12,6 +12,7 @@ import { centeredDecorator } from "./documentContextDecorator";
 // a native <select>. Stories own `current` so switching is interactive.
 const meta = {
   title: "Internal/Tabs",
+  tags: ["internal"],
   component: Tabs,
   decorators: [centeredDecorator],
 } satisfies Meta<typeof Tabs>;

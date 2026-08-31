@@ -51,6 +51,7 @@ const userPassword = {
 
 const meta = {
   title: "Internal/Authorization",
+  tags: ["internal"],
   component: Authorization,
   decorators: [centeredDecorator],
 } satisfies Meta<typeof Authorization>;

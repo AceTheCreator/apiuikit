@@ -4,6 +4,7 @@ import { centeredDecorator } from './documentContextDecorator';
 
 const meta = {
   title: 'Internal/SchemaViewer',
+  tags: ['internal'],
   component: SchemaViewer,
   decorators: [centeredDecorator],
 } satisfies Meta<typeof SchemaViewer>;

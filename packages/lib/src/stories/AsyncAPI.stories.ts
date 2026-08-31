@@ -6,7 +6,7 @@ import { NoCanvasDocsPage } from "./noCanvasDocsPage";
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
 const meta = {
-  title: "Components/AsyncAPI",
+  title: "AsyncAPI/AsyncAPI",
   component: AsyncAPI,
   tags: ["autodocs"],
   // Full-page widget with a sidebar, search, and portaled content: doesn't

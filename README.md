@@ -74,25 +74,25 @@ export default function App() {
 Prefer your own layout over the full widget? Render one section on its own by passing it a `document`:
 
 ```tsx
-import { Operations } from "apiuikit";
+import { AsyncAPIOperations } from "apiuikit";
 import doc from "./asyncapi.json";
 
 export default function OperationsPage() {
-  return <Operations document={doc} />;
+  return <AsyncAPIOperations document={doc} />;
 }
 ```
 
-`Servers`, `Operations`, `Messages`, `Schemas`, and `Info` all work this way (OpenAPI equivalents: `OpenAPIServers`, `OpenAPIEndpoints`, `OpenAPISchemas`, `OpenAPIInfo`). To arrange several of them together, wrap them in `AsyncAPIProvider` (or `OpenAPIProvider`) instead so the document is resolved once and shared:
+`AsyncAPIServers`, `AsyncAPIOperations`, `AsyncAPIMessages`, `AsyncAPISchemas`, and `AsyncAPIInfo` all work this way (OpenAPI equivalents: `OpenAPIServers`, `OpenAPIEndpoints`, `OpenAPISchemas`, `OpenAPIInfo`). To arrange several of them together, wrap them in `AsyncAPIProvider` (or `OpenAPIProvider`) instead so the document is resolved once and shared:
 
 ```tsx
-import { AsyncAPIProvider, Servers, Operations, Schemas } from "apiuikit";
+import { AsyncAPIProvider, AsyncAPIServers, AsyncAPIOperations, AsyncAPISchemas } from "apiuikit";
 
 export default function CustomLayout() {
   return (
     <AsyncAPIProvider document={doc}>
-      <Servers />
-      <Operations />
-      <Schemas />
+      <AsyncAPIServers />
+      <AsyncAPIOperations />
+      <AsyncAPISchemas />
     </AsyncAPIProvider>
   );
 }
@@ -102,7 +102,7 @@ See the full usage docs for props, configuration options, and more:
 
 - [Without Parser](./docs/usage/no-parser.md) (`AsyncAPI` component)
 - [With Parser](./docs/usage/with-parser.md) (`AsyncAPIRenderer` component, `parseAndRender` utility)
-- [Composable Sections](./docs/usage/sections.md) (`Servers`, `Operations`, `Messages`, `Schemas`, `Info`, `AsyncAPIProvider`)
+- [Composable Sections](./docs/usage/sections.md) (`AsyncAPIServers`, `AsyncAPIOperations`, `AsyncAPIMessages`, `AsyncAPISchemas`, `AsyncAPIInfo`, `AsyncAPIProvider`)
 - [Configuration](./docs/configuration/config.md) (`ConfigInterface`: theme, show flags, sidebar, sidePanel, etc.)
 - [Web Components](./docs/usage/with-webcomponents.md) (`<apiuikit-asyncapi>`, `<apiuikit-asyncapi-renderer>`, use apiuikit from any framework)
 - [Plugins](./docs/usage/plugins.md) (`plugins` prop, `definePlugin`, writing and publishing your own)

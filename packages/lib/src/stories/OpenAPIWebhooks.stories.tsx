@@ -36,7 +36,7 @@ const document = {
 } as unknown as OpenAPIDocumentData;
 
 const meta = {
-  title: "Components/OpenAPIWebhooks",
+  title: "OpenAPI/Webhooks",
   component: OpenAPIWebhooks,
   decorators: [centeredDecorator],
   tags: ["autodocs"],

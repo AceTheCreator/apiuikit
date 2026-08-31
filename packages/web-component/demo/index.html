@@ -11,37 +11,227 @@
        *inside* .frame, several levels down. Custom elements don't use shadow
        DOM here (see docs/usage/with-webcomponents.md), so any unscoped
        selector on this demo page leaks straight into the widget's content. */
+    /* Scoped to the demo chrome. A bare `nav` selector would also match
+       apiuikit's server-list <nav> (light DOM, no shadow root). */
+    .demo-nav {
+      position: sticky; top: 0; z-index: 20;
+      display: flex; flex-wrap: wrap; gap: 8px 16px;
+      padding: 10px 16px; background: #111; color: #eee; font-size: 13px;
+    }
+    .demo-nav a { color: #9cdcfe; }
     .section > h2 { padding: 8px 16px; margin: 0; background: #222; color: #fff; }
     .section > p { padding: 4px 16px; margin: 0; background: #444; color: #ccc; font-size: 13px; }
     .frame { height: 700px; overflow: auto; }
+    .frame.compose { height: auto; min-height: 700px; overflow: visible; }
   </style>
 </head>
 <body>
-  <div class="section">
+  <nav class="demo-nav">
+    <a href="#full-asyncapi-renderer">AsyncAPI renderer</a>
+    <a href="#full-asyncapi">AsyncAPI</a>
+    <a href="#full-openapi-renderer">OpenAPI renderer</a>
+    <a href="#full-openapi">OpenAPI</a>
+    <a href="#aa-info">AA info</a>
+    <a href="#aa-servers">AA servers</a>
+    <a href="#aa-operations">AA operations</a>
+    <a href="#aa-messages">AA messages</a>
+    <a href="#aa-schemas">AA schemas</a>
+    <a href="#oa-info">OA info</a>
+    <a href="#oa-servers">OA servers</a>
+    <a href="#oa-endpoints">OA endpoints</a>
+    <a href="#oa-webhooks">OA webhooks</a>
+    <a href="#oa-schemas">OA schemas</a>
+    <a href="#compose-asyncapi">Compose AsyncAPI</a>
+    <a href="#compose-openapi">Compose OpenAPI</a>
+  </nav>
+
+  <!-- Full-document elements -->
+  <div class="section" id="full-asyncapi-renderer">
     <h2>With Parser — &lt;apiuikit-asyncapi-renderer&gt;</h2>
-    <p>Raw YAML/JSON spec text set as <code>.spec</code>; parsed internally via the bundled @asyncapi/parser.</p>
+    <p>Raw YAML/JSON spec text set as <code>.spec</code>; parsed internally via the bundled @asyncapi/parser. Subpath: <code>@apiuikit/web-component/asyncapi-renderer</code>.</p>
     <div class="frame">
-      <apiuikit-asyncapi-renderer id="renderer-el"></apiuikit-asyncapi-renderer>
+      <apiuikit-asyncapi-renderer id="asyncapi-renderer-el"></apiuikit-asyncapi-renderer>
     </div>
   </div>
 
-  <div class="section">
+  <div class="section" id="full-asyncapi">
     <h2>Without Parser — &lt;apiuikit-asyncapi&gt;</h2>
-    <p>Pre-parsed document object set as <code>.spec</code>; no parser involved.</p>
+    <p>Pre-parsed document object set as <code>.spec</code>; no parser involved. Subpath: <code>@apiuikit/web-component/asyncapi</code>.</p>
     <div class="frame">
       <apiuikit-asyncapi id="asyncapi-el"></apiuikit-asyncapi>
     </div>
   </div>
 
+  <div class="section" id="full-openapi-renderer">
+    <h2>With Parser — &lt;apiuikit-openapi-renderer&gt;</h2>
+    <p>Raw OpenAPI YAML/JSON set as <code>.spec</code>; parsed internally via the bundled OpenAPI parser. Subpath: <code>@apiuikit/web-component/openapi-renderer</code>.</p>
+    <div class="frame">
+      <apiuikit-openapi-renderer id="openapi-renderer-el"></apiuikit-openapi-renderer>
+    </div>
+  </div>
+
+  <div class="section" id="full-openapi">
+    <h2>Without Parser — &lt;apiuikit-openapi&gt;</h2>
+    <p>Pre-parsed OpenAPI document object set as <code>.spec</code>. Subpath: <code>@apiuikit/web-component/openapi</code>.</p>
+    <div class="frame">
+      <apiuikit-openapi id="openapi-el"></apiuikit-openapi>
+    </div>
+  </div>
+
+  <!-- AsyncAPI section elements, one each -->
+  <div class="section" id="aa-info">
+    <h2>Section only — &lt;apiuikit-asyncapi-info&gt;</h2>
+    <p>Just the AsyncAPI info block. Subpath: <code>@apiuikit/web-component/asyncapi-info</code>.</p>
+    <div class="frame">
+      <apiuikit-asyncapi-info id="asyncapi-info-el"></apiuikit-asyncapi-info>
+    </div>
+  </div>
+
+  <div class="section" id="aa-servers">
+    <h2>Section only — &lt;apiuikit-asyncapi-servers&gt;</h2>
+    <p>Just the AsyncAPI servers section. Default <code>layout="columns"</code> puts the server list on the right. Subpath: <code>@apiuikit/web-component/asyncapi-servers</code>.</p>
+    <div class="frame">
+      <apiuikit-asyncapi-servers id="asyncapi-servers-el"></apiuikit-asyncapi-servers>
+    </div>
+  </div>
+
+  <div class="section" id="aa-operations">
+    <h2>Section only — &lt;apiuikit-asyncapi-operations&gt;</h2>
+    <p>Just the AsyncAPI operations section. Subpath: <code>@apiuikit/web-component/asyncapi-operations</code>.</p>
+    <div class="frame">
+      <apiuikit-asyncapi-operations id="asyncapi-operations-el" layout="stacked"></apiuikit-asyncapi-operations>
+    </div>
+  </div>
+
+  <div class="section" id="aa-messages">
+    <h2>Section only — &lt;apiuikit-asyncapi-messages&gt;</h2>
+    <p>Just the AsyncAPI messages section. Subpath: <code>@apiuikit/web-component/asyncapi-messages</code>.</p>
+    <div class="frame">
+      <apiuikit-asyncapi-messages id="asyncapi-messages-el" layout="stacked"></apiuikit-asyncapi-messages>
+    </div>
+  </div>
+
+  <div class="section" id="aa-schemas">
+    <h2>Section only — &lt;apiuikit-schemas&gt; (AsyncAPI)</h2>
+    <p>Shared schemas element on an AsyncAPI document. Subpath: <code>@apiuikit/web-component/schemas</code>.</p>
+    <div class="frame">
+      <apiuikit-schemas id="asyncapi-schemas-el" layout="stacked"></apiuikit-schemas>
+    </div>
+  </div>
+
+  <!-- OpenAPI section elements, one each -->
+  <div class="section" id="oa-info">
+    <h2>Section only — &lt;apiuikit-openapi-info&gt;</h2>
+    <p>Just the OpenAPI info block. Subpath: <code>@apiuikit/web-component/openapi-info</code>.</p>
+    <div class="frame">
+      <apiuikit-openapi-info id="openapi-info-el"></apiuikit-openapi-info>
+    </div>
+  </div>
+
+  <div class="section" id="oa-servers">
+    <h2>Section only — &lt;apiuikit-openapi-servers&gt;</h2>
+    <p>Just the OpenAPI servers section. Default <code>layout="columns"</code> puts the server list on the right. Subpath: <code>@apiuikit/web-component/openapi-servers</code>.</p>
+    <div class="frame">
+      <apiuikit-openapi-servers id="openapi-servers-el"></apiuikit-openapi-servers>
+    </div>
+  </div>
+
+  <div class="section" id="oa-endpoints">
+    <h2>Section only — &lt;apiuikit-openapi-endpoints&gt;</h2>
+    <p>Just the OpenAPI endpoints section. Subpath: <code>@apiuikit/web-component/openapi-endpoints</code>.</p>
+    <div class="frame">
+      <apiuikit-openapi-endpoints id="openapi-endpoints-el" layout="stacked"></apiuikit-openapi-endpoints>
+    </div>
+  </div>
+
+  <div class="section" id="oa-webhooks">
+    <h2>Section only — &lt;apiuikit-openapi-webhooks&gt;</h2>
+    <p>Just the OpenAPI 3.1 webhooks section. Subpath: <code>@apiuikit/web-component/openapi-webhooks</code>.</p>
+    <div class="frame">
+      <apiuikit-openapi-webhooks id="openapi-webhooks-el" layout="stacked"></apiuikit-openapi-webhooks>
+    </div>
+  </div>
+
+  <div class="section" id="oa-schemas">
+    <h2>Section only — &lt;apiuikit-schemas&gt; (OpenAPI)</h2>
+    <p>The same shared schemas element, this time on an OpenAPI document.</p>
+    <div class="frame">
+      <apiuikit-schemas id="openapi-schemas-el" layout="stacked"></apiuikit-schemas>
+    </div>
+  </div>
+
+  <!-- Composed full documents from modular sections -->
+  <div class="section" id="compose-asyncapi">
+    <h2>Composed document — AsyncAPI sections</h2>
+    <p>The full streetlight document assembled from modular elements with the default columns layout (same geometry as the full widget): info, servers, operations, messages, schemas.</p>
+    <div class="frame compose">
+      <apiuikit-asyncapi-info id="compose-aa-info"></apiuikit-asyncapi-info>
+      <apiuikit-asyncapi-servers id="compose-aa-servers"></apiuikit-asyncapi-servers>
+      <apiuikit-asyncapi-operations id="compose-aa-operations"></apiuikit-asyncapi-operations>
+      <apiuikit-asyncapi-messages id="compose-aa-messages"></apiuikit-asyncapi-messages>
+      <apiuikit-schemas id="compose-aa-schemas"></apiuikit-schemas>
+    </div>
+  </div>
+
+  <div class="section" id="compose-openapi">
+    <h2>Composed document — OpenAPI sections</h2>
+    <p>The full petstore document assembled from modular elements with the default columns layout: info, servers, endpoints, webhooks, schemas.</p>
+    <div class="frame compose">
+      <apiuikit-openapi-info id="compose-oa-info"></apiuikit-openapi-info>
+      <apiuikit-openapi-servers id="compose-oa-servers"></apiuikit-openapi-servers>
+      <apiuikit-openapi-endpoints id="compose-oa-endpoints"></apiuikit-openapi-endpoints>
+      <apiuikit-openapi-webhooks id="compose-oa-webhooks"></apiuikit-openapi-webhooks>
+      <apiuikit-schemas id="compose-oa-schemas"></apiuikit-schemas>
+    </div>
+  </div>
+
   <script type="module" src="/dist/web-component.es.js"></script>
   <script type="module">
-    const rawText = await (await fetch('/demo/streetlight.json')).text();
+    function assign(ids, spec) {
+      for (const id of ids) {
+        document.getElementById(id).spec = spec;
+      }
+    }
 
-    // With parser: raw spec string, parsed internally.
-    document.getElementById('renderer-el').spec = rawText;
+    const [asyncapiRes, openapiRes] = await Promise.all([
+      fetch("/demo/streetlight.json"),
+      fetch("/demo/petstore.json"),
+    ]);
+    const asyncapiText = await asyncapiRes.text();
+    const openapiText = await openapiRes.text();
+    const asyncapi = JSON.parse(asyncapiText);
+    const openapi = JSON.parse(openapiText);
 
-    // Without parser: same document, but pre-parsed by us and handed over as an object.
-    document.getElementById('asyncapi-el').spec = JSON.parse(rawText);
+    document.getElementById("asyncapi-renderer-el").spec = asyncapiText;
+    document.getElementById("asyncapi-el").spec = asyncapi;
+    document.getElementById("openapi-renderer-el").spec = openapiText;
+    document.getElementById("openapi-el").spec = openapi;
+
+    assign([
+      "asyncapi-info-el",
+      "asyncapi-servers-el",
+      "asyncapi-operations-el",
+      "asyncapi-messages-el",
+      "asyncapi-schemas-el",
+      "compose-aa-info",
+      "compose-aa-servers",
+      "compose-aa-operations",
+      "compose-aa-messages",
+      "compose-aa-schemas",
+    ], asyncapi);
+
+    assign([
+      "openapi-info-el",
+      "openapi-servers-el",
+      "openapi-endpoints-el",
+      "openapi-webhooks-el",
+      "openapi-schemas-el",
+      "compose-oa-info",
+      "compose-oa-servers",
+      "compose-oa-endpoints",
+      "compose-oa-webhooks",
+      "compose-oa-schemas",
+    ], openapi);
   </script>
 </body>
 </html>

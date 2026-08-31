@@ -25,6 +25,7 @@ export default function SearchPanel({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
   const resultsId = "asyncapi-search-results";
+  const resultItemId = (index: number) => `asyncapi-search-result-${index}`;
   const { portalHost, rootElement, topOffset = 0 } = useAsyncAPIDocument();
 
   const closeModal = () => {
@@ -132,6 +133,15 @@ export default function SearchPanel({
     }
   }, [activeIndex, results.length]);
 
+  // Keeps the highlighted result in view as arrow keys move past the edge of
+  // the scrollable listbox — otherwise the active row can move behind the
+  // fold with nothing on screen to show it changed.
+  useEffect(() => {
+    if (activeIndex < 0) return;
+    document.getElementById(resultItemId(activeIndex))?.scrollIntoView({ block: "nearest" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex]);
+
   const showDropdown = isModalOpen && query.trim().length > 0;
 
   const handleSelectResult = (result: SearchEntry) => {
@@ -159,11 +169,7 @@ export default function SearchPanel({
     if (event.key === "ArrowUp") {
       event.preventDefault();
       setActiveIndex((current) =>
-        results.length === 0
-          ? -1
-          : current <= 0
-          ? results.length - 1
-          : current - 1
+        results.length === 0 ? -1 : Math.max(current - 1, 0)
       );
       return;
     }
@@ -180,14 +186,17 @@ export default function SearchPanel({
       return;
     }
 
-    if (event.key === "Enter" && activeIndex >= 0 && results[activeIndex]) {
+    if (
+      (event.key === "Enter" || event.key === " ") &&
+      activeIndex >= 0 &&
+      results[activeIndex]
+    ) {
       event.preventDefault();
       handleSelectResult(results[activeIndex]);
       return;
     }
   };
 
-  const resultItemId = (index: number) => `asyncapi-search-result-${index}`;
   const resultCountText = showDropdown
     ? `${results.length} result${results.length === 1 ? "" : "s"} found`
     : "";
@@ -288,15 +297,32 @@ export default function SearchPanel({
                   )}
                 </div>
               )}
-              <div className="flex items-center justify-center gap-1 px-4 py-1.5 text-xs text-foreground-muted">
-                Press
-                <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
-                  {isMac ? "⌘ Cmd" : "Ctrl"}
-                </kbd>
-                <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
-                  K
-                </kbd>
-                to search
+              <div className="flex flex-wrap items-center justify-center gap-3 px-4 py-1.5 text-xs text-foreground-muted">
+                <span className="flex items-center gap-1">
+                  <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
+                    ↑
+                  </kbd>
+                  <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
+                    ↓
+                  </kbd>
+                  to navigate
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
+                    ↵
+                  </kbd>
+                  to select
+                </span>
+                <span className="flex items-center gap-1">
+                  Press
+                  <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
+                    {isMac ? "⌘ Cmd" : "Ctrl"}
+                  </kbd>
+                  <kbd className="rounded border border-border bg-neutral-50 px-1 font-mono text-[10px]">
+                    K
+                  </kbd>
+                  to search
+                </span>
               </div>
             </div>
           </div>,

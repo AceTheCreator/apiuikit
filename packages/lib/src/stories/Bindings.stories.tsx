@@ -10,6 +10,7 @@ import { centeredDecorator } from "./documentContextDecorator";
 // and a nested one.
 const meta = {
   title: "Internal/Bindings",
+  tags: ["internal"],
   component: Bindings,
   decorators: [centeredDecorator],
 } satisfies Meta<typeof Bindings>;

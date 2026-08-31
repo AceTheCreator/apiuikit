@@ -24,12 +24,12 @@ import { createSectionRoot } from "./createSectionRoot";
  * They're dual-mode:
  *   - Standalone: pass a `document` (and optional `config`); the section
  *     resolves it and sets up its own context.
- *       <Operations document={doc} />
+ *       <AsyncAPIOperations document={doc} />
  *   - Composed: render several under one <AsyncAPIProvider> (resolves once,
  *     shares context); sections then read from it and their own `document`
  *     prop is unnecessary.
  *       <AsyncAPIProvider document={doc}>
- *         <Servers /> <Operations />
+ *         <AsyncAPIServers /> <AsyncAPIOperations />
  *       </AsyncAPIProvider>
  */
 
@@ -105,7 +105,7 @@ function ServersBody({ layout }: { layout?: SectionLayout }) {
   return <ServersContainer servers={document.servers} layout={layout} />;
 }
 
-export function Servers({ layout, ...providerProps }: SectionProps) {
+export function AsyncAPIServers({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>
       <ServersBody layout={layout} />
@@ -128,7 +128,7 @@ function OperationsBody({ layout }: { layout?: SectionLayout }) {
   );
 }
 
-export function Operations({ layout, ...providerProps }: SectionProps) {
+export function AsyncAPIOperations({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>
       <OperationsBody layout={layout} />
@@ -148,7 +148,7 @@ function MessagesBody({ layout }: { layout?: SectionLayout }) {
   );
 }
 
-export function Messages({ layout, ...providerProps }: SectionProps) {
+export function AsyncAPIMessages({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>
       <MessagesBody layout={layout} />
@@ -163,7 +163,7 @@ function SchemasBody({ layout }: { layout?: SectionLayout }) {
   return <SchemasContainer schemas={document.components?.schemas ?? {}} layout={layout} />;
 }
 
-export function Schemas({ layout, ...providerProps }: SectionProps) {
+export function AsyncAPISchemas({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>
       <SchemasBody layout={layout} />
@@ -179,7 +179,7 @@ function InfoBody({ layout }: { layout?: SectionLayout }) {
   return <Information {...document.info} layout={layout} />;
 }
 
-export function Info({ layout, ...providerProps }: SectionProps) {
+export function AsyncAPIInfo({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>
       <InfoBody layout={layout} />

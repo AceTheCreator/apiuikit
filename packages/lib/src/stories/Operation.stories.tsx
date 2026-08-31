@@ -10,6 +10,7 @@ const [firstKey, firstOperation] = Object.entries(operations)[0];
 
 const meta = {
   title: "Internal/Operation",
+  tags: ["internal"],
   component: Operation,
   decorators: [decorator],
 } satisfies Meta<typeof Operation>;
