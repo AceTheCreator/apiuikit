@@ -4,10 +4,11 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 import type {
   PluginSlotComponent,
   PluginSlotContextMap,
-  PluginTabSlotFill,
   SupplementarySlotName,
   TabSlotName,
 } from "./types";
+import { createPluginSlotRegistry } from "./registry";
+import type { PluginSlotRegistry } from "./registry";
 
 /** Isolates one plugin's render in its own error boundary + Suspense
  * boundary, tagged with `label` for the console error, so one broken or
@@ -27,15 +28,19 @@ export function PluginBoundary({ label, children }: { label: string; children: R
 
 /** Every plugin (from `useDocumentContext().plugins`) that fills `name`, in
  * registration order. */
-export function usePluginSlot<N extends SupplementarySlotName>(name: N): PluginSlotComponent<N>[] {
-  const { plugins } = useDocumentContext();
+function usePluginSlotRegistry(): PluginSlotRegistry {
+  const { plugins, pluginSlotRegistry } = useDocumentContext();
+  // The fallback supports consumers that manually construct DocumentContext
+  // values. Library providers always supply the precomputed registry.
   return useMemo(
-    () =>
-      (plugins ?? [])
-        .filter((plugin) => name in plugin.slots)
-        .map((plugin) => plugin.slots[name] as PluginSlotComponent<N>),
-    [plugins, name],
+    () => pluginSlotRegistry ?? createPluginSlotRegistry(plugins ?? []),
+    [pluginSlotRegistry, plugins],
   );
+}
+
+export function usePluginSlot<N extends SupplementarySlotName>(name: N): readonly PluginSlotComponent<N>[] {
+  const registry = usePluginSlotRegistry();
+  return (registry.get(name) ?? []) as readonly PluginSlotComponent<N>[];
 }
 
 export interface PluginSlotProps<N extends SupplementarySlotName> {
@@ -79,18 +84,9 @@ export interface PluginTabEntry<N extends TabSlotName> {
  * strip); exported alongside `PluginSlot`/`usePluginSlot` for the same reason
  * those are: only relevant if you're building something that itself hosts
  * `*.operation.tab` plugins, like a custom operation panel. */
-export function useOperationTabPlugins<N extends TabSlotName>(name: N): PluginTabEntry<N>[] {
-  const { plugins } = useDocumentContext();
-  return useMemo(
-    () =>
-      (plugins ?? [])
-        .filter((plugin) => name in plugin.slots)
-        .map((plugin) => {
-          const fill = plugin.slots[name] as PluginTabSlotFill<N>;
-          return { id: plugin.name, label: fill.label, Component: fill.component };
-        }),
-    [plugins, name],
-  );
+export function useOperationTabPlugins<N extends TabSlotName>(name: N): readonly PluginTabEntry<N>[] {
+  const registry = usePluginSlotRegistry();
+  return (registry.get(name) ?? []) as readonly PluginTabEntry<N>[];
 }
 
 export default PluginSlot;

@@ -6,6 +6,7 @@ import { buildThemeVars } from "../utils/theme";
 import { DEFAULT_DEPTH_COLORS } from "../components/schema/depthColors";
 import { createDocumentDeref } from "../helpers/jsonPointer";
 import type { ApiuikitPlugin } from "../plugins/types";
+import { createPluginSlotRegistry } from "../plugins/registry";
 
 const NO_PLUGINS: ApiuikitPlugin[] = [];
 
@@ -61,6 +62,7 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
     if (typeof configuredMarkdownUrl === "string") return () => configuredMarkdownUrl;
     return undefined;
   }, [configuredMarkdownUrl]);
+  const pluginSlotRegistry = useMemo(() => createPluginSlotRegistry(plugins), [plugins]);
   const contextValue = useMemo(
     () => ({
       specType,
@@ -77,6 +79,7 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
       showCodeSamples,
       markdownUrl,
       plugins,
+      pluginSlotRegistry,
       config,
     }),
     [
@@ -94,6 +97,7 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
       showCodeSamples,
       markdownUrl,
       plugins,
+      pluginSlotRegistry,
       config,
     ],
   );
