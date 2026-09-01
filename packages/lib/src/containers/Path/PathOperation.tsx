@@ -1,7 +1,7 @@
-import { lazy, Suspense, useEffect, useId, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { SchemaTab } from "../../components/schema";
 import Markdown from "../../components/Markdown";
-import Tabs, { TabPanels } from "../../components/Tabs";
+import Tabs from "../../components/Tabs";
 import Authorization from "../../components/Authorization";
 import CollapsiblePanel from "../../components/CollapsiblePanel";
 import IconExternalLink from "../../icons/ExternalLink";
@@ -9,7 +9,8 @@ import IconShieldCheck from "../../icons/ShieldCheck";
 import { PARAMETER_GROUPS } from "../../contants";
 import ResponseLinks from "./ResponseLinks";
 import OperationCallbacks from "./OperationCallbacks";
-import { PluginBoundary, PluginSlot, useOperationTabPlugins } from "../../plugins/PluginSlot";
+import { PluginSlot } from "../../plugins/PluginSlot";
+import OperationPluginTabs from "../../plugins/OperationPluginTabs";
 import { useDocumentContext } from "../../contexts";
 import {
   HttpMethod,
@@ -511,13 +512,6 @@ interface PathOperationProps {
 /** How deep callbacks keep expanding. One level covers every real document while staying terminating on a cyclic one. */
 const MAX_CALLBACK_DEPTH = 1;
 
-/** The built-in tab, always first — the operation's own documentation
- * content, exactly what rendered here before `openapi.operation.tab` plugins
- * existed. Labeled "Reference" rather than "Documentation": the whole product
- * is documentation, so the more generic word is redundant next to a plugin
- * tab's own specific label (e.g. "Try it"). */
-const REFERENCE_TAB_ID = "reference";
-
 export default function PathOperation({
   method,
   path,
@@ -579,49 +573,19 @@ export default function PathOperation({
   // to take, and stretching there would be wrong.
   const isRoot = depth === 0;
 
-  // A callback's own operation renders inline inside its parent's Callbacks
-  // tab, not as its own panel — no tab strip there, just the documentation
-  // content, same as before `openapi.operation.tab` existed.
-  const tabPlugins = useOperationTabPlugins("openapi.operation.tab");
-  const [activeTabId, setActiveTabId] = useState<string>(REFERENCE_TAB_ID);
-  const showTabs = isRoot && tabPlugins.length > 0;
-  const activePlugin = showTabs ? tabPlugins.find((entry) => entry.id === activeTabId) : undefined;
-  const ActivePluginComponent = activePlugin?.Component;
-  const operationTabIdPrefix = useId();
-  const operationTabs = [
-    { id: REFERENCE_TAB_ID, name: "Reference" },
-    ...tabPlugins.map((entry) => ({ id: entry.id, name: entry.label })),
-  ];
-  const currentTabId = activePlugin?.id ?? REFERENCE_TAB_ID;
-
   return (
     <div
       className={`flex flex-col gap-6 ${isRoot ? "min-h-full" : ""}`}
       id={`${idPrefix}-${id}-detail`}
     >
-      {showTabs && (
-        <Tabs
-          variant="segmented"
-          ariaLabel="Operation view"
-          idPrefix={operationTabIdPrefix}
-          tabs={operationTabs}
-          current={currentTabId}
-          onChange={setActiveTabId}
-        />
-      )}
-
-      <TabPanels
-        enabled={showTabs}
-        tabs={operationTabs}
-        current={currentTabId}
-        idPrefix={operationTabIdPrefix}
+      <OperationPluginTabs
+        name="openapi.operation.tab"
+        context={{ document, method, path }}
+        // A callback operation renders inline inside its parent's Callbacks
+        // tab rather than receiving its own operation-level tab strip.
+        enabled={isRoot}
       >
-        {activePlugin && ActivePluginComponent ? (
-          <PluginBoundary label={`openapi.operation.tab:${activePlugin.pluginName}`}>
-            <ActivePluginComponent document={document} method={method} path={path} />
-          </PluginBoundary>
-        ) : (
-          <>
+        <>
           <div className="flex items-center gap-2">
             {op.deprecated && (
               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
@@ -698,9 +662,8 @@ export default function PathOperation({
             onFollowOperation={onFollowOperation}
             isOperationKnown={isOperationKnown}
           />
-          </>
-        )}
-      </TabPanels>
+        </>
+      </OperationPluginTabs>
     </div>
   );
 }

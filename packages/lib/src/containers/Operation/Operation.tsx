@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId } from "react";
 import { OperationBindingsObject } from "../../types/asyncapi/OperationBindingsObject";
 import Authorization from "../../components/Authorization";
 import Bindings from "../../components/Bindings";
@@ -14,13 +14,10 @@ import { Message } from "../Messages/Message";
 import { Reply } from "../../components/Reply";
 import Markdown from "../../components/Markdown";
 import { AsyncCodeSample } from "../../components/AsyncCodeSample";
-import { PluginBoundary, PluginSlot, useOperationTabPlugins } from "../../plugins/PluginSlot";
-import Tabs, { TabPanels } from "../../components/Tabs";
+import { PluginSlot } from "../../plugins/PluginSlot";
+import OperationPluginTabs from "../../plugins/OperationPluginTabs";
 import { useDocumentContext } from "../../contexts";
 import type { AsyncAPIDocumentData } from "../../types/schema";
-
-/** The built-in tab, always first — see PathOperation's identical constant. */
-const REFERENCE_TAB_ID = "reference";
 
 interface OperationProps {
   op: OperationInterface;
@@ -64,43 +61,14 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
     </div>
   );
 
-  const tabPlugins = useOperationTabPlugins("asyncapi.operation.tab");
-  const [activeTabId, setActiveTabId] = useState<string>(REFERENCE_TAB_ID);
-  const showTabs = !!id && tabPlugins.length > 0;
-  const activePlugin = showTabs ? tabPlugins.find((entry) => entry.id === activeTabId) : undefined;
-  const ActivePluginComponent = activePlugin?.Component;
-  const operationTabIdPrefix = useId();
-  const operationTabs = [
-    { id: REFERENCE_TAB_ID, name: "Reference" },
-    ...tabPlugins.map((entry) => ({ id: entry.id, name: entry.label })),
-  ];
-  const currentTabId = activePlugin?.id ?? REFERENCE_TAB_ID;
-
   return (
     <div className="flex flex-col gap-6" id={`operation-${id}-detail`}>
-      {showTabs && (
-        <Tabs
-          variant="segmented"
-          ariaLabel="Operation view"
-          idPrefix={operationTabIdPrefix}
-          tabs={operationTabs}
-          current={currentTabId}
-          onChange={setActiveTabId}
-        />
-      )}
-
-      <TabPanels
-        enabled={showTabs}
-        tabs={operationTabs}
-        current={currentTabId}
-        idPrefix={operationTabIdPrefix}
+      <OperationPluginTabs
+        name="asyncapi.operation.tab"
+        context={{ document, operationId: id ?? "" }}
+        enabled={!!id}
       >
-        {activePlugin && ActivePluginComponent && id ? (
-          <PluginBoundary label={`asyncapi.operation.tab:${activePlugin.pluginName}`}>
-            <ActivePluginComponent document={document} operationId={id} />
-          </PluginBoundary>
-        ) : (
-          <>
+        <>
           <div className="flex items-center gap-2">
             <span
               className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono bg-primary-50 text-primary-600 border border-primary-200`}
@@ -228,9 +196,8 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
               </div>
             </div>
           )}
-          </>
-        )}
-      </TabPanels>
+        </>
+      </OperationPluginTabs>
     </div>
   );
 }
