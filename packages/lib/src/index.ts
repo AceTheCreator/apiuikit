@@ -50,7 +50,12 @@ export type {
   OpenAPIServerData,
 } from './types/openapi';
 
-export { useAsyncAPIDocument, useDocumentContext } from './contexts';
+export {
+  useAsyncAPIDocument,
+  useAsyncAPIDocumentContext,
+  useDocumentContext,
+  useOpenAPIDocumentContext,
+} from './contexts';
 export type { DocumentContextValue, AsyncAPIDocumentContextValue, OpenAPIDocumentContextValue } from './contexts';
 
 // Re-exported (also, more ergonomically, from the `apiuikit/plugin` subpath)

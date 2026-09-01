@@ -11,11 +11,10 @@ import ResponseLinks from "./ResponseLinks";
 import OperationCallbacks from "./OperationCallbacks";
 import { PluginSlot } from "../../plugins/PluginSlot";
 import OperationPluginTabs from "../../plugins/OperationPluginTabs";
-import { useDocumentContext } from "../../contexts";
+import { useOpenAPIDocumentContext } from "../../contexts";
 import {
   HttpMethod,
   OpenAPICallbackData,
-  OpenAPIDocumentData,
   OpenAPIHeaderData,
   OpenAPILinkData,
   OpenAPIMediaTypeData,
@@ -524,15 +523,7 @@ export default function PathOperation({
   isOperationKnown,
   depth = 0,
 }: PathOperationProps) {
-  // Plugins get the whole document rather than pre-extracted fields — see
-  // OpenAPIOperationPluginContext. PathOperation only ever renders under
-  // OpenAPIDocumentProvider, so the cast mirrors the same narrowing
-  // openapiSections.tsx's useDocument() does.
-  const documentContext = useDocumentContext();
-  const document =
-    documentContext.specType === "openapi"
-      ? documentContext.document
-      : (documentContext.document as unknown as OpenAPIDocumentData);
+  const { document } = useOpenAPIDocumentContext();
 
   // Path and query parameters are already surfaced via the address bar's
   // tooltip (see Paths.tsx) — only header/cookie parameters still need their

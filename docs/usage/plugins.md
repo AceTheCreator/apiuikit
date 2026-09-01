@@ -129,21 +129,33 @@ import { definePlugin } from "apiuikit/plugin";
 import type { OpenAPIOperationPluginContext } from "apiuikit/plugin";
 ```
 
-### Exports
+### Plugin-author exports
+
+Most plugins only need `definePlugin` plus the context type for the slot they
+fill. The rest of this table is useful when inspecting the document or reading
+host configuration from inside that component.
 
 | Export | What it's for |
 |---|---|
 | `definePlugin(plugin)` | Identity helper — returns the object as-is, typed as `ApiuikitPlugin`. |
-| `ApiuikitPlugin`, `PluginSlotName`, `PluginSlotContextMap`, `PluginSlotComponent<N>` | Types for the plugin object and each slot's context. |
-| `SupplementarySlotName` | The `*.operation.reference.supplementary` slot names accepted by `PluginSlot` and `usePluginSlot`. |
+| `ApiuikitPlugin` | The complete plugin object type, when `definePlugin` is not convenient. |
 | `OpenAPIOperationPluginContext`, `AsyncAPIOperationPluginContext` | Props your slot component receives: the document plus which operation this instance is for. |
-| `TabSlotName`, `PluginTabSlotFill<N>` | The `*.operation.tab` slot names, and the `{ label, component }` shape they're filled with. |
 | `HttpMethod`, `OpenAPIDocumentData`, `OpenAPIOperationData`, `OpenAPIPathItemData`, `OpenAPIParameterData`, `OpenAPIRequestBodyData`, `OpenAPISecuritySchemeData`, `OpenAPIServerData` | OpenAPI document-shape types for resolving an operation out of `document`. |
 | `AsyncAPIDocumentData` | AsyncAPI document-shape type for `document.operations[operationId]`. |
-| `useDocumentContext()` / `useAsyncAPIDocument()` | Ambient context (`deref`, theme/config-derived settings). You don't need this for the document itself — that's already on the slot context. Same hook, two names. |
+| `useDocumentContext()` | Ambient configuration and helpers such as `deref`; the operation document itself is already supplied in your component props. |
 | `ConfigInterface`, `ThemeConfig`, `ThemeColors`, `ThemeColorScale`, `ThemeModeColors` | Types for the host's `config` prop, available as `useDocumentContext().config`. |
 
-`PluginSlot`, `usePluginSlot`, and `useOperationTabPlugins` are also exported. A plugin component doesn't need them — they're for something that itself hosts plugin slots (for example a custom operation panel).
+### Advanced: hosting plugin slots
+
+You do not need these APIs to write a plugin. They are exported for custom UI
+components that host APIUIKit plugins themselves:
+
+- `PluginSlot`, `PluginSlotProps`, and `usePluginSlot`
+- `useOperationTabPlugins` and `PluginTabEntry`
+- `PluginSlotName`, `SupplementarySlotName`, and `TabSlotName`
+- `PluginSlotContextMap`, `PluginSlotComponent<N>`, and `PluginTabSlotFill<N>`
+- `useOpenAPIDocumentContext()` and `useAsyncAPIDocumentContext()` for hosts
+  that require one specific document type
 
 ### A minimal tab component
 

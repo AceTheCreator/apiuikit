@@ -25,7 +25,15 @@ export type {
 // nested, since React context lookups are keyed on object identity, not
 // shape. Routing through the external "apiuikit" specifier guarantees both
 // entry points resolve to the one instance the consuming app actually loads.
-export { PluginSlot, usePluginSlot, useOperationTabPlugins, useDocumentContext, useAsyncAPIDocument } from "apiuikit";
+export {
+  PluginSlot,
+  useAsyncAPIDocument,
+  useAsyncAPIDocumentContext,
+  useDocumentContext,
+  useOpenAPIDocumentContext,
+  useOperationTabPlugins,
+  usePluginSlot,
+} from "apiuikit";
 export type {
   PluginSlotProps,
   PluginTabEntry,

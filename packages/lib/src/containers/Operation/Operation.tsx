@@ -16,8 +16,7 @@ import Markdown from "../../components/Markdown";
 import { AsyncCodeSample } from "../../components/AsyncCodeSample";
 import { PluginSlot } from "../../plugins/PluginSlot";
 import OperationPluginTabs from "../../plugins/OperationPluginTabs";
-import { useDocumentContext } from "../../contexts";
-import type { AsyncAPIDocumentData } from "../../types/schema";
+import { useAsyncAPIDocumentContext } from "../../contexts";
 
 interface OperationProps {
   op: OperationInterface;
@@ -27,15 +26,7 @@ interface OperationProps {
 }
 
 export default function Operation({ op, id, focusSection = null }: OperationProps) {
-  // Plugins get the whole document rather than pre-extracted fields — see
-  // AsyncAPIOperationPluginContext. Operation only ever renders under
-  // AsyncAPIDocumentProvider, so the cast mirrors the same narrowing
-  // public/sections.tsx's useDocument() does.
-  const documentContext = useDocumentContext();
-  const document =
-    documentContext.specType === "asyncapi"
-      ? documentContext.document
-      : (documentContext.document as unknown as AsyncAPIDocumentData);
+  const { document } = useAsyncAPIDocumentContext();
 
   const authHeadingId = useId();
   const messages = (op.messages ?? []) as unknown as MessageObject[];

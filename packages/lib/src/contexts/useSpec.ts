@@ -72,6 +72,30 @@ export const useDocumentContext = () => {
   return context;
 };
 
+/** Returns an AsyncAPI context and fails fast when rendered under the wrong
+ * document provider. */
+export const useAsyncAPIDocumentContext = (): AsyncAPIDocumentContextValue => {
+  const context = useDocumentContext();
+  if (context.specType !== "asyncapi") {
+    throw new Error(
+      `useAsyncAPIDocumentContext expected an AsyncAPI document provider, but received provider type "${context.specType}"`,
+    );
+  }
+  return context;
+};
+
+/** Returns an OpenAPI context and fails fast when rendered under the wrong
+ * document provider. */
+export const useOpenAPIDocumentContext = (): OpenAPIDocumentContextValue => {
+  const context = useDocumentContext();
+  if (context.specType !== "openapi") {
+    throw new Error(
+      `useOpenAPIDocumentContext expected an OpenAPI document provider, but received provider type "${context.specType}"`,
+    );
+  }
+  return context;
+};
+
 // Back-compat aliases: AsyncAPI-facing code (and the public `useAsyncAPIDocument`
 // export) keeps working unchanged. This is the same context object, just under
 // its original name; the name was changed when OpenAPI support was added.
