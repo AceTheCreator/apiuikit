@@ -35,6 +35,7 @@ export {
   usePluginSlot,
 } from "apiuikit";
 export type {
+  PluginSlotEntry,
   PluginSlotProps,
   PluginTabEntry,
   DocumentContextValue,

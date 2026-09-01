@@ -92,7 +92,7 @@ More slots may be added over time; a plugin only needs to fill the ones it cares
 
 ### `*.operation.tab`
 
-Selecting your tab hands you the operation panel's entire body. apiuikit's own documentation content is unmounted while your tab is active. The built-in "Reference" tab is always first; plugin tabs follow in registration order, each labeled with the `label` you gave it. Two plugins filling the same tab slot each get their own tab. Switching operations always lands back on Reference — a plugin's tab state does not carry over.
+Selecting your tab hands you the operation panel's entire body. The built-in "Reference" tab is always first; plugin tabs follow in registration order, each labeled with the `label` you gave it. Reference stays mounted while hidden, and each plugin panel mounts on its first visit and then stays mounted, so switching tabs preserves local component state. Two plugins filling the same tab slot each get their own tab. Switching operations still lands back on Reference.
 
 ```tsx
 export default definePlugin({
@@ -150,7 +150,7 @@ host configuration from inside that component.
 You do not need these APIs to write a plugin. They are exported for custom UI
 components that host APIUIKit plugins themselves:
 
-- `PluginSlot`, `PluginSlotProps`, and `usePluginSlot`
+- `PluginSlot`, `PluginSlotEntry`, `PluginSlotProps`, and `usePluginSlot`
 - `useOperationTabPlugins` and `PluginTabEntry`
 - `PluginSlotName`, `SupplementarySlotName`, and `TabSlotName`
 - `PluginSlotContextMap`, `PluginSlotComponent<N>`, and `PluginTabSlotFill<N>`

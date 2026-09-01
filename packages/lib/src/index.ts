@@ -66,7 +66,7 @@ export type { DocumentContextValue, AsyncAPIDocumentContextValue, OpenAPIDocumen
 // `useDocumentContext` would fail to find a value even when correctly
 // nested under a provider.
 export { PluginSlot, usePluginSlot, useOperationTabPlugins } from './plugins/PluginSlot';
-export type { PluginSlotProps, PluginTabEntry } from './plugins/PluginSlot';
+export type { PluginSlotEntry, PluginSlotProps, PluginTabEntry } from './plugins/PluginSlot';
 
 export { SchemaTree, SchemaTab } from './components/schema';
 export type { SchemaTreeProps } from './components/schema';

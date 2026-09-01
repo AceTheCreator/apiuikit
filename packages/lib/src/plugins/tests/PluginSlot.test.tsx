@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { useState } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { PluginSlot, useOperationTabPlugins } from "../PluginSlot";
 import { definePlugin } from "../types";
@@ -96,8 +97,36 @@ describe("PluginSlot", () => {
 
     expect(screen.getByText("before")).toBeInTheDocument();
     expect(screen.getByText("after")).toBeInTheDocument();
+    expect(
+      onErrorSpy.mock.calls.some(([message]) =>
+        String(message).includes("broken (openapi-operation-reference-supplementary-plugin-"),
+      ),
+    ).toEqual(true);
 
     onErrorSpy.mockRestore();
+  });
+
+  it("keeps component state with the same plugin when registration order changes", () => {
+    function Counter({ label }: { label: string }) {
+      const [count, setCount] = useState(0);
+      return <button onClick={() => setCount((value) => value + 1)}>{label}: {count}</button>;
+    }
+    const first = definePlugin({
+      name: "first",
+      slots: { "openapi.operation.reference.supplementary": () => <Counter label="First" /> },
+    });
+    const second = definePlugin({
+      name: "second",
+      slots: { "openapi.operation.reference.supplementary": () => <Counter label="Second" /> },
+    });
+    const slot = <PluginSlot name="openapi.operation.reference.supplementary" context={CONTEXT} />;
+    const view = render(withPlugins([first, second], slot));
+
+    fireEvent.click(screen.getByRole("button", { name: "First: 0" }));
+    view.rerender(withPlugins([second, first], slot));
+
+    expect(screen.getByRole("button", { name: "First: 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Second: 0" })).toBeInTheDocument();
   });
 });
 
@@ -107,7 +136,7 @@ describe("useOperationTabPlugins", () => {
     return (
       <ul>
         {entries.map((entry) => (
-          <li key={entry.id}>{entry.id}: {entry.pluginName}: {entry.label}</li>
+          <li key={entry.id}>{entry.pluginName}: {entry.label}</li>
         ))}
       </ul>
     );
@@ -131,10 +160,7 @@ describe("useOperationTabPlugins", () => {
     render(withPlugins([first, second], <Probe name="openapi.operation.tab" />));
 
     const items = screen.getAllByRole("listitem").map((el) => el.textContent);
-    expect(items).toEqual([
-      "openapi-operation-tab-plugin-0: first: First",
-      "openapi-operation-tab-plugin-1: second: Second",
-    ]);
+    expect(items).toEqual(["first: First", "second: Second"]);
   });
 
   it("ignores plugins that don't fill the requested tab slot", () => {

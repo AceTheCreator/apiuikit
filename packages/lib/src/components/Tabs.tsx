@@ -238,18 +238,15 @@ export default function Tabs({
 }
 
 interface TabPanelsProps {
-  enabled: boolean;
   tabs: Tab[];
   current: string;
   idPrefix?: string;
-  children: ReactNode;
+  renderPanel: (tab: Tab, active: boolean) => ReactNode;
 }
 
-/** Renders one ARIA panel target per tab while mounting content only in the
- * active panel. When tabs are disabled, it preserves the caller's old DOM. */
-export function TabPanels({ enabled, tabs, current, idPrefix, children }: TabPanelsProps) {
-  if (!enabled) return <>{children}</>;
-
+/** Renders one linked ARIA panel per tab. The caller decides which panels
+ * have mounted content, allowing visited panels to remain stateful. */
+export function TabPanels({ tabs, current, idPrefix, renderPanel }: TabPanelsProps) {
   return (
     <>
       {tabs.map((tab) => {
@@ -263,7 +260,7 @@ export function TabPanels({ enabled, tabs, current, idPrefix, children }: TabPan
             hidden={!active}
             className={active ? "flex flex-col gap-6" : undefined}
           >
-            {active ? children : null}
+            {renderPanel(tab, active)}
           </div>
         );
       })}

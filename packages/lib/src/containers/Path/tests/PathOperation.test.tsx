@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import PathOperation from "../PathOperation";
@@ -609,7 +610,7 @@ describe("PathOperation plugin tabs", () => {
     );
 
     const tabs = screen.getAllByRole("tab");
-    expect(new Set(tabs.map((tab) => tab.id))).toHaveSize(tabs.length);
+    expect(new Set(tabs.map((tab) => tab.id)).size).toEqual(tabs.length);
 
     for (const tab of tabs) {
       const panelId = tab.getAttribute("aria-controls");
@@ -625,7 +626,7 @@ describe("PathOperation plugin tabs", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Try it" }));
 
     expect(screen.getByText("plugin content for get /pets")).toBeInTheDocument();
-    expect(screen.queryByText("List pets")).not.toBeInTheDocument();
+    expect(screen.getByText("List pets")).not.toBeVisible();
   });
 
   it("switches back to full documentation content when Reference is reselected", () => {
@@ -635,7 +636,7 @@ describe("PathOperation plugin tabs", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Reference" }));
 
     expect(screen.getByText("List pets")).toBeInTheDocument();
-    expect(screen.queryByText(/plugin content for/)).not.toBeInTheDocument();
+    expect(screen.getByText(/plugin content for/)).not.toBeVisible();
   });
 
   it("keeps duplicate and reserved plugin names independently selectable", () => {
@@ -659,7 +660,38 @@ describe("PathOperation plugin tabs", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "Second plugin" }));
     expect(screen.getByText("second content")).toBeInTheDocument();
-    expect(screen.queryByText("first content")).not.toBeInTheDocument();
+    expect(screen.getByText("first content")).not.toBeVisible();
+  });
+
+  it("preserves Reference and plugin state after each panel has been visited", () => {
+    function ReferenceCounter() {
+      const [count, setCount] = useState(0);
+      return <button onClick={() => setCount((value) => value + 1)}>Reference count: {count}</button>;
+    }
+    function PluginCounter() {
+      const [count, setCount] = useState(0);
+      return <button onClick={() => setCount((value) => value + 1)}>Plugin count: {count}</button>;
+    }
+    const statefulPlugin = definePlugin({
+      name: "stateful",
+      slots: {
+        "openapi.operation.reference.supplementary": ReferenceCounter,
+        "openapi.operation.tab": { label: "Stateful", component: PluginCounter },
+      },
+    });
+
+    render(withContext(<PathOperation method="get" path="/pets" op={baseOp} id="get /pets" />, [statefulPlugin]));
+
+    fireEvent.click(screen.getByRole("button", { name: "Reference count: 0" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Stateful" }));
+    fireEvent.click(screen.getByRole("button", { name: "Plugin count: 0" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Reference" }));
+
+    expect(screen.getByRole("button", { name: "Reference count: 1" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Plugin count: 1", hidden: true })).not.toBeVisible();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Stateful" }));
+    expect(screen.getByRole("button", { name: "Plugin count: 1" })).toBeVisible();
   });
 
   it("gives a callback's nested operation no tab strip, even with a plugin registered", () => {
@@ -733,6 +765,6 @@ describe("PathOperation operation supplementary slot", () => {
     expect(screen.getByText("annotation for get /pets")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "Try it" }));
-    expect(screen.queryByText(/annotation for/)).not.toBeInTheDocument();
+    expect(screen.getByText(/annotation for/)).not.toBeVisible();
   });
 });

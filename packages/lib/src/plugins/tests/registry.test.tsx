@@ -24,23 +24,19 @@ describe("createPluginSlotRegistry", () => {
       }),
     ]);
 
-    expect(registry.get("openapi.operation.reference.supplementary")).toEqual([
-      Supplementary,
+    const supplementary = registry.get("openapi.operation.reference.supplementary") as
+      readonly { id: string; pluginName: string; Component: unknown }[];
+    const tabs = registry.get("openapi.operation.tab") as
+      readonly { id: string; pluginName: string; label: string; Component: unknown }[];
+
+    expect(supplementary.map(({ pluginName, Component }) => ({ pluginName, Component }))).toEqual([
+      { pluginName: "first", Component: Supplementary },
     ]);
-    expect(registry.get("openapi.operation.tab")).toEqual([
-      {
-        id: "openapi-operation-tab-plugin-0",
-        pluginName: "first",
-        label: "First",
-        Component: FirstTab,
-      },
-      {
-        id: "openapi-operation-tab-plugin-1",
-        pluginName: "second",
-        label: "Second",
-        Component: SecondTab,
-      },
+    expect(tabs.map(({ pluginName, label, Component }) => ({ pluginName, label, Component }))).toEqual([
+      { pluginName: "first", label: "First", Component: FirstTab },
+      { pluginName: "second", label: "Second", Component: SecondTab },
     ]);
+    expect(new Set([...supplementary, ...tabs].map(({ id }) => id)).size).toEqual(3);
   });
 
   it("generates distinct ids for duplicate and reserved plugin names", () => {
@@ -56,11 +52,27 @@ describe("createPluginSlotRegistry", () => {
     ]);
 
     const entries = registry.get("openapi.operation.tab") as readonly { id: string }[];
-    expect(entries.map(({ id }) => id)).toEqual([
-      "openapi-operation-tab-plugin-0",
-      "openapi-operation-tab-plugin-1",
-    ]);
+    expect(new Set(entries.map(({ id }) => id)).size).toEqual(2);
     expect(entries.every(({ id }) => id !== "reference")).toBe(true);
+  });
+
+  it("keeps plugin ids stable when registration order changes", () => {
+    const first = definePlugin({
+      name: "first",
+      slots: { "openapi.operation.reference.supplementary": () => null },
+    });
+    const second = definePlugin({
+      name: "second",
+      slots: { "openapi.operation.reference.supplementary": () => null },
+    });
+    const idsByName = (plugins: typeof first[]) => {
+      const entries = createPluginSlotRegistry(plugins).get(
+        "openapi.operation.reference.supplementary",
+      ) as readonly { id: string; pluginName: string }[];
+      return Object.fromEntries(entries.map(({ id, pluginName }) => [pluginName, id]));
+    };
+
+    expect(idsByName([first, second])).toEqual(idsByName([second, first]));
   });
 
   it("returns the same indexed array for repeated lookups", () => {

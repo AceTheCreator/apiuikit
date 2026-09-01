@@ -38,9 +38,15 @@ function usePluginSlotRegistry(): PluginSlotRegistry {
   );
 }
 
-export function usePluginSlot<N extends SupplementarySlotName>(name: N): readonly PluginSlotComponent<N>[] {
+export interface PluginSlotEntry<N extends SupplementarySlotName> {
+  id: string;
+  pluginName: string;
+  Component: PluginSlotComponent<N>;
+}
+
+export function usePluginSlot<N extends SupplementarySlotName>(name: N): readonly PluginSlotEntry<N>[] {
   const registry = usePluginSlotRegistry();
-  return (registry.get(name) ?? []) as readonly PluginSlotComponent<N>[];
+  return (registry.get(name) ?? []) as readonly PluginSlotEntry<N>[];
 }
 
 export interface PluginSlotProps<N extends SupplementarySlotName> {
@@ -55,14 +61,14 @@ export interface PluginSlotProps<N extends SupplementarySlotName> {
  * no plugin fills this slot.
  */
 export function PluginSlot<N extends SupplementarySlotName>({ name, context }: PluginSlotProps<N>) {
-  const components = usePluginSlot(name);
-  if (components.length === 0) return null;
+  const entries = usePluginSlot(name);
+  if (entries.length === 0) return null;
 
   return (
     <>
-      {components.map((Slot, index) => (
-        <PluginBoundary key={index} label={name}>
-          <Slot {...context} />
+      {entries.map(({ id, pluginName, Component }) => (
+        <PluginBoundary key={id} label={`${name}:${pluginName} (${id})`}>
+          <Component {...context} />
         </PluginBoundary>
       ))}
     </>

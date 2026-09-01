@@ -68,7 +68,7 @@ describe("Operation plugin tabs", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Send it" }));
 
     expect(screen.getByText("plugin content for sendMessage")).toBeInTheDocument();
-    expect(screen.queryByText("Send a chat message")).not.toBeInTheDocument();
+    expect(screen.getByText("Send a chat message")).not.toBeVisible();
   });
 
   it("switches back to full documentation content when Reference is reselected", () => {
@@ -78,7 +78,7 @@ describe("Operation plugin tabs", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Reference" }));
 
     expect(screen.getByText("Send a chat message")).toBeInTheDocument();
-    expect(screen.queryByText(/plugin content for/)).not.toBeInTheDocument();
+    expect(screen.getByText(/plugin content for/)).not.toBeVisible();
   });
 });
 
@@ -86,7 +86,7 @@ describe("Operation supplementary slot", () => {
   it("renders nothing when no reference supplementary plugin is registered", () => {
     render(withContext(<Operation op={baseOp} id="sendMessage" />));
 
-    expect(screen.queryByText(/annotation for/)).not.toBeInTheDocument();
+    expect(screen.getByText(/annotation for/)).not.toBeVisible();
   });
 
   it("renders a plugin's operation supplementary slot with the operationId context", () => {
@@ -115,6 +115,6 @@ describe("Operation supplementary slot", () => {
     expect(screen.getByText("annotation for sendMessage")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "Send it" }));
-    expect(screen.queryByText(/annotation for/)).not.toBeInTheDocument();
+    expect(screen.getByText(/annotation for/)).not.toBeVisible();
   });
 });

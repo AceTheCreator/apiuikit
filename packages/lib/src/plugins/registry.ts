@@ -6,12 +6,23 @@ import type { ApiuikitPlugin, PluginSlotName, TabSlotName } from "./types";
 export type PluginSlotRegistry = ReadonlyMap<PluginSlotName, readonly unknown[]>;
 
 const isTabSlot = (name: PluginSlotName): name is TabSlotName => name.endsWith(".tab");
+const pluginIds = new WeakMap<ApiuikitPlugin, string>();
+let nextPluginId = 0;
+
+const getPluginId = (plugin: ApiuikitPlugin) => {
+  const existing = pluginIds.get(plugin);
+  if (existing) return existing;
+  const id = `plugin-${nextPluginId++}`;
+  pluginIds.set(plugin, id);
+  return id;
+};
 
 /** Indexes every declared fill once, preserving plugin registration order. */
 export function createPluginSlotRegistry(plugins: readonly ApiuikitPlugin[]): PluginSlotRegistry {
   const registry = new Map<PluginSlotName, unknown[]>();
 
-  for (const [pluginIndex, plugin] of plugins.entries()) {
+  for (const plugin of plugins) {
+    const pluginId = getPluginId(plugin);
     for (const name of Object.keys(plugin.slots) as PluginSlotName[]) {
       const fill = plugin.slots[name];
       if (!fill) continue;
@@ -22,13 +33,17 @@ export function createPluginSlotRegistry(plugins: readonly ApiuikitPlugin[]): Pl
       if (isTabSlot(name)) {
         const tab = fill as { label: string; component: unknown };
         entries.push({
-          id: `${name.replace(/\./g, "-")}-plugin-${pluginIndex}`,
+          id: `${name.replace(/\./g, "-")}-${pluginId}`,
           pluginName: plugin.name,
           label: tab.label,
           Component: tab.component,
         });
       } else {
-        entries.push(fill);
+        entries.push({
+          id: `${name.replace(/\./g, "-")}-${pluginId}`,
+          pluginName: plugin.name,
+          Component: fill,
+        });
       }
     }
   }

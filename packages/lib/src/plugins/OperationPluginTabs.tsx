@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Tabs, { TabPanels } from "../components/Tabs";
 import { PluginBoundary, useOperationTabPlugins } from "./PluginSlot";
@@ -24,41 +24,61 @@ export default function OperationPluginTabs<N extends TabSlotName>({
 }: OperationPluginTabsProps<N>) {
   const plugins = useOperationTabPlugins(name);
   const [selectedId, setSelectedId] = useState(REFERENCE_TAB_ID);
+  const [visitedIds, setVisitedIds] = useState<ReadonlySet<string>>(
+    () => new Set([REFERENCE_TAB_ID]),
+  );
   const idPrefix = useId();
+  const pluginsById = useMemo(
+    () => new Map(plugins.map((plugin) => [plugin.id, plugin])),
+    [plugins],
+  );
   const showTabs = enabled && plugins.length > 0;
   const activePlugin = showTabs
-    ? plugins.find((entry) => entry.id === selectedId)
+    ? pluginsById.get(selectedId)
     : undefined;
-  const ActivePluginComponent = activePlugin?.Component;
   const currentId = activePlugin?.id ?? REFERENCE_TAB_ID;
   const tabs = [
     { id: REFERENCE_TAB_ID, name: "Reference" },
     ...plugins.map((entry) => ({ id: entry.id, name: entry.label })),
   ];
 
-  const content = activePlugin && ActivePluginComponent ? (
-    <PluginBoundary label={`${name}:${activePlugin.pluginName}`}>
-      <ActivePluginComponent {...context} />
-    </PluginBoundary>
-  ) : (
-    children
-  );
+  const selectTab = (id: string) => {
+    setVisitedIds((previous) =>
+      previous.has(id) ? previous : new Set([...previous, id]),
+    );
+    setSelectedId(id);
+  };
+
+  if (!showTabs) return <>{children}</>;
 
   return (
     <>
-      {showTabs && (
-        <Tabs
-          variant="segmented"
-          ariaLabel="Operation view"
-          idPrefix={idPrefix}
-          tabs={tabs}
-          current={currentId}
-          onChange={setSelectedId}
-        />
-      )}
-      <TabPanels enabled={showTabs} tabs={tabs} current={currentId} idPrefix={idPrefix}>
-        {content}
-      </TabPanels>
+      <Tabs
+        variant="segmented"
+        ariaLabel="Operation view"
+        idPrefix={idPrefix}
+        tabs={tabs}
+        current={currentId}
+        onChange={selectTab}
+      />
+      <TabPanels
+        tabs={tabs}
+        current={currentId}
+        idPrefix={idPrefix}
+        renderPanel={(tab, active) => {
+          if (!active && !visitedIds.has(tab.id)) return null;
+          if (tab.id === REFERENCE_TAB_ID) return children;
+
+          const plugin = pluginsById.get(tab.id);
+          if (!plugin) return null;
+          const Component = plugin.Component;
+          return (
+            <PluginBoundary label={`${name}:${plugin.pluginName}`}>
+              <Component {...context} />
+            </PluginBoundary>
+          );
+        }}
+      />
     </>
   );
 }
