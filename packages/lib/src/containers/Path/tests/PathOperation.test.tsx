@@ -646,18 +646,18 @@ describe("PathOperation plugin tabs", () => {
   });
 });
 
-describe("PathOperation operation actions slot", () => {
-  it("renders nothing when no operation.actions plugin is registered", () => {
+describe("PathOperation operation supplementary slot", () => {
+  it("renders nothing when no reference supplementary plugin is registered", () => {
     render(withContext(<PathOperation method="get" path="/pets" op={baseOp} id="get /pets" />));
 
     expect(screen.queryByText(/annotation for/)).not.toBeInTheDocument();
   });
 
-  it("renders a plugin's operation actions slot with the method/path context", () => {
+  it("renders a plugin's operation supplementary slot with the method/path context", () => {
     const annotate = definePlugin({
       name: "annotate",
       slots: {
-        "openapi.operation.actions": ({ method, path }) => (
+        "openapi.operation.reference.supplementary": ({ method, path }) => (
           <div>
             annotation for {method} {path}
           </div>
@@ -670,11 +670,11 @@ describe("PathOperation operation actions slot", () => {
     expect(screen.getByText("annotation for get /pets")).toBeInTheDocument();
   });
 
-  it("hides the actions slot while a plugin's own tab is active", () => {
+  it("hides the supplementary slot while a plugin's own tab is active", () => {
     const annotate = definePlugin({
       name: "annotate",
       slots: {
-        "openapi.operation.actions": ({ method, path }) => (
+        "openapi.operation.reference.supplementary": ({ method, path }) => (
           <div>
             annotation for {method} {path}
           </div>

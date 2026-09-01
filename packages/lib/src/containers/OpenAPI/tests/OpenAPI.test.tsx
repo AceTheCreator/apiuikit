@@ -315,11 +315,11 @@ describe("OpenAPI", () => {
   });
 
   describe("plugins", () => {
-    it("wires a `plugins` prop through to an operation's actions slot", () => {
+    it("wires a `plugins` prop through to an operation's supplementary slot", () => {
       const annotate = definePlugin({
         name: "annotate",
         slots: {
-          "openapi.operation.actions": ({ method, path }) => (
+          "openapi.operation.reference.supplementary": ({ method, path }) => (
             <div>
               plugin annotation for {method} {path}
             </div>

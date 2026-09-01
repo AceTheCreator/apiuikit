@@ -1,10 +1,10 @@
 import { definePlugin } from "apiuikit/plugin";
-import type { OpenAPIOperationActionsContext } from "apiuikit/plugin";
+import type { OpenAPIOperationPluginContext } from "apiuikit/plugin";
 
-// Playground-local dev fixture, same spirit as operationActionsDemoPlugin.tsx:
+// Playground-local dev fixture, same spirit as operationSupplementaryDemoPlugin.tsx:
 // not a published package, just something concrete to click through when
 // working on the plugin architecture (packages/lib). This one fills
-// `openapi.operation.tab` instead of `openapi.operation.actions` — selecting
+// `openapi.operation.tab` instead of `openapi.operation.reference.supplementary` — selecting
 // its tab hands it the operation panel's *entire* body, rather than a sliver
 // of it. The tinted background + thick dotted border exist purely to make
 // that full-panel slot visible (e.g. for a screenshot); a real plugin
@@ -29,7 +29,7 @@ const styles = {
   },
 };
 
-function OperationTabDemo({ method, path }: OpenAPIOperationActionsContext) {
+function OperationTabDemo({ method, path }: OpenAPIOperationPluginContext) {
   return (
     <div style={styles.wrapper}>
       <p style={styles.label}>

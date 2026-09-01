@@ -2,12 +2,12 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { PluginSlot, useOperationTabPlugins } from "../PluginSlot";
 import { definePlugin } from "../types";
-import type { ApiuikitPlugin, OpenAPIOperationActionsContext } from "../types";
+import type { ApiuikitPlugin, OpenAPIOperationPluginContext } from "../types";
 import { DocumentContext } from "../../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../../components/schema/depthColors";
 import type { OpenAPIDocumentData } from "../../types/openapi";
 
-const CONTEXT: OpenAPIOperationActionsContext = {
+const CONTEXT: OpenAPIOperationPluginContext = {
   document: {} as OpenAPIDocumentData,
   method: "get",
   path: "/pets/{petId}",
@@ -35,17 +35,22 @@ function withPlugins(plugins: ApiuikitPlugin[] | undefined, children: React.Reac
 }
 
 describe("PluginSlot", () => {
+  // @ts-expect-error Tab slots use { label, component } fills and must be
+  // consumed through useOperationTabPlugins, not rendered as inline slots.
+  const tabAsInlineSlot = <PluginSlot name="openapi.operation.tab" context={CONTEXT} />;
+  void tabAsInlineSlot;
+
   it("renders nothing when no plugins are registered", () => {
     const { container } = render(
-      withPlugins(undefined, <PluginSlot name="openapi.operation.actions" context={CONTEXT} />),
+      withPlugins(undefined, <PluginSlot name="openapi.operation.reference.supplementary" context={CONTEXT} />),
     );
     expect(container).toBeEmptyDOMElement();
   });
 
   it("renders nothing when no registered plugin fills the requested slot", () => {
-    const other = definePlugin({ name: "other", slots: { "asyncapi.operation.actions": () => <div>async</div> } });
+    const other = definePlugin({ name: "other", slots: { "asyncapi.operation.reference.supplementary": () => <div>async</div> } });
     const { container } = render(
-      withPlugins([other], <PluginSlot name="openapi.operation.actions" context={CONTEXT} />),
+      withPlugins([other], <PluginSlot name="openapi.operation.reference.supplementary" context={CONTEXT} />),
     );
     expect(container).toBeEmptyDOMElement();
   });
@@ -54,14 +59,14 @@ describe("PluginSlot", () => {
     const plugin = definePlugin({
       name: "try-it-out",
       slots: {
-        "openapi.operation.actions": ({ method, path }) => (
+        "openapi.operation.reference.supplementary": ({ method, path }) => (
           <button>
             {method.toUpperCase()} {path}
           </button>
         ),
       },
     });
-    render(withPlugins([plugin], <PluginSlot name="openapi.operation.actions" context={CONTEXT} />));
+    render(withPlugins([plugin], <PluginSlot name="openapi.operation.reference.supplementary" context={CONTEXT} />));
     expect(screen.getByRole("button", { name: "GET /pets/{petId}" })).toBeInTheDocument();
   });
 
@@ -70,23 +75,23 @@ describe("PluginSlot", () => {
 
     const before = definePlugin({
       name: "before",
-      slots: { "openapi.operation.actions": () => <span>before</span> },
+      slots: { "openapi.operation.reference.supplementary": () => <span>before</span> },
     });
     const broken = definePlugin({
       name: "broken",
       slots: {
-        "openapi.operation.actions": () => {
+        "openapi.operation.reference.supplementary": () => {
           throw new Error("plugin exploded");
         },
       },
     });
     const after = definePlugin({
       name: "after",
-      slots: { "openapi.operation.actions": () => <span>after</span> },
+      slots: { "openapi.operation.reference.supplementary": () => <span>after</span> },
     });
 
     render(
-      withPlugins([before, broken, after], <PluginSlot name="openapi.operation.actions" context={CONTEXT} />),
+      withPlugins([before, broken, after], <PluginSlot name="openapi.operation.reference.supplementary" context={CONTEXT} />),
     );
 
     expect(screen.getByText("before")).toBeInTheDocument();
@@ -130,12 +135,12 @@ describe("useOperationTabPlugins", () => {
   });
 
   it("ignores plugins that don't fill the requested tab slot", () => {
-    const actionsOnly = definePlugin({
-      name: "actions-only",
-      slots: { "openapi.operation.actions": () => <div>actions</div> },
+    const supplementaryOnly = definePlugin({
+      name: "supplementary-only",
+      slots: { "openapi.operation.reference.supplementary": () => <div>supplementary</div> },
     });
 
-    const { container } = render(withPlugins([actionsOnly], <Probe name="openapi.operation.tab" />));
+    const { container } = render(withPlugins([supplementaryOnly], <Probe name="openapi.operation.tab" />));
     expect(container.querySelector("li")).toBeNull();
   });
 });

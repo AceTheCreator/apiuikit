@@ -2,7 +2,7 @@
 
 Plugins add external functionality from a separately-installed package into named slots on a rendered document. The code stays out of `apiuikit` itself, so consumers who don't want a feature (for example "try it out" / sending a real HTTP request) never ship it.
 
-A plugin declares a `name` and which slot(s) it fills. Tab slots take `{ label, component }`; actions slots take a bare component:
+A plugin declares a `name` and which slot(s) it fills. Tab slots take `{ label, component }`; supplementary slots take a bare component:
 
 ```tsx
 import { definePlugin } from "apiuikit/plugin";
@@ -51,7 +51,7 @@ A section's standalone `document` prop form also accepts `plugins`. Composed und
 
 Plugins currently work only through the React API. `@apiuikit/web-component`'s custom elements don't support `plugins` yet: it's a live array of component references, not something a JSON/string attribute can carry.
 
-The playground has two unpublished fixtures in `packages/playground/src/plugins/` (`operationTabDemoPlugin.tsx`, `operationActionsDemoPlugin.tsx`) that only outline each slot's boundary. Writing a real plugin is covered below.
+The playground has two unpublished fixtures in `packages/playground/src/plugins/` (`operationTabDemoPlugin.tsx`, `operationSupplementaryDemoPlugin.tsx`) that only outline each slot's boundary. Writing a real plugin is covered below.
 
 ## Slots
 
@@ -59,19 +59,19 @@ Two shapes, distinguished by what they're filled with:
 
 | Slot | Where it renders | Context | Filled with |
 |---|---|---|---|
-| `openapi.operation.tab` | A tab in the OpenAPI operation panel, alongside the built-in "Reference" tab | `OpenAPIOperationActionsContext` | `{ label, component }` |
-| `asyncapi.operation.tab` | A tab in the AsyncAPI operation panel, alongside "Reference" | `AsyncAPIOperationActionsContext` | `{ label, component }` |
-| `openapi.operation.actions` | Inline, under each OpenAPI operation's documentation (after the code samples, before Authorization) | `OpenAPIOperationActionsContext` | bare component |
-| `asyncapi.operation.actions` | Inline, under each AsyncAPI operation's documentation (after the code sample) | `AsyncAPIOperationActionsContext` | bare component |
+| `openapi.operation.tab` | A tab in the OpenAPI operation panel, alongside the built-in "Reference" tab | `OpenAPIOperationPluginContext` | `{ label, component }` |
+| `asyncapi.operation.tab` | A tab in the AsyncAPI operation panel, alongside "Reference" | `AsyncAPIOperationPluginContext` | `{ label, component }` |
+| `openapi.operation.reference.supplementary` | Inline, under each OpenAPI operation's documentation (after the code samples, before Authorization) | `OpenAPIOperationPluginContext` | bare component |
+| `asyncapi.operation.reference.supplementary` | Inline, under each AsyncAPI operation's documentation (after the code sample) | `AsyncAPIOperationPluginContext` | bare component |
 
 ```ts
-interface OpenAPIOperationActionsContext {
+interface OpenAPIOperationPluginContext {
   document: OpenAPIDocumentData;
   method: HttpMethod;
   path: string; // the operation's key in document.paths — not the optional, often-absent operationId field
 }
 
-interface AsyncAPIOperationActionsContext {
+interface AsyncAPIOperationPluginContext {
   document: AsyncAPIDocumentData;
   operationId: string; // the operation's key in document.operations
 }
@@ -86,7 +86,7 @@ const operation = document.operations?.[operationId];        // AsyncAPI
 
 If you still see `$ref`s, `useDocumentContext().deref` resolves a JSON Pointer against the ambient document.
 
-A plugin may fill more than one slot (for example both OpenAPI and AsyncAPI tab slots, or a tab plus a small actions button). Unfilled slots are simply omitted from `slots`.
+A plugin may fill more than one slot (for example both OpenAPI and AsyncAPI tab slots, or a tab plus supplementary Reference content). Unfilled slots are simply omitted from `slots`.
 
 More slots may be added over time; a plugin only needs to fill the ones it cares about.
 
@@ -105,20 +105,20 @@ export default definePlugin({
 
 ![The `openapi.operation.tab` slot, outlined in the playground: the "Demo" tab's content fills the whole operation panel body](./images/plugins/operation-tab-slot.png)
 
-### `*.operation.actions`
+### `*.operation.reference.supplementary`
 
-Your component renders alongside apiuikit's own content. Use this only for something small and secondary (for example a button) that belongs next to the documentation rather than replacing it. Multiple plugins filling the same actions slot stack in registration order. It takes a bare component, not a `{ label, component }` pair:
+Your component renders at the documented supplementary point in the built-in Reference panel. Use this for small, secondary content that complements the operation documentation rather than replacing it. Multiple plugins filling the same supplementary slot render in registration order. It takes a bare component, not a `{ label, component }` pair:
 
 ```tsx
 export default definePlugin({
   name: "my-plugin",
   slots: {
-    "openapi.operation.actions": MyInlineButton,
+    "openapi.operation.reference.supplementary": MyInlineButton,
   },
 });
 ```
 
-![The `openapi.operation.actions` slot, outlined in the playground: a small inline element sitting between the code samples and Authorization](./images/plugins/operation-actions-slot.png)
+![The `openapi.operation.reference.supplementary` slot, outlined in the playground: a small inline element sitting between the code samples and Authorization](./images/plugins/operation-supplementary-slot.png)
 
 ## Writing a plugin
 
@@ -126,7 +126,7 @@ export default definePlugin({
 
 ```ts
 import { definePlugin } from "apiuikit/plugin";
-import type { OpenAPIOperationActionsContext } from "apiuikit/plugin";
+import type { OpenAPIOperationPluginContext } from "apiuikit/plugin";
 ```
 
 ### Exports
@@ -135,7 +135,8 @@ import type { OpenAPIOperationActionsContext } from "apiuikit/plugin";
 |---|---|
 | `definePlugin(plugin)` | Identity helper — returns the object as-is, typed as `ApiuikitPlugin`. |
 | `ApiuikitPlugin`, `PluginSlotName`, `PluginSlotContextMap`, `PluginSlotComponent<N>` | Types for the plugin object and each slot's context. |
-| `OpenAPIOperationActionsContext`, `AsyncAPIOperationActionsContext` | Props your slot component receives: the document plus which operation this instance is for. |
+| `SupplementarySlotName` | The `*.operation.reference.supplementary` slot names accepted by `PluginSlot` and `usePluginSlot`. |
+| `OpenAPIOperationPluginContext`, `AsyncAPIOperationPluginContext` | Props your slot component receives: the document plus which operation this instance is for. |
 | `TabSlotName`, `PluginTabSlotFill<N>` | The `*.operation.tab` slot names, and the `{ label, component }` shape they're filled with. |
 | `HttpMethod`, `OpenAPIDocumentData`, `OpenAPIOperationData`, `OpenAPIPathItemData`, `OpenAPIParameterData`, `OpenAPIRequestBodyData`, `OpenAPISecuritySchemeData`, `OpenAPIServerData` | OpenAPI document-shape types for resolving an operation out of `document`. |
 | `AsyncAPIDocumentData` | AsyncAPI document-shape type for `document.operations[operationId]`. |
@@ -148,9 +149,9 @@ import type { OpenAPIOperationActionsContext } from "apiuikit/plugin";
 
 ```tsx
 import { definePlugin } from "apiuikit/plugin";
-import type { OpenAPIOperationActionsContext } from "apiuikit/plugin";
+import type { OpenAPIOperationPluginContext } from "apiuikit/plugin";
 
-function MyOperationPanel({ document, method, path }: OpenAPIOperationActionsContext) {
+function MyOperationPanel({ document, method, path }: OpenAPIOperationPluginContext) {
   const operation = document.paths?.[path]?.[method];
   if (!operation) return null;
   return <div>{method.toUpperCase()} {path} — {operation.summary}</div>;

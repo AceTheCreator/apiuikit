@@ -352,11 +352,11 @@ describe("AsyncAPI", () => {
   });
 
   describe("plugins", () => {
-    it("wires a `plugins` prop through to an operation's actions slot", () => {
+    it("wires a `plugins` prop through to an operation's supplementary slot", () => {
       const annotate = definePlugin({
         name: "annotate",
         slots: {
-          "asyncapi.operation.actions": ({ operationId }) => <div>plugin annotation for {operationId}</div>,
+          "asyncapi.operation.reference.supplementary": ({ operationId }) => <div>plugin annotation for {operationId}</div>,
         },
       });
 

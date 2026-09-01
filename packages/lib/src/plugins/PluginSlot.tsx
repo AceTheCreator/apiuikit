@@ -1,7 +1,13 @@
 import { Suspense, useMemo } from "react";
 import { useDocumentContext } from "../contexts";
 import { ErrorBoundary } from "../components/ErrorBoundary";
-import type { PluginSlotComponent, PluginSlotContextMap, PluginSlotName, PluginTabSlotFill, TabSlotName } from "./types";
+import type {
+  PluginSlotComponent,
+  PluginSlotContextMap,
+  PluginTabSlotFill,
+  SupplementarySlotName,
+  TabSlotName,
+} from "./types";
 
 /** Isolates one plugin's render in its own error boundary + Suspense
  * boundary, tagged with `label` for the console error, so one broken or
@@ -21,7 +27,7 @@ export function PluginBoundary({ label, children }: { label: string; children: R
 
 /** Every plugin (from `useDocumentContext().plugins`) that fills `name`, in
  * registration order. */
-export function usePluginSlot<N extends PluginSlotName>(name: N): PluginSlotComponent<N>[] {
+export function usePluginSlot<N extends SupplementarySlotName>(name: N): PluginSlotComponent<N>[] {
   const { plugins } = useDocumentContext();
   return useMemo(
     () =>
@@ -32,7 +38,7 @@ export function usePluginSlot<N extends PluginSlotName>(name: N): PluginSlotComp
   );
 }
 
-export interface PluginSlotProps<N extends PluginSlotName> {
+export interface PluginSlotProps<N extends SupplementarySlotName> {
   name: N;
   context: PluginSlotContextMap[N];
 }
@@ -43,7 +49,7 @@ export interface PluginSlotProps<N extends PluginSlotName> {
  * can't take down the document or its sibling plugins. Renders nothing when
  * no plugin fills this slot.
  */
-export function PluginSlot<N extends PluginSlotName>({ name, context }: PluginSlotProps<N>) {
+export function PluginSlot<N extends SupplementarySlotName>({ name, context }: PluginSlotProps<N>) {
   const components = usePluginSlot(name);
   if (components.length === 0) return null;
 

@@ -531,7 +531,7 @@ export default function PathOperation({
   depth = 0,
 }: PathOperationProps) {
   // Plugins get the whole document rather than pre-extracted fields — see
-  // OpenAPIOperationActionsContext. PathOperation only ever renders under
+  // OpenAPIOperationPluginContext. PathOperation only ever renders under
   // OpenAPIDocumentProvider, so the cast mirrors the same narrowing
   // openapiSections.tsx's useDocument() does.
   const documentContext = useDocumentContext();
@@ -646,7 +646,7 @@ export default function PathOperation({
             />
           </Suspense>
 
-          <PluginSlot name="openapi.operation.actions" context={{ document, method, path }} />
+          <PluginSlot name="openapi.operation.reference.supplementary" context={{ document, method, path }} />
 
           {security.length > 0 && (
             <div id={`${idPrefix}-${id}-security`}>

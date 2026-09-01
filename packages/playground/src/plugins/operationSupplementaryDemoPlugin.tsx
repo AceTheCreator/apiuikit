@@ -1,13 +1,13 @@
 import { definePlugin } from "apiuikit/plugin";
-import type { OpenAPIOperationActionsContext } from "apiuikit/plugin";
+import type { OpenAPIOperationPluginContext } from "apiuikit/plugin";
 
 // Playground-local dev fixture, same spirit as operationTabDemoPlugin.tsx:
 // not a published package, just something concrete to click through when
 // working on the plugin architecture (packages/lib). This one fills
-// `openapi.operation.actions` instead of `openapi.operation.tab` — it
-// renders inline, amid the operation's own documentation, rather than
+// `openapi.operation.reference.supplementary` instead of
+// `openapi.operation.tab` — it complements the Reference panel rather than
 // taking over the whole panel body. The tinted background + thick dotted
-// border exist purely to make that inline slot's boundaries visible (e.g.
+// border exist purely to make that slot's boundaries visible (e.g.
 // for a screenshot); a real plugin wouldn't style itself this way.
 
 const styles = {
@@ -29,19 +29,19 @@ const styles = {
   },
 };
 
-function OperationActionsDemo({ method, path }: OpenAPIOperationActionsContext) {
+function OperationSupplementaryDemo({ method, path }: OpenAPIOperationPluginContext) {
   return (
     <div style={styles.wrapper}>
       <span style={styles.label}>
-        openapi.operation.actions — inline slot ({method.toUpperCase()} {path})
+    openapi.operation.reference.supplementary ({method.toUpperCase()} {path})
       </span>
     </div>
   );
 }
 
 export default definePlugin({
-  name: "playground-operation-actions-demo",
+  name: "playground-operation-supplementary-demo",
   slots: {
-    "openapi.operation.actions": OperationActionsDemo,
+    "openapi.operation.reference.supplementary": OperationSupplementaryDemo,
   },
 });

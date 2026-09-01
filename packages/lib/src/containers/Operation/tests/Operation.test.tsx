@@ -82,18 +82,18 @@ describe("Operation plugin tabs", () => {
   });
 });
 
-describe("Operation actions slot", () => {
-  it("renders nothing when no operation.actions plugin is registered", () => {
+describe("Operation supplementary slot", () => {
+  it("renders nothing when no reference supplementary plugin is registered", () => {
     render(withContext(<Operation op={baseOp} id="sendMessage" />));
 
     expect(screen.queryByText(/annotation for/)).not.toBeInTheDocument();
   });
 
-  it("renders a plugin's operation actions slot with the operationId context", () => {
+  it("renders a plugin's operation supplementary slot with the operationId context", () => {
     const annotate = definePlugin({
       name: "annotate",
       slots: {
-        "asyncapi.operation.actions": ({ operationId }) => <div>annotation for {operationId}</div>,
+        "asyncapi.operation.reference.supplementary": ({ operationId }) => <div>annotation for {operationId}</div>,
       },
     });
 
@@ -102,11 +102,11 @@ describe("Operation actions slot", () => {
     expect(screen.getByText("annotation for sendMessage")).toBeInTheDocument();
   });
 
-  it("hides the actions slot while a plugin's own tab is active", () => {
+  it("hides the supplementary slot while a plugin's own tab is active", () => {
     const annotate = definePlugin({
       name: "annotate",
       slots: {
-        "asyncapi.operation.actions": ({ operationId }) => <div>annotation for {operationId}</div>,
+        "asyncapi.operation.reference.supplementary": ({ operationId }) => <div>annotation for {operationId}</div>,
         "asyncapi.operation.tab": { label: "Send it", component: () => <div>tab content</div> },
       },
     });

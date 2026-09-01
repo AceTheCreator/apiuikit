@@ -6,12 +6,13 @@
 export { definePlugin } from "./plugins/types";
 export type {
   ApiuikitPlugin,
-  AsyncAPIOperationActionsContext,
-  OpenAPIOperationActionsContext,
+  AsyncAPIOperationPluginContext,
+  OpenAPIOperationPluginContext,
   PluginSlotComponent,
   PluginSlotContextMap,
   PluginSlotName,
   PluginTabSlotFill,
+  SupplementarySlotName,
   TabSlotName,
 } from "./plugins/types";
 
@@ -45,8 +46,8 @@ export type {
 } from "apiuikit";
 
 // Document-shape types, for resolving an operation out of the `document` a
-// slot context hands you (see OpenAPIOperationActionsContext /
-// AsyncAPIOperationActionsContext) — e.g. `document.paths[path][method]`.
+// slot context hands you (see OpenAPIOperationPluginContext /
+// AsyncAPIOperationPluginContext) — e.g. `document.paths[path][method]`.
 // Type-only, so re-exporting from source here (rather than through the
 // external "apiuikit" specifier like the runtime values above) is fine: types
 // are erased at build time and have no singleton-identity concern.

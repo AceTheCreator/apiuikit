@@ -31,7 +31,7 @@ interface OperationProps {
 
 export default function Operation({ op, id, focusSection = null }: OperationProps) {
   // Plugins get the whole document rather than pre-extracted fields — see
-  // AsyncAPIOperationActionsContext. Operation only ever renders under
+  // AsyncAPIOperationPluginContext. Operation only ever renders under
   // AsyncAPIDocumentProvider, so the cast mirrors the same narrowing
   // public/sections.tsx's useDocument() does.
   const documentContext = useDocumentContext();
@@ -123,7 +123,7 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
 
           <AsyncCodeSample operationId={id} />
 
-          {id && <PluginSlot name="asyncapi.operation.actions" context={{ document, operationId: id }} />}
+          {id && <PluginSlot name="asyncapi.operation.reference.supplementary" context={{ document, operationId: id }} />}
 
           {/* Security */}
           {security && security.length > 0 && (
