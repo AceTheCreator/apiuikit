@@ -1,5 +1,5 @@
 import { useId, useRef } from "react";
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import type { KeyboardEvent } from "react";
 import classNames from "../helpers/classNames";
 import IconArrowDown from "../icons/ArrowDown";
@@ -10,12 +10,19 @@ export type Tab = {
   icon?: ComponentType<{ className?: string }>;
 };
 
+const tabDomId = (idPrefix: string | undefined, tabId: string) =>
+  `${idPrefix ? `${idPrefix}-` : ""}tab-${tabId}`;
+const panelDomId = (idPrefix: string | undefined, tabId: string) =>
+  `${idPrefix ? `${idPrefix}-` : ""}panel-${tabId}`;
+
 interface TabsProps {
   tabs: Tab[];
   current: string | null;
   onChange?: (id: string) => void;
   ariaLabel?: string;
   selectLabel?: string;
+  /** Scopes the tab and panel DOM ids when more than one tab list can appear on a page. */
+  idPrefix?: string;
   /** When set, the mobile `<select>` includes an empty option for no selection. */
   placeholder?: string;
   /**
@@ -34,6 +41,7 @@ export default function Tabs({
   onChange = () => {},
   ariaLabel = "Tabs",
   selectLabel = "Select a tab",
+  idPrefix,
   placeholder,
   variant,
 }: TabsProps) {
@@ -123,12 +131,12 @@ export default function Tabs({
                 <button
                   ref={(el) => { buttonRefs.current[tabIndex] = el; }}
                   key={tab.id}
-                  id={`tab-${tab.id}`}
+                  id={tabDomId(idPrefix, tab.id)}
                   type="button"
                   role="tab"
                   tabIndex={tabIndex === focusableIndex ? 0 : -1}
                   aria-selected={isActive}
-                  aria-controls={`panel-${tab.id}`}
+                  aria-controls={panelDomId(idPrefix, tab.id)}
                   onClick={() => onChange(tab.id)}
                   onKeyDown={(event) => handleTabKeyDown(event, tabIndex)}
                   className={classNames(
@@ -158,12 +166,12 @@ export default function Tabs({
                   <button
                     ref={(el) => { buttonRefs.current[tabIndex] = el; }}
                     key={tab.id}
-                    id={`tab-${tab.id}`}
+                    id={tabDomId(idPrefix, tab.id)}
                     type="button"
                     role="tab"
                     tabIndex={tabIndex === focusableIndex ? 0 : -1}
                     aria-selected={isActive}
-                    aria-controls={`panel-${tab.id}`}
+                    aria-controls={panelDomId(idPrefix, tab.id)}
                     onClick={() => onChange(tab.id)}
                     onKeyDown={(event) => handleTabKeyDown(event, tabIndex)}
                     className={classNames(
@@ -194,12 +202,12 @@ export default function Tabs({
                 <button
                   ref={(el) => { buttonRefs.current[tabIdx] = el; }}
                   key={tab.id}
-                  id={`tab-${tab.id}`}
+                  id={tabDomId(idPrefix, tab.id)}
                   type="button"
                   role="tab"
                   tabIndex={tabIdx === focusableIndex ? 0 : -1}
                   aria-selected={isActive}
-                  aria-controls={`panel-${tab.id}`}
+                  aria-controls={panelDomId(idPrefix, tab.id)}
                   onClick={() => onChange(tab.id)}
                   onKeyDown={(event) => handleTabKeyDown(event, tabIdx)}
                   className={classNames(
@@ -226,5 +234,39 @@ export default function Tabs({
         )}
       </div>
     </div>
+  );
+}
+
+interface TabPanelsProps {
+  enabled: boolean;
+  tabs: Tab[];
+  current: string;
+  idPrefix?: string;
+  children: ReactNode;
+}
+
+/** Renders one ARIA panel target per tab while mounting content only in the
+ * active panel. When tabs are disabled, it preserves the caller's old DOM. */
+export function TabPanels({ enabled, tabs, current, idPrefix, children }: TabPanelsProps) {
+  if (!enabled) return <>{children}</>;
+
+  return (
+    <>
+      {tabs.map((tab) => {
+        const active = tab.id === current;
+        return (
+          <div
+            key={tab.id}
+            id={panelDomId(idPrefix, tab.id)}
+            role="tabpanel"
+            aria-labelledby={tabDomId(idPrefix, tab.id)}
+            hidden={!active}
+            className={active ? "flex flex-col gap-6" : undefined}
+          >
+            {active ? children : null}
+          </div>
+        );
+      })}
+    </>
   );
 }

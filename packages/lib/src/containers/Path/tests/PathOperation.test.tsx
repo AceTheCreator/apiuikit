@@ -597,6 +597,28 @@ describe("PathOperation plugin tabs", () => {
     expect(screen.queryByText(/plugin content for/)).not.toBeInTheDocument();
   });
 
+  it("gives every operation unique, correctly linked tab and panel ids", () => {
+    render(
+      withContext(
+        <>
+          <PathOperation method="get" path="/pets" op={baseOp} id="get /pets" />
+          <PathOperation method="post" path="/pets" op={baseOp} id="post /pets" />
+        </>,
+        [tryItPlugin],
+      ),
+    );
+
+    const tabs = screen.getAllByRole("tab");
+    expect(new Set(tabs.map((tab) => tab.id))).toHaveSize(tabs.length);
+
+    for (const tab of tabs) {
+      const panelId = tab.getAttribute("aria-controls");
+      const panel = panelId ? document.getElementById(panelId) : null;
+      expect(panel).toHaveAttribute("role", "tabpanel");
+      expect(panel).toHaveAttribute("aria-labelledby", tab.id);
+    }
+  });
+
   it("hands the plugin the whole panel body when its tab is selected, hiding documentation content", () => {
     render(withContext(<PathOperation method="get" path="/pets" op={baseOp} id="get /pets" />, [tryItPlugin]));
 

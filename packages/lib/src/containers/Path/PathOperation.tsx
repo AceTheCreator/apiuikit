@@ -1,7 +1,7 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useId, useState } from "react";
 import { SchemaTab } from "../../components/schema";
 import Markdown from "../../components/Markdown";
-import Tabs from "../../components/Tabs";
+import Tabs, { TabPanels } from "../../components/Tabs";
 import Authorization from "../../components/Authorization";
 import CollapsiblePanel from "../../components/CollapsiblePanel";
 import IconExternalLink from "../../icons/ExternalLink";
@@ -587,6 +587,12 @@ export default function PathOperation({
   const showTabs = isRoot && tabPlugins.length > 0;
   const activePlugin = showTabs ? tabPlugins.find((entry) => entry.id === activeTabId) : undefined;
   const ActivePluginComponent = activePlugin?.Component;
+  const operationTabIdPrefix = useId();
+  const operationTabs = [
+    { id: REFERENCE_TAB_ID, name: "Reference" },
+    ...tabPlugins.map((entry) => ({ id: entry.id, name: entry.label })),
+  ];
+  const currentTabId = activePlugin?.id ?? REFERENCE_TAB_ID;
 
   return (
     <div
@@ -597,21 +603,25 @@ export default function PathOperation({
         <Tabs
           variant="segmented"
           ariaLabel="Operation view"
-          tabs={[
-            { id: REFERENCE_TAB_ID, name: "Reference" },
-            ...tabPlugins.map((entry) => ({ id: entry.id, name: entry.label })),
-          ]}
-          current={activePlugin ? activePlugin.id : REFERENCE_TAB_ID}
+          idPrefix={operationTabIdPrefix}
+          tabs={operationTabs}
+          current={currentTabId}
           onChange={setActiveTabId}
         />
       )}
 
-      {activePlugin && ActivePluginComponent ? (
-        <PluginBoundary label={`openapi.operation.tab:${activePlugin.pluginName}`}>
-          <ActivePluginComponent document={document} method={method} path={path} />
-        </PluginBoundary>
-      ) : (
-        <>
+      <TabPanels
+        enabled={showTabs}
+        tabs={operationTabs}
+        current={currentTabId}
+        idPrefix={operationTabIdPrefix}
+      >
+        {activePlugin && ActivePluginComponent ? (
+          <PluginBoundary label={`openapi.operation.tab:${activePlugin.pluginName}`}>
+            <ActivePluginComponent document={document} method={method} path={path} />
+          </PluginBoundary>
+        ) : (
+          <>
           <div className="flex items-center gap-2">
             {op.deprecated && (
               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
@@ -688,8 +698,9 @@ export default function PathOperation({
             onFollowOperation={onFollowOperation}
             isOperationKnown={isOperationKnown}
           />
-        </>
-      )}
+          </>
+        )}
+      </TabPanels>
     </div>
   );
 }
