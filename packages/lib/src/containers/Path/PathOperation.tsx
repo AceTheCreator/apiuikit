@@ -525,9 +525,9 @@ export default function PathOperation({
 }: PathOperationProps) {
   const { document } = useOpenAPIDocumentContext();
 
-  // Path and query parameters are already surfaced via the address bar's
-  // tooltip (see Paths.tsx) — only header/cookie parameters still need their
-  // own tab here.
+  // Path and query parameters are already surfaced by the panel header (see
+  // Paths.tsx): path ones as the address's own `{chunk}` tooltips, query ones
+  // in the chip beside it. Only header/cookie parameters still need a tab here.
   const parameters = (op.parameters ?? []).filter((param) => param.in !== "query" && param.in !== "path");
   const security = op.security ?? globalSecurity ?? [];
   const responses = op.responses ?? {};

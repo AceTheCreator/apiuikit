@@ -102,8 +102,12 @@ describe("AsyncAPI", () => {
     top = -20;
     fireEvent.scroll(window);
 
+    // The hidden offset is computed from the bar's own geometry rather than
+    // being a flat `-150%`, so it clears the viewport at any host topOffset —
+    // DocumentTopBar.test.tsx covers that property. With no topOffset set it
+    // works out to the bar's 40px height plus 8px of slack.
     await waitFor(() => {
-      expect(toolbar).toHaveStyle({ position: "fixed", transform: "translateY(-150%)" });
+      expect(toolbar).toHaveStyle({ position: "fixed", transform: "translateY(-48px)" });
     });
     expect(toolbar.querySelector(".document-logo")).not.toBeNull();
     expect(within(toolbar).getByRole("button", { name: "Search" })).toBeInTheDocument();

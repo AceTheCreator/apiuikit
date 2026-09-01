@@ -72,12 +72,22 @@ export const Plain: Story = {
   },
 };
 
-// Truncated single-line variant (as used inside table rows).
+// Truncated single-line variant (as used inside table rows and both detail
+// panel headers). Hover or focus the trailing ellipsis to peek the whole
+// address wrapped — the clipped tail is otherwise unreachable.
 export const Truncated: Story = {
   args: {
     address:
       "smartylighting/streetlights/{streetlightId}/command/{action}/with/a/very/long/trailing/path/segment",
     parameters,
     truncate: true,
+    peek: true,
   },
+  decorators: [
+    (Story) => (
+      <div className="w-80 rounded-lg border border-border p-2">
+        <Story />
+      </div>
+    ),
+  ],
 };

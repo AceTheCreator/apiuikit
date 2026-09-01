@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import Section, { type SectionLayout } from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
 import { ChannelAddress, ChannelAddressParameterDetail } from "../../components/ChannelAddress";
+import QueryParameters, { QueryParameterDetail } from "../../components/QueryParameters";
 import MethodBadge from "../../components/MethodBadge";
 import IconArrowRight from "../../icons/ArrowRight";
 import IconArrowDown from "../../icons/ArrowDown";
@@ -28,31 +29,37 @@ interface PathsProps {
   layout?: SectionLayout;
 }
 
-// Query parameters aren't otherwise visible until "Show more" is expanded —
-// appending them to the address, the same way path parameters already
-// appear as `{name}` chunks, surfaces them immediately in the panel header.
-function addressWithQuery(path: string, parameters: OpenAPIParameterData[]): string {
-  const queryParams = parameters.filter((param) => param.in === "query");
-  if (queryParams.length === 0) return path;
-  return `${path}?${queryParams.map((param) => `${param.name}={${param.name}}`).join("&")}`;
+// OpenAPI carries a parameter's type/default/enum/example under its
+// `schema`, not on the parameter itself — adapt it into the shape the
+// address bar's tooltips and the query chip's list both read.
+function toParameterDetail(param: OpenAPIParameterData): ChannelAddressParameterDetail {
+  const schema = param.schema as { type?: string; default?: unknown; enum?: unknown[] } | undefined;
+  return {
+    description: param.description,
+    type: schema?.type,
+    default: schema?.default !== undefined ? String(schema.default) : undefined,
+    enum: schema?.enum?.map(String),
+    examples: "example" in param && param.example !== undefined ? [String(param.example)] : undefined,
+  };
 }
 
-// OpenAPI carries a parameter's type/default/enum/example under its
-// `schema`, not on the parameter itself — adapt it into ChannelAddress's
-// tooltip shape here.
 function toChannelAddressParameters(parameters: OpenAPIParameterData[]): Record<string, ChannelAddressParameterDetail> {
   const result: Record<string, ChannelAddressParameterDetail> = {};
   for (const param of parameters) {
-    const schema = param.schema as { type?: string; default?: unknown; enum?: unknown[] } | undefined;
-    result[param.name] = {
-      description: param.description,
-      type: schema?.type,
-      default: schema?.default !== undefined ? String(schema.default) : undefined,
-      enum: schema?.enum?.map(String),
-      examples: "example" in param && param.example !== undefined ? [String(param.example)] : undefined,
-    };
+    result[param.name] = toParameterDetail(param);
   }
   return result;
+}
+
+// Query parameters aren't otherwise visible anywhere in the panel — PathOperation
+// keeps them out of the Parameters tab because they belong to the address. They
+// used to be spelled into it (`?limit={limit}&cursor={cursor}…`), which is what
+// overflowed the header on any operation with more than a couple; the chip
+// collapses them to a count instead, and gives each one room for its details.
+function toQueryParameters(parameters: OpenAPIParameterData[]): QueryParameterDetail[] {
+  return parameters
+    .filter((param) => param.in === "query")
+    .map((param) => ({ ...toParameterDetail(param), name: param.name, required: param.required }));
 }
 
 export default function Paths({
@@ -214,16 +221,22 @@ export default function Paths({
 
   const operationParameters = resolveOperationParameters(selected ? paths[selected.path] : undefined, selectedOp);
 
+  // The path is the operation's identity, so it keeps the room and clips to a
+  // single line (its ellipsis peeks the whole thing); the query parameters —
+  // the part that actually ran the header long — sit beside it as a chip.
   const panelTitle = selected ? (
     <div className="flex items-center gap-2 min-w-0">
       <MethodBadge method={selected.method} />
       <div className="min-w-0 flex-1 overflow-hidden">
         <ChannelAddress
-          address={addressWithQuery(selected.path, operationParameters)}
+          address={selected.path}
           parameters={toChannelAddressParameters(operationParameters)}
+          truncate
+          peek
           className="text-xs"
         />
       </div>
+      <QueryParameters parameters={toQueryParameters(operationParameters)} />
     </div>
   ) : (
     selectedKey

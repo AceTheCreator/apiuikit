@@ -105,18 +105,18 @@ describe("OpenAPI", () => {
     expect(tabBar.style.top).toBe("0px");
   });
 
-  it("opens an endpoint's detail panel with responses; its only parameter (a query param) surfaces via the address bar, not a Parameters tab", () => {
+  it("opens an endpoint's detail panel with responses; its only parameter (a query param) surfaces via the header's query chip, not a Parameters tab", () => {
     render(<OpenAPI openapi={asDoc(exampleDoc)} />);
 
     fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
     const detail = within(document.getElementById("endpoint-get /pets-detail")!);
     expect(detail.getByText("List all pets")).toBeInTheDocument();
 
-    // Query parameters are appended to the address bar as `{name}` chunks
-    // (with a hover tooltip for type/description), the same way path
-    // parameters already appear — GET /pets has no other parameters and no
+    // Query parameters live in the panel header's chip rather than being
+    // spelled into the address — GET /pets has no other parameters and no
     // request body, so the Parameters/Body request card doesn't render at all.
-    expect(screen.getByText("{limit}")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "1 query parameter" }));
+    expect(within(screen.getByRole("dialog", { name: "Query parameters" })).getByText("limit")).toBeInTheDocument();
     expect(detail.queryByText(/expects the following request/i)).not.toBeInTheDocument();
   });
 
