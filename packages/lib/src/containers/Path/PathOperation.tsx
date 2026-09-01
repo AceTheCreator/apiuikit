@@ -577,25 +577,27 @@ export default function PathOperation({
         enabled={isRoot}
       >
         <>
-          <div className="flex items-center gap-2">
-            {op.deprecated && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                Deprecated
-              </span>
-            )}
-            {op.externalDocs?.url && (
-              <a
-                href={op.externalDocs.url}
-                target="_blank"
-                rel="noreferrer"
-                title={op.externalDocs.description || op.externalDocs.url}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-100 text-foreground-secondary border border-border hover:bg-neutral-200 transition-colors"
-              >
-                External Documentation
-                <IconExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
-          </div>
+          {(op.deprecated || op.externalDocs?.url) && (
+            <div className="flex items-center gap-2">
+              {op.deprecated && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                  Deprecated
+                </span>
+              )}
+              {op.externalDocs?.url && (
+                <a
+                  href={op.externalDocs.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={op.externalDocs.description || op.externalDocs.url}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-100 text-foreground-secondary border border-border hover:bg-neutral-200 transition-colors"
+                >
+                  External Documentation
+                  <IconExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+            </div>
+          )}
 
           {op.summary && <p className="text-sm text-foreground-secondary">{op.summary}</p>}
           {op.description && <Markdown>{op.description}</Markdown>}

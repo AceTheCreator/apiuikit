@@ -25,7 +25,11 @@ function buildCompleteMarker(): Plugin {
   const marker = fileURLToPath(new URL('./.build-complete', import.meta.url))
   return {
     name: 'build-complete-marker',
-    closeBundle() {
+    // `closeBundle` is only called when Rollup's watch session closes; it does
+    // not run after every incremental rebuild. `writeBundle` runs once the
+    // current output is safely on disk, which is the signal the playground
+    // needs before invalidating its modules.
+    writeBundle() {
       writeFileSync(marker, String(Date.now()))
     },
   }
@@ -98,6 +102,11 @@ export default defineConfig({
     watch: isWatch
       ? {
           chokidar: {
+            // Native filesystem events are unreliable for some workspace and
+            // synced-folder setups. Polling keeps the playground watch loop
+            // deterministic across local environments.
+            usePolling: true,
+            interval: 200,
             // Marker lives outside dist/; writing it must not kick off another rebuild.
             // With emptyOutDir:false, dist/ is no longer auto-ignored — ignore it explicitly.
             ignored: ['**/.build-complete', '**/dist/**'],

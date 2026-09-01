@@ -56,6 +56,7 @@ export default function OperationPluginTabs<N extends TabSlotName>({
       <Tabs
         variant="segmented"
         ariaLabel="Operation view"
+        selectLabel="Select operation view"
         idPrefix={idPrefix}
         tabs={tabs}
         current={currentId}
