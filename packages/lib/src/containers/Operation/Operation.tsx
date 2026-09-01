@@ -14,6 +14,9 @@ import { Message } from "../Messages/Message";
 import { Reply } from "../../components/Reply";
 import Markdown from "../../components/Markdown";
 import { AsyncCodeSample } from "../../components/AsyncCodeSample";
+import { PluginSlot } from "../../plugins/PluginSlot";
+import OperationPluginTabs from "../../plugins/OperationPluginTabs";
+import { useAsyncAPIDocumentContext } from "../../contexts";
 
 interface OperationProps {
   op: OperationInterface;
@@ -23,6 +26,8 @@ interface OperationProps {
 }
 
 export default function Operation({ op, id, focusSection = null }: OperationProps) {
+  const { document } = useAsyncAPIDocumentContext();
+
   const authHeadingId = useId();
   const messages = (op.messages ?? []) as unknown as MessageObject[];
   const tags = (op.tags ?? []) as unknown as Tag[];
@@ -49,131 +54,141 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
 
   return (
     <div className="flex flex-col gap-6" id={`operation-${id}-detail`}>
-      <div className="flex items-center gap-2">
-        <span
-          className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono bg-primary-50 text-primary-600 border border-primary-200`}
-        >
-          ID: {id}
-        </span>
-        {externalDocs?.url && (
-          <a
-            href={externalDocs.url}
-            target="_blank"
-            rel="noreferrer"
-            title={externalDocs.description || externalDocs.url}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-100 text-foreground-secondary border border-border hover:bg-neutral-200 transition-colors"
-          >
-            External Documentation
-            <IconExternalLink className="w-3.5 h-3.5" />
-          </a>
-        )}
-      </div>
-      {op.description && (
-        <div>
-          <Markdown>{op.description}</Markdown>
-        </div>
-      )}
-      {op.summary && (
-        <div>
-          <p className="text-sm text-foreground-secondary">{op.summary}</p>
-        </div>
-      )}
-
-      <AsyncCodeSample operationId={id} />
-
-      {/* Security */}
-      {security && security.length > 0 && (
-        <div id={`operation-${id}-security`}>
-          <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
-            Operation Authorization
-          </p>
-          <CollapsiblePanel
-            ariaLabelledBy={authHeadingId}
-            forceExpanded={focusSection === "security"}
-            trigger={
-              <span className="text-xs font-normal text-foreground-muted bg-neutral-100 border border-border rounded-full px-2 py-0.5">
-                {security.length}
-              </span>
-            }
-          >
-            <div className="px-4 py-2 border-t border-border">
-              <Authorization
-                securities={
-                  security as Parameters<
-                    typeof Authorization
-                  >[0]["securities"]
-                }
-              />
-            </div>
-          </CollapsiblePanel>
-        </div>
-      )}
-
-      {/* Bindings */}
-      {operationBindings &&
-        Object.entries(operationBindings).map(([protocol, binding]) =>
-          binding ? (
-            <div key={protocol} id={`operation-${id}-bindings-${protocol}`}>
-              <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-1">
-                Operation configuration
-              </p>
-              <Bindings
-                protocol={protocol}
-                bindings={binding as Record<string, unknown>}
-                focused={focusSection === `binding:${protocol}`}
-              />
-            </div>
-          ) : null,
-        )}
-
-      {/* Messages */}
-      {reply ? (
-        <Reply
-          requestMessages={messages}
-          reply={reply}
-          isSend={isSend}
-          operationId={id}
-        />
-      ) : (
-        messages.length > 0 && (
-          <div>
-            <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
-              <span className="font-bold">{id}</span>{" "}
-              {isSend ? "accepts" : "expects"}
-              {messages.length > 1 ? (
-                <>
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold text-foreground-mute">
-                    one of
-                  </span>
-                  the following messages:
-                </>
-              ) : (
-                " the following message:"
-              )}
-            </p>
-            {messageList}
-          </div>
-        )
-      )}
-
-      {/* Tags */}
-      {tags.length > 0 && (
-        <div>
-          <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
-            Tags
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {tags.map((tag, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-neutral-100 text-foreground-secondary"
+      <OperationPluginTabs
+        name="asyncapi.operation.tab"
+        context={{ document, operationId: id ?? "" }}
+        enabled={!!id}
+      >
+        <>
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono bg-primary-50 text-primary-600 border border-primary-200`}
+            >
+              ID: {id}
+            </span>
+            {externalDocs?.url && (
+              <a
+                href={externalDocs.url}
+                target="_blank"
+                rel="noreferrer"
+                title={externalDocs.description || externalDocs.url}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-100 text-foreground-secondary border border-border hover:bg-neutral-200 transition-colors"
               >
-                {tag.name}
-              </span>
-            ))}
+                External Documentation
+                <IconExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
           </div>
-        </div>
-      )}
+            {op.description && (
+              <div>
+                <Markdown>{op.description}</Markdown>
+              </div>
+            )}
+          {op.summary && (
+            <div>
+              <p className="text-sm text-foreground-secondary">{op.summary}</p>
+            </div>
+          )}
+
+          <AsyncCodeSample operationId={id} />
+
+          {id && <PluginSlot name="asyncapi.operation.reference.supplementary" context={{ document, operationId: id }} />}
+
+          {/* Security */}
+          {security && security.length > 0 && (
+            <div id={`operation-${id}-security`}>
+              <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
+                Operation Authorization
+              </p>
+              <CollapsiblePanel
+                ariaLabelledBy={authHeadingId}
+                forceExpanded={focusSection === "security"}
+                trigger={
+                  <span className="text-xs font-normal text-foreground-muted bg-neutral-100 border border-border rounded-full px-2 py-0.5">
+                    {security.length}
+                  </span>
+                }
+              >
+                <div className="px-4 py-2 border-t border-border">
+                  <Authorization
+                    securities={
+                      security as Parameters<
+                        typeof Authorization
+                      >[0]["securities"]
+                    }
+                  />
+                </div>
+              </CollapsiblePanel>
+            </div>
+          )}
+
+          {/* Bindings */}
+          {operationBindings &&
+            Object.entries(operationBindings).map(([protocol, binding]) =>
+              binding ? (
+                <div key={protocol} id={`operation-${id}-bindings-${protocol}`}>
+                  <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-1">
+                    Operation configuration
+                  </p>
+                  <Bindings
+                    protocol={protocol}
+                    bindings={binding as Record<string, unknown>}
+                    focused={focusSection === `binding:${protocol}`}
+                  />
+                </div>
+              ) : null,
+            )}
+
+          {/* Messages */}
+          {reply ? (
+            <Reply
+              requestMessages={messages}
+              reply={reply}
+              isSend={isSend}
+              operationId={id}
+            />
+          ) : (
+            messages.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
+                  <span className="font-bold">{id}</span>{" "}
+                  {isSend ? "accepts" : "expects"}
+                  {messages.length > 1 ? (
+                    <>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold text-foreground-mute">
+                        one of
+                      </span>
+                      the following messages:
+                    </>
+                  ) : (
+                    " the following message:"
+                  )}
+                </p>
+                {messageList}
+              </div>
+            )
+          )}
+
+          {/* Tags */}
+          {tags.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
+                Tags
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {tags.map((tag, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-neutral-100 text-foreground-secondary"
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      </OperationPluginTabs>
     </div>
   );
 }

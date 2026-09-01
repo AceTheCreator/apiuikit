@@ -9,6 +9,7 @@ import { useOpenAPISearch } from "../../hooks/useOpenAPISearch";
 import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
 import { openApiToMarkdown } from "../../helpers/toMarkdown";
 import { ConfigInterface } from "../../config";
+import type { ApiuikitPlugin } from "../../plugins/types";
 import IconConnection from "../../icons/Connection";
 import IconOperation from "../../icons/Operation";
 import IconSchema from "../../icons/Schema";
@@ -25,6 +26,7 @@ import { OpenAPIDocumentData } from "../../types/openapi";
 export interface OpenAPILayoutProps {
   openapi: OpenAPIDocumentData;
   config: ConfigInterface;
+  plugins?: ApiuikitPlugin[];
 }
 
 type OpenAPITabKey = OpenAPINavTab;
@@ -32,7 +34,7 @@ type OpenAPITabKey = OpenAPINavTab;
 const isOpenAPITabKey = (value: string): value is OpenAPITabKey =>
   value === "endpoints" || value === "webhooks" || value === "schemas";
 
-export default function Layout({ openapi, config }: OpenAPILayoutProps) {
+export default function Layout({ openapi, config, plugins }: OpenAPILayoutProps) {
   const show = config.show ?? {};
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMarkdownOpen, setIsMarkdownOpen] = useState(false);
@@ -112,7 +114,7 @@ export default function Layout({ openapi, config }: OpenAPILayoutProps) {
     ) : null;
 
   return (
-    <OpenAPIDocumentProvider document={openapi} config={config}>
+    <OpenAPIDocumentProvider document={openapi} config={config} plugins={plugins}>
       <div className={`px-4 ${hasMasthead && tabs.length > 0 ? "pt-14" : ""}`}>
         {hasMasthead && (
           <DocumentTopBar

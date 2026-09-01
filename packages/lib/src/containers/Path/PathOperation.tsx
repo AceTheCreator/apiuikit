@@ -9,6 +9,9 @@ import IconShieldCheck from "../../icons/ShieldCheck";
 import { PARAMETER_GROUPS } from "../../contants";
 import ResponseLinks from "./ResponseLinks";
 import OperationCallbacks from "./OperationCallbacks";
+import { PluginSlot } from "../../plugins/PluginSlot";
+import OperationPluginTabs from "../../plugins/OperationPluginTabs";
+import { useOpenAPIDocumentContext } from "../../contexts";
 import {
   HttpMethod,
   OpenAPICallbackData,
@@ -520,9 +523,11 @@ export default function PathOperation({
   isOperationKnown,
   depth = 0,
 }: PathOperationProps) {
-  // Path and query parameters are already surfaced via the address bar's
-  // tooltip (see Paths.tsx) — only header/cookie parameters still need their
-  // own tab here.
+  const { document } = useOpenAPIDocumentContext();
+
+  // Path and query parameters are already surfaced by the panel header (see
+  // Paths.tsx): path ones as the address's own `{chunk}` tooltips, query ones
+  // in the chip beside it. Only header/cookie parameters still need a tab here.
   const parameters = (op.parameters ?? []).filter((param) => param.in !== "query" && param.in !== "path");
   const security = op.security ?? globalSecurity ?? [];
   const responses = op.responses ?? {};
@@ -564,80 +569,94 @@ export default function PathOperation({
       className={`flex flex-col gap-6 ${isRoot ? "min-h-full" : ""}`}
       id={`${idPrefix}-${id}-detail`}
     >
-      <div className="flex items-center gap-2">
-        {op.deprecated && (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-            Deprecated
-          </span>
-        )}
-        {op.externalDocs?.url && (
-          <a
-            href={op.externalDocs.url}
-            target="_blank"
-            rel="noreferrer"
-            title={op.externalDocs.description || op.externalDocs.url}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-100 text-foreground-secondary border border-border hover:bg-neutral-200 transition-colors"
-          >
-            External Documentation
-            <IconExternalLink className="w-3.5 h-3.5" />
-          </a>
-        )}
-      </div>
-
-      {op.summary && <p className="text-sm text-foreground-secondary">{op.summary}</p>}
-      {op.description && <Markdown>{op.description}</Markdown>}
-
-      <Suspense fallback={null}>
-        <CodeSamples
-          method={method}
-          path={path}
-          parameters={parameters}
-          requestBody={op.requestBody}
-          security={security}
-          id={id}
-        />
-      </Suspense>
-
-      {security.length > 0 && (
-        <div id={`${idPrefix}-${id}-security`}>
-          <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
-            Authorization
-          </p>
-
-
-          {resolvedSchemes.length > 0 && (
-            <CollapsiblePanel
-              className="mt-3"
-              trigger={
-                <span className="flex items-center gap-2 text-xs font-normal text-foreground-muted">
-                  <IconShieldCheck className="h-4 w-4 text-foreground-muted" />
-                  <span className="bg-neutral-100 border border-border rounded-full px-2 py-0.5">
-                    {resolvedSchemes.length}
-                  </span>
+      <OperationPluginTabs
+        name="openapi.operation.tab"
+        context={{ document, method, path }}
+        // A callback operation renders inline inside its parent's Callbacks
+        // tab rather than receiving its own operation-level tab strip.
+        enabled={isRoot}
+      >
+        <>
+          {(op.deprecated || op.externalDocs?.url) && (
+            <div className="flex items-center gap-2">
+              {op.deprecated && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                  Deprecated
                 </span>
-              }
-            >
-              <div className="px-4 py-2 border-t border-border">
-                <Authorization securities={resolvedSchemes} />
-              </div>
-            </CollapsiblePanel>
+              )}
+              {op.externalDocs?.url && (
+                <a
+                  href={op.externalDocs.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={op.externalDocs.description || op.externalDocs.url}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-neutral-100 text-foreground-secondary border border-border hover:bg-neutral-200 transition-colors"
+                >
+                  External Documentation
+                  <IconExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+            </div>
           )}
-        </div>
-      )}
 
-      <ExchangeTabs
-        label={label}
-        parameters={parameters}
-        requestBodyContent={requestBodyContent}
-        requestBodyDescription={op.requestBody?.description}
-        responses={responses}
-        callbacks={op.callbacks}
-        id={id}
-        depth={depth}
-        fillHeight={isRoot}
-        onFollowOperation={onFollowOperation}
-        isOperationKnown={isOperationKnown}
-      />
+          {op.summary && <p className="text-sm text-foreground-secondary">{op.summary}</p>}
+          {op.description && <Markdown>{op.description}</Markdown>}
+
+          <Suspense fallback={null}>
+            <CodeSamples
+              method={method}
+              path={path}
+              parameters={parameters}
+              requestBody={op.requestBody}
+              security={security}
+              id={id}
+            />
+          </Suspense>
+
+          <PluginSlot name="openapi.operation.reference.supplementary" context={{ document, method, path }} />
+
+          {security.length > 0 && (
+            <div id={`${idPrefix}-${id}-security`}>
+              <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-2">
+                Authorization
+              </p>
+
+
+              {resolvedSchemes.length > 0 && (
+                <CollapsiblePanel
+                  className="mt-3"
+                  trigger={
+                    <span className="flex items-center gap-2 text-xs font-normal text-foreground-muted">
+                      <IconShieldCheck className="h-4 w-4 text-foreground-muted" />
+                      <span className="bg-neutral-100 border border-border rounded-full px-2 py-0.5">
+                        {resolvedSchemes.length}
+                      </span>
+                    </span>
+                  }
+                >
+                  <div className="px-4 py-2 border-t border-border">
+                    <Authorization securities={resolvedSchemes} />
+                  </div>
+                </CollapsiblePanel>
+              )}
+            </div>
+          )}
+
+          <ExchangeTabs
+            label={label}
+            parameters={parameters}
+            requestBodyContent={requestBodyContent}
+            requestBodyDescription={op.requestBody?.description}
+            responses={responses}
+            callbacks={op.callbacks}
+            id={id}
+            depth={depth}
+            fillHeight={isRoot}
+            onFollowOperation={onFollowOperation}
+            isOperationKnown={isOperationKnown}
+          />
+        </>
+      </OperationPluginTabs>
     </div>
   );
 }

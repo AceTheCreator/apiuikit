@@ -5,6 +5,10 @@ import { SpecType } from "../contexts";
 import { buildThemeVars } from "../utils/theme";
 import { DEFAULT_DEPTH_COLORS } from "../components/schema/depthColors";
 import { createDocumentDeref } from "../helpers/jsonPointer";
+import type { ApiuikitPlugin } from "../plugins/types";
+import { createPluginSlotRegistry } from "../plugins/registry";
+
+const NO_PLUGINS: ApiuikitPlugin[] = [];
 
 /**
  * Builds the shared DocumentContext value (deref resolver, portal/root refs,
@@ -19,6 +23,7 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
   specType: S,
   document: D,
   config: ConfigInterface = defaultConfig,
+  plugins: ApiuikitPlugin[] = NO_PLUGINS,
 ) {
   const [portalHost, setPortalHost] = useState<HTMLDivElement | null>(null);
   const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null);
@@ -57,6 +62,7 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
     if (typeof configuredMarkdownUrl === "string") return () => configuredMarkdownUrl;
     return undefined;
   }, [configuredMarkdownUrl]);
+  const pluginSlotRegistry = useMemo(() => createPluginSlotRegistry(plugins), [plugins]);
   const contextValue = useMemo(
     () => ({
       specType,
@@ -72,6 +78,9 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
       showExtensions,
       showCodeSamples,
       markdownUrl,
+      plugins,
+      pluginSlotRegistry,
+      config,
     }),
     [
       specType,
@@ -87,6 +96,9 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
       showExtensions,
       showCodeSamples,
       markdownUrl,
+      plugins,
+      pluginSlotRegistry,
+      config,
     ],
   );
 

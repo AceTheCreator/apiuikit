@@ -9,7 +9,11 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
+    "paths": {
+      "apiuikit": ["../lib/src/index.ts"],
+      "apiuikit/plugin": ["../lib/src/plugin.ts"]
+    },
     "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src", "../lib/src/vite-env.d.ts"]
 }

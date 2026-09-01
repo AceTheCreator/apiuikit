@@ -4,6 +4,7 @@ import { containsRefs, resolveDocument } from "../../helpers/resolveDocument";
 import { OpenAPIDocumentData } from "../../types/openapi";
 import { ErrorBoundary, ErrorBoundaryFallbackRenderer } from "../../components/ErrorBoundary";
 import type { ErrorInfo, ReactNode } from "react";
+import type { ApiuikitPlugin } from "../../plugins/types";
 import Layout from "./Layout";
 
 export interface IOpenAPIProps {
@@ -11,6 +12,8 @@ export interface IOpenAPIProps {
   openapi: OpenAPIDocumentData;
   /** UI configuration: theme, which sections to show, sidebar options, and more. */
   config?: ConfigInterface;
+  /** Third-party plugins (e.g. a "try it out" panel) to render into this document's extension slots. */
+  plugins?: ApiuikitPlugin[];
   /** Promise that `openapi` is already fully dereferenced upstream. Verified rather than trusted: `$ref`s left in place are still resolved either way, with a console warning that the promise was false. */
   kind?: "resolved";
   /** Custom UI shown if rendering this document throws. Defaults to a built-in fallback. */
@@ -60,7 +63,7 @@ const OpenAPIContent = (props: IOpenAPIProps) => {
   }, [kind, raw, openapi]);
 
   const config = props.config ?? defaultConfig;
-  return <Layout openapi={openapi} config={config} />;
+  return <Layout openapi={openapi} config={config} plugins={props.plugins} />;
 };
 
 export default OpenAPI;

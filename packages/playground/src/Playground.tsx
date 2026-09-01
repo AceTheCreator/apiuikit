@@ -51,6 +51,9 @@ function readStoredUiMode(): UiMode | null {
 const DEFAULT_CONFIG: ConfigInterface = {
   ...defaultConfig,
   theme: { ...defaultConfig.theme, ...netlifyTheme },
+  // The preview is an embedded, independently scrolling pane. Keep overlays
+  // inside the rendered docs instead of covering the browser/editor chrome.
+  sidePanel: { ...defaultConfig.sidePanel, containment: 'component' },
 }
 
 export interface PlaygroundProps {

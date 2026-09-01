@@ -26,6 +26,7 @@ export default function OperationsPage() {
 |------------|------------------------------|----------|----------------------------------------------------------------|
 | `document` | `AsyncAPIDocumentData`       | Yes*     | A pre-resolved AsyncAPI 3.0 document. *Not required when rendered inside `AsyncAPIProvider` (see below). |
 | `config`   | `ConfigInterface`            | No       | UI configuration. Only applied when the section sets up its own context (standalone); ignored when composed under a provider. |
+| `plugins`  | `ApiuikitPlugin[]`           | No       | Third-party plugins. Only applied standalone; composed under `AsyncAPIProvider`, that provider's own `plugins` apply instead. See [Plugins](./plugins.md). |
 | `layout`   | `"columns"` \| `"stacked"`   | No       | Column geometry. `"columns"` (default) keeps the reserved right gutter so sections align with AsyncAPIInfo/AsyncAPIServers in the full widget. `"stacked"` uses the full container width (no prose max-width), drops empty side space, and stacks AsyncAPIInfo/AsyncAPIServers side content below the main content. Prefer `"stacked"` when embedding a section alone. |
 
 ## Composing several sections

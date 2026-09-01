@@ -70,11 +70,16 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
       <div className="flex items-center gap-2 min-w-0">
         <MethodBadge method={selectedOp.action} />
         <div className="min-w-0 flex-1 overflow-hidden">
+          {/* Clipped to one line, same as the endpoint panel's header: a long
+              channel address otherwise wraps and pushes the close button
+              around. Its ellipsis peeks the full address on hover/focus. */}
           <ChannelAddress
             address={selectedChannel.address}
             parameters={
               selectedChannel.parameters as unknown as Record<string, Parameter>
             }
+            truncate
+            peek
           />
         </div>
       </div>
@@ -119,7 +124,10 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
         onClose={() => setSelectedKey(null)}
         title={panelTitle}
       >
-        {selectedOp && <Operation op={selectedOp} id={selectedKey} focusSection={focusSection} />}
+        {selectedOp && (
+          // Remounts on every operation switch — see Paths.tsx's identical `key`.
+          <Operation key={selectedKey} op={selectedOp} id={selectedKey} focusSection={focusSection} />
+        )}
       </SidePanel>
     </>
   );

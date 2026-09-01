@@ -4,6 +4,7 @@ import { useAsyncAPIDocument } from "../contexts";
 import { AsyncAPIDocumentProvider } from "../containers/AsyncAPI/AsyncAPIDocumentProvider";
 import { resolveDocument } from "../helpers/resolveDocument";
 import { ConfigInterface } from "../config";
+import type { ApiuikitPlugin } from "../plugins/types";
 import { AsyncAPIDocumentData } from "../types/schema";
 import { MessageObject } from "../types/asyncapi/MessageObject";
 import ServersContainer from "../containers/Server/Servers";
@@ -39,6 +40,9 @@ export interface SectionProps {
   /** Only applied when this section sets up its own context (standalone). When
    * composed under a provider, config comes from that provider. */
   config?: ConfigInterface;
+  /** Only applied when this section sets up its own context (standalone). When
+   * composed under <AsyncAPIProvider>, that provider's own `plugins` apply. */
+  plugins?: ApiuikitPlugin[];
   /**
    * `"columns"` (default) — reserved right gutter at large breakpoints.
    * `"stacked"` — full-width single column; no prose max-width and no empty
@@ -54,18 +58,21 @@ export interface SectionProps {
 export function AsyncAPIProvider({
   document,
   config,
+  plugins,
   children,
 }: {
   /** The AsyncAPI document to resolve and share with sections inside. */
   document: AsyncAPIDocumentData;
   /** UI configuration (theme, schema expansion defaults) shared with sections inside. */
   config?: ConfigInterface;
+  /** Third-party plugins shared with sections inside. */
+  plugins?: ApiuikitPlugin[];
   /** Section components (or your own), rendered with access to the shared document context. */
   children: ReactNode;
 }) {
   const resolved = useMemo(() => resolveDocument(document), [document]);
   return (
-    <AsyncAPIDocumentProvider document={resolved} config={config}>
+    <AsyncAPIDocumentProvider document={resolved} config={config} plugins={plugins}>
       {children}
     </AsyncAPIDocumentProvider>
   );

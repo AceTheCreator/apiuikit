@@ -85,6 +85,7 @@
   top: 10px;
   left: 16px;
   right: 16px;
+  margin-top: -10px;
   z-index: 40;
   height: 40px;
   pointer-events: none;

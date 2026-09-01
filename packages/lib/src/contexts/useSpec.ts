@@ -1,7 +1,9 @@
 import { createContext, useContext } from "react";
 import type { AsyncAPIDocumentData } from "../types/schema";
 import type { OpenAPIDocumentData } from "../types/openapi";
-import type { MarkdownUrlResolver, SidePanelContainment } from "../config/config";
+import type { ConfigInterface, MarkdownUrlResolver, SidePanelContainment } from "../config/config";
+import type { ApiuikitPlugin } from "../plugins/types";
+import type { PluginSlotRegistry } from "../plugins/registry";
 
 /** Which spec produced the ambient document. The discriminant of DocumentContextValue. */
 export type SpecType = "asyncapi" | "openapi";
@@ -28,6 +30,12 @@ interface DocumentContextBase {
   showCodeSamples: boolean;
   /** Resolves the hosted URL serving a target as Markdown, if the consumer serves one (config.markdown.url). */
   markdownUrl?: MarkdownUrlResolver;
+  /** Third-party plugins registered on the nearest `<AsyncAPI>`/`<OpenAPI>` (or provider), consumed via `PluginSlot`. Undefined is equivalent to none registered. */
+  plugins?: ApiuikitPlugin[];
+  /** Pre-indexed plugin fills used internally by slot hosts. */
+  pluginSlotRegistry?: PluginSlotRegistry;
+  /** The host's as-given `config` prop, unmerged with defaults. For plugins; prefer the derived fields above for apiuikit's own UI. Theme colors: use the CSS custom properties on the document root (see Plugins docs), not `config.theme`. */
+  config?: ConfigInterface;
 }
 
 export interface AsyncAPIDocumentContextValue extends DocumentContextBase {
@@ -59,6 +67,30 @@ export const useDocumentContext = () => {
   if (!context) {
     throw new Error(
       "useDocumentContext must be used within a document provider (AsyncAPIDocumentProvider or OpenAPIDocumentProvider)"
+    );
+  }
+  return context;
+};
+
+/** Returns an AsyncAPI context and fails fast when rendered under the wrong
+ * document provider. */
+export const useAsyncAPIDocumentContext = (): AsyncAPIDocumentContextValue => {
+  const context = useDocumentContext();
+  if (context.specType !== "asyncapi") {
+    throw new Error(
+      `useAsyncAPIDocumentContext expected an AsyncAPI document provider, but received provider type "${context.specType}"`,
+    );
+  }
+  return context;
+};
+
+/** Returns an OpenAPI context and fails fast when rendered under the wrong
+ * document provider. */
+export const useOpenAPIDocumentContext = (): OpenAPIDocumentContextValue => {
+  const context = useDocumentContext();
+  if (context.specType !== "openapi") {
+    throw new Error(
+      `useOpenAPIDocumentContext expected an OpenAPI document provider, but received provider type "${context.specType}"`,
     );
   }
   return context;

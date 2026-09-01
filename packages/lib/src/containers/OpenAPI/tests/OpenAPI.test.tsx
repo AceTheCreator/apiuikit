@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import OpenAPI from "../OpenAPI";
+import { definePlugin } from "../../../plugins/types";
 import type { OpenAPIDocumentData } from "../../../types/openapi";
 import exampleDoc from "../../../config/examples/openapi-petstore.json";
 
@@ -104,18 +105,18 @@ describe("OpenAPI", () => {
     expect(tabBar.style.top).toBe("0px");
   });
 
-  it("opens an endpoint's detail panel with responses; its only parameter (a query param) surfaces via the address bar, not a Parameters tab", () => {
+  it("opens an endpoint's detail panel with responses; its only parameter (a query param) surfaces via the header's query chip, not a Parameters tab", () => {
     render(<OpenAPI openapi={asDoc(exampleDoc)} />);
 
     fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
     const detail = within(document.getElementById("endpoint-get /pets-detail")!);
     expect(detail.getByText("List all pets")).toBeInTheDocument();
 
-    // Query parameters are appended to the address bar as `{name}` chunks
-    // (with a hover tooltip for type/description), the same way path
-    // parameters already appear — GET /pets has no other parameters and no
+    // Query parameters live in the panel header's chip rather than being
+    // spelled into the address — GET /pets has no other parameters and no
     // request body, so the Parameters/Body request card doesn't render at all.
-    expect(screen.getByText("{limit}")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "1 query parameter" }));
+    expect(within(screen.getByRole("dialog", { name: "Query parameters" })).getByText("limit")).toBeInTheDocument();
     expect(detail.queryByText(/expects the following request/i)).not.toBeInTheDocument();
   });
 
@@ -311,5 +312,47 @@ describe("OpenAPI", () => {
     } finally {
       warn.mockRestore();
     }
+  });
+
+  describe("plugins", () => {
+    it("wires a `plugins` prop through to an operation's supplementary slot", () => {
+      const annotate = definePlugin({
+        name: "annotate",
+        slots: {
+          "openapi.operation.reference.supplementary": ({ method, path }) => (
+            <div>
+              plugin annotation for {method} {path}
+            </div>
+          ),
+        },
+      });
+
+      render(<OpenAPI openapi={asDoc(exampleDoc)} plugins={[annotate]} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
+      expect(screen.getByText("plugin annotation for get /pets")).toBeInTheDocument();
+    });
+
+    it("wires a `plugins` prop through to an operation's tab slot", () => {
+      const tryItOut = definePlugin({
+        name: "try-it-out",
+        slots: {
+          "openapi.operation.tab": {
+            label: "Try it",
+            component: ({ method, path }) => (
+              <div>
+                try it content for {method} {path}
+              </div>
+            ),
+          },
+        },
+      });
+
+      render(<OpenAPI openapi={asDoc(exampleDoc)} plugins={[tryItOut]} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
+      fireEvent.click(screen.getByRole("tab", { name: "Try it" }));
+      expect(screen.getByText("try it content for get /pets")).toBeInTheDocument();
+    });
   });
 });
