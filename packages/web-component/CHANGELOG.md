@@ -1,5 +1,16 @@
 # @apiuikit/web-component
 
+## 1.6.0
+
+### Minor Changes
+
+- dc9c8d1: Minor ui fixes
+
+### Patch Changes
+
+- Updated dependencies [2a4e80f]
+  - apiuikit@1.7.0
+
 ## 1.5.0
 
 ### Minor Changes

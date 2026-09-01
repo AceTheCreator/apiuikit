@@ -1,6 +1,6 @@
 {
   "name": "@apiuikit/web-component",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Framework-agnostic web components for apiuikit — full-document and per-section (servers, operations, messages, schemas, info) custom elements for AsyncAPI and OpenAPI",
   "license": "Apache-2.0",
   "repository": {
