@@ -11,7 +11,7 @@ const isTabSlot = (name: PluginSlotName): name is TabSlotName => name.endsWith("
 export function createPluginSlotRegistry(plugins: readonly ApiuikitPlugin[]): PluginSlotRegistry {
   const registry = new Map<PluginSlotName, unknown[]>();
 
-  for (const plugin of plugins) {
+  for (const [pluginIndex, plugin] of plugins.entries()) {
     for (const name of Object.keys(plugin.slots) as PluginSlotName[]) {
       const fill = plugin.slots[name];
       if (!fill) continue;
@@ -21,7 +21,12 @@ export function createPluginSlotRegistry(plugins: readonly ApiuikitPlugin[]): Pl
 
       if (isTabSlot(name)) {
         const tab = fill as { label: string; component: unknown };
-        entries.push({ id: plugin.name, label: tab.label, Component: tab.component });
+        entries.push({
+          id: `${name.replace(/\./g, "-")}-plugin-${pluginIndex}`,
+          pluginName: plugin.name,
+          label: tab.label,
+          Component: tab.component,
+        });
       } else {
         entries.push(fill);
       }

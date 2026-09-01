@@ -28,9 +28,39 @@ describe("createPluginSlotRegistry", () => {
       Supplementary,
     ]);
     expect(registry.get("openapi.operation.tab")).toEqual([
-      { id: "first", label: "First", Component: FirstTab },
-      { id: "second", label: "Second", Component: SecondTab },
+      {
+        id: "openapi-operation-tab-plugin-0",
+        pluginName: "first",
+        label: "First",
+        Component: FirstTab,
+      },
+      {
+        id: "openapi-operation-tab-plugin-1",
+        pluginName: "second",
+        label: "Second",
+        Component: SecondTab,
+      },
     ]);
+  });
+
+  it("generates distinct ids for duplicate and reserved plugin names", () => {
+    const registry = createPluginSlotRegistry([
+      definePlugin({
+        name: "reference",
+        slots: { "openapi.operation.tab": { label: "First", component: () => null } },
+      }),
+      definePlugin({
+        name: "reference",
+        slots: { "openapi.operation.tab": { label: "Second", component: () => null } },
+      }),
+    ]);
+
+    const entries = registry.get("openapi.operation.tab") as readonly { id: string }[];
+    expect(entries.map(({ id }) => id)).toEqual([
+      "openapi-operation-tab-plugin-0",
+      "openapi-operation-tab-plugin-1",
+    ]);
+    expect(entries.every(({ id }) => id !== "reference")).toBe(true);
   });
 
   it("returns the same indexed array for repeated lookups", () => {

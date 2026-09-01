@@ -607,7 +607,7 @@ export default function PathOperation({
       )}
 
       {activePlugin && ActivePluginComponent ? (
-        <PluginBoundary label={`openapi.operation.tab:${activePlugin.id}`}>
+        <PluginBoundary label={`openapi.operation.tab:${activePlugin.pluginName}`}>
           <ActivePluginComponent document={document} method={method} path={path} />
         </PluginBoundary>
       ) : (

@@ -107,7 +107,7 @@ describe("useOperationTabPlugins", () => {
     return (
       <ul>
         {entries.map((entry) => (
-          <li key={entry.id}>{entry.id}: {entry.label}</li>
+          <li key={entry.id}>{entry.id}: {entry.pluginName}: {entry.label}</li>
         ))}
       </ul>
     );
@@ -131,7 +131,10 @@ describe("useOperationTabPlugins", () => {
     render(withPlugins([first, second], <Probe name="openapi.operation.tab" />));
 
     const items = screen.getAllByRole("listitem").map((el) => el.textContent);
-    expect(items).toEqual(["first: First", "second: Second"]);
+    expect(items).toEqual([
+      "openapi-operation-tab-plugin-0: first: First",
+      "openapi-operation-tab-plugin-1: second: Second",
+    ]);
   });
 
   it("ignores plugins that don't fill the requested tab slot", () => {

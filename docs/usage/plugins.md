@@ -15,7 +15,7 @@ export default definePlugin({
 });
 ```
 
-`name` is a human-readable id used in error/debug messages and as the tab's selection id. It is not a registry key: two plugins with the same `name` are still both registered. Prefer unique names anyway so tab ids stay distinct.
+`name` is a human-readable identifier used in error and debug messages. It is not a registry key or a tab's internal selection id, so two plugins with the same `name` are still registered and selectable independently. Distinct names are nevertheless recommended so diagnostics identify the responsible plugin clearly.
 
 You attach plugins with the `plugins` prop. apiuikit renders each registered plugin at the matching slot, wherever that slot appears.
 

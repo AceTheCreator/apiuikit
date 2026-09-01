@@ -616,6 +616,30 @@ describe("PathOperation plugin tabs", () => {
     expect(screen.queryByText(/plugin content for/)).not.toBeInTheDocument();
   });
 
+  it("keeps duplicate and reserved plugin names independently selectable", () => {
+    const first = definePlugin({
+      name: "reference",
+      slots: {
+        "openapi.operation.tab": { label: "First plugin", component: () => <div>first content</div> },
+      },
+    });
+    const second = definePlugin({
+      name: "reference",
+      slots: {
+        "openapi.operation.tab": { label: "Second plugin", component: () => <div>second content</div> },
+      },
+    });
+
+    render(withContext(<PathOperation method="get" path="/pets" op={baseOp} id="get /pets" />, [first, second]));
+
+    fireEvent.click(screen.getByRole("tab", { name: "First plugin" }));
+    expect(screen.getByText("first content")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Second plugin" }));
+    expect(screen.getByText("second content")).toBeInTheDocument();
+    expect(screen.queryByText("first content")).not.toBeInTheDocument();
+  });
+
   it("gives a callback's nested operation no tab strip, even with a plugin registered", () => {
     const opWithCallback: OpenAPIOperationData = {
       summary: "Create an order",

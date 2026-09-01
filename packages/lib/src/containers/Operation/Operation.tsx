@@ -86,7 +86,7 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
       )}
 
       {activePlugin && ActivePluginComponent && id ? (
-        <PluginBoundary label={`asyncapi.operation.tab:${activePlugin.id}`}>
+        <PluginBoundary label={`asyncapi.operation.tab:${activePlugin.pluginName}`}>
           <ActivePluginComponent document={document} operationId={id} />
         </PluginBoundary>
       ) : (
