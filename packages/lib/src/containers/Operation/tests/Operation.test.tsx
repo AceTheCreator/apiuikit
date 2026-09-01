@@ -86,7 +86,10 @@ describe("Operation supplementary slot", () => {
   it("renders nothing when no reference supplementary plugin is registered", () => {
     render(withContext(<Operation op={baseOp} id="sendMessage" />));
 
-    expect(screen.getByText(/annotation for/)).not.toBeVisible();
+    // Absent, not merely hidden: an unfilled slot renders no element at all
+    // (PluginSlot bails to null), so unlike the tab-switch cases below there's
+    // nothing here to be invisible.
+    expect(screen.queryByText(/annotation for/)).not.toBeInTheDocument();
   });
 
   it("renders a plugin's operation supplementary slot with the operationId context", () => {
