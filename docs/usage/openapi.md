@@ -104,17 +104,17 @@ export default function EndpointsPage() {
 }
 ```
 
-`OpenAPIServers`, `OpenAPIEndpoints`, `OpenAPISchemas`, and `OpenAPIInfo` all work this way. Standalone, they also accept `plugins` (same rule as `config`: applied only when the section sets up its own context). To arrange several together, wrap them in `OpenAPIProvider` so the document is resolved once and shared — put `plugins` on the provider, not on each section:
+`OpenAPIServers`, `OpenAPIEndpoints`, `Schemas`, and `OpenAPIInfo` all work this way. Standalone, they also accept `plugins` (same rule as `config`: applied only when the section sets up its own context). To arrange several together, wrap them in `OpenAPIProvider` so the document is resolved once and shared — put `plugins` on the provider, not on each section:
 
 ```tsx
-import { OpenAPIProvider, OpenAPIServers, OpenAPIEndpoints, OpenAPISchemas } from "apiuikit";
+import { OpenAPIProvider, OpenAPIServers, OpenAPIEndpoints, Schemas } from "apiuikit";
 
 export default function CustomLayout() {
   return (
     <OpenAPIProvider document={doc}>
       <OpenAPIServers />
       <OpenAPIEndpoints />
-      <OpenAPISchemas />
+      <Schemas />
     </OpenAPIProvider>
   );
 }

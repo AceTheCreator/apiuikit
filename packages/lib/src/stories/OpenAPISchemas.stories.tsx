@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { OpenAPISchemas } from "../public/openapiSections";
+import { Schemas } from "../public/schemasSection";
 import type { OpenAPIDocumentData } from "../types/openapi";
 import rawExample from "../config/examples/openapi-petstore.json";
 import { centeredDecorator } from "./documentContextDecorator";
@@ -8,7 +8,7 @@ const document = rawExample as unknown as OpenAPIDocumentData;
 
 const meta = {
   title: "OpenAPI/Schemas",
-  component: OpenAPISchemas,
+  component: Schemas,
   decorators: [centeredDecorator],
   tags: ["autodocs"],
   argTypes: {
@@ -19,7 +19,7 @@ const meta = {
         '`"columns"` (default) reserves a right gutter. `"stacked"` drops it for full-width standalone use.',
     },
   },
-} satisfies Meta<typeof OpenAPISchemas>;
+} satisfies Meta<typeof Schemas>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

@@ -1,6 +1,6 @@
 import r2wc from "@r2wc/react-to-web-component";
 import "apiuikit/style.css";
-import { AsyncAPISchemas } from "apiuikit";
+import { Schemas } from "apiuikit";
 import type { ConfigInterface, AsyncAPIDocumentData, OpenAPIDocumentData, SectionLayout } from "apiuikit";
 import { defineOnce } from "../registerElement";
 
@@ -10,17 +10,14 @@ export interface SchemasElementProps {
   layout?: SectionLayout;
 }
 
-// One element for both spec types: `components.schemas` is the exact same
+// One element for both spec types, backed by apiuikit's spec-agnostic
+// `Schemas` section: `components.schemas` is the exact same
 // `Record<string, SchemaNodeData>` shape on AsyncAPIDocumentData and
 // OpenAPIDocumentData (openapi.ts imports SchemaNodeData from schema.ts
-// directly), and apiuikit's `AsyncAPISchemas`/`OpenAPISchemas` section
-// components are two names wrapping the identical underlying container —
-// they only differ in which document provider's context they set up, which
-// this section doesn't otherwise read. The cast below is safe because
-// `AsyncAPISchemas` only ever reads `document.components?.schemas`.
+// directly).
 export function SchemasElement({ spec, config, layout }: SchemasElementProps) {
   if (!spec) return null;
-  return <AsyncAPISchemas document={spec as AsyncAPIDocumentData} config={config} layout={layout} />;
+  return <Schemas document={spec} config={config} layout={layout} />;
 }
 
 defineOnce(

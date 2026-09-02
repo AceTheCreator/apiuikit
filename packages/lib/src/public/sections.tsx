@@ -10,7 +10,6 @@ import { MessageObject } from "../types/asyncapi/MessageObject";
 import ServersContainer from "../containers/Server/Servers";
 import OperationsContainer from "../containers/Operation/Operations";
 import MessagesContainer from "../containers/Messages/Messages";
-import SchemasContainer from "../containers/Schema/Schemas";
 import Information from "../containers/Information/Information";
 import type { SectionLayout } from "../components/Section";
 import { createSectionRoot } from "./createSectionRoot";
@@ -157,19 +156,8 @@ export function AsyncAPIMessages({ layout, ...providerProps }: SectionProps) {
 }
 
 // --- Schemas ---------------------------------------------------------------
-
-function SchemasBody({ layout }: { layout?: SectionLayout }) {
-  const document = useDocument();
-  return <SchemasContainer schemas={document.components?.schemas ?? {}} layout={layout} />;
-}
-
-export function AsyncAPISchemas({ layout, ...providerProps }: SectionProps) {
-  return (
-    <SectionRoot {...providerProps}>
-      <SchemasBody layout={layout} />
-    </SectionRoot>
-  );
-}
+// Lives in ./schemasSection as the spec-agnostic `Schemas`: its document shape
+// and rendering are identical for both specs, so there is only one component.
 
 // --- Info ------------------------------------------------------------------
 
