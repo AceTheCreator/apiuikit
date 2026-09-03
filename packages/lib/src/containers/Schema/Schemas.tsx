@@ -131,7 +131,7 @@ export default function Schemas({ schemas, selectedKey, focusTarget, layout }: S
     </div>
   ) : (
     <div className="mt-10 rounded-xl border border-dashed border-neutral-300 bg-surface p-8 text-center text-sm text-foreground-muted">
-      No schemas defined in this AsyncAPI document.
+      No schemas defined in this document.
     </div>
   );
 

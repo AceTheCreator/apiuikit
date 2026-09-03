@@ -82,17 +82,17 @@ export default function OperationsPage() {
 }
 ```
 
-`AsyncAPIServers`, `AsyncAPIOperations`, `AsyncAPIMessages`, `AsyncAPISchemas`, and `AsyncAPIInfo` all work this way (OpenAPI equivalents: `OpenAPIServers`, `OpenAPIEndpoints`, `OpenAPISchemas`, `OpenAPIInfo`). To arrange several of them together, wrap them in `AsyncAPIProvider` (or `OpenAPIProvider`) instead so the document is resolved once and shared:
+`AsyncAPIServers`, `AsyncAPIOperations`, `AsyncAPIMessages`, and `AsyncAPIInfo` all work this way (OpenAPI equivalents: `OpenAPIServers`, `OpenAPIEndpoints`, `OpenAPIInfo`), as does `Schemas`, which is shared by both specs. To arrange several of them together, wrap them in `AsyncAPIProvider` (or `OpenAPIProvider`) instead so the document is resolved once and shared:
 
 ```tsx
-import { AsyncAPIProvider, AsyncAPIServers, AsyncAPIOperations, AsyncAPISchemas } from "apiuikit";
+import { AsyncAPIProvider, AsyncAPIServers, AsyncAPIOperations, Schemas } from "apiuikit";
 
 export default function CustomLayout() {
   return (
     <AsyncAPIProvider document={doc}>
       <AsyncAPIServers />
       <AsyncAPIOperations />
-      <AsyncAPISchemas />
+      <Schemas />
     </AsyncAPIProvider>
   );
 }
@@ -102,7 +102,7 @@ See the full usage docs for props, configuration options, and more:
 
 - [Without Parser](./docs/usage/no-parser.md) (`AsyncAPI` component)
 - [With Parser](./docs/usage/with-parser.md) (`AsyncAPIRenderer` component, `parseAndRender` utility)
-- [Composable Sections](./docs/usage/sections.md) (`AsyncAPIServers`, `AsyncAPIOperations`, `AsyncAPIMessages`, `AsyncAPISchemas`, `AsyncAPIInfo`, `AsyncAPIProvider`)
+- [Composable Sections](./docs/usage/sections.md) (`AsyncAPIServers`, `AsyncAPIOperations`, `AsyncAPIMessages`, `Schemas`, `AsyncAPIInfo`, `AsyncAPIProvider`)
 - [Configuration](./docs/configuration/config.md) (`ConfigInterface`: theme, show flags, sidebar, sidePanel, etc.)
 - [Web Components](./docs/usage/with-webcomponents.md) (`<apiuikit-asyncapi>`, `<apiuikit-asyncapi-renderer>`, use apiuikit from any framework)
 - [Plugins](./docs/usage/plugins.md) (`plugins` prop, `definePlugin`, writing and publishing your own)

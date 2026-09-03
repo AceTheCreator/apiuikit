@@ -8,7 +8,6 @@ import type { ApiuikitPlugin } from "../plugins/types";
 import { OpenAPIDocumentData } from "../types/openapi";
 import OpenAPIServersContainer from "../containers/Server/OpenAPIServers";
 import PathsContainer from "../containers/Path/Paths";
-import SchemasContainer from "../containers/Schema/Schemas";
 import OpenAPIInformation from "../containers/Information/OpenAPIInformation";
 import type { SectionLayout } from "../components/Section";
 import { createSectionRoot } from "./createSectionRoot";
@@ -142,19 +141,8 @@ export function OpenAPIWebhooks({ layout, ...providerProps }: OpenAPISectionProp
 }
 
 // --- Schemas ---------------------------------------------------------------
-
-function OpenAPISchemasBody({ layout }: { layout?: SectionLayout }) {
-  const document = useDocument();
-  return <SchemasContainer schemas={document.components?.schemas ?? {}} layout={layout} />;
-}
-
-export function OpenAPISchemas({ layout, ...providerProps }: OpenAPISectionProps) {
-  return (
-    <SectionRoot {...providerProps}>
-      <OpenAPISchemasBody layout={layout} />
-    </SectionRoot>
-  );
-}
+// Lives in ./schemasSection as the spec-agnostic `Schemas`: its document shape
+// and rendering are identical for both specs, so there is only one component.
 
 // --- Info --------------------------------------------------------------------
 

@@ -6,7 +6,7 @@ The `AsyncAPI` component renders a complete documentation page: sidebar, search,
 
 ## Rendering one section standalone
 
-`AsyncAPIServers`, `AsyncAPIOperations`, `AsyncAPIMessages`, `AsyncAPISchemas`, and `AsyncAPIInfo` each render on their own. Pass a `document` and the section resolves it and sets up its own context internally, no provider needed.
+`AsyncAPIServers`, `AsyncAPIOperations`, `AsyncAPIMessages`, `Schemas`, and `AsyncAPIInfo` each render on their own. Pass a `document` and the section resolves it and sets up its own context internally, no provider needed.
 
 ```tsx
 import { AsyncAPIOperations } from "apiuikit";
@@ -34,7 +34,7 @@ export default function OperationsPage() {
 To arrange multiple sections together, reordering them or interleaving your own components between them, wrap them in `AsyncAPIProvider` instead of passing `document` to each one individually. It resolves the document once and shares it with every section underneath, rather than each one resolving independently.
 
 ```tsx
-import { AsyncAPIProvider, AsyncAPIServers, AsyncAPIOperations, AsyncAPISchemas } from "apiuikit";
+import { AsyncAPIProvider, AsyncAPIServers, AsyncAPIOperations, Schemas } from "apiuikit";
 import doc from "./asyncapi.json";
 
 export default function CustomLayout() {
@@ -44,7 +44,7 @@ export default function CustomLayout() {
       <AsyncAPIServers />
       <AsyncAPIOperations />
       <MyCustomSidebar />
-      <AsyncAPISchemas />
+      <Schemas />
     </AsyncAPIProvider>
   );
 }
@@ -60,7 +60,7 @@ Because composition doesn't rely on a slot API, dropping in a custom implementat
 <AsyncAPIProvider document={doc}>
   <AsyncAPIServers />
   <MyCustomOperationsList />  {/* reads useAsyncAPIDocument() itself */}
-  <AsyncAPISchemas />
+  <Schemas />
 </AsyncAPIProvider>
 ```
 
@@ -73,13 +73,13 @@ Unlike `AsyncAPI` and `OpenAPI`, which wrap themselves in an error boundary, sec
 The `ErrorBoundary` used by the full-page components is exported, so opt in wherever it suits your layout. Around everything, so one bad section doesn't take the page down:
 
 ```tsx
-import { ErrorBoundary, AsyncAPIProvider, AsyncAPIServers, AsyncAPIOperations, AsyncAPISchemas } from "apiuikit";
+import { ErrorBoundary, AsyncAPIProvider, AsyncAPIServers, AsyncAPIOperations, Schemas } from "apiuikit";
 
 <ErrorBoundary onError={(error, errorInfo) => reportToSentry(error, errorInfo)}>
   <AsyncAPIProvider document={doc}>
     <AsyncAPIServers />
     <AsyncAPIOperations />
-    <AsyncAPISchemas />
+    <Schemas />
   </AsyncAPIProvider>
 </ErrorBoundary>
 ```
@@ -92,7 +92,7 @@ Or around a single section, so the rest of the page survives it:
   <ErrorBoundary fallback={<p>Couldn't render operations.</p>}>
     <AsyncAPIOperations />
   </ErrorBoundary>
-  <AsyncAPISchemas />
+  <Schemas />
 </AsyncAPIProvider>
 ```
 

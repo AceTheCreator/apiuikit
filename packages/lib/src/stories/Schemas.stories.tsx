@@ -1,15 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { AsyncAPISchemas } from "../public/sections";
+import { Schemas } from "../public/schemasSection";
 import type { AsyncAPIDocumentData } from "../types/schema";
 import rawExample from "../config/examples/example1.json";
 import { centeredDecorator } from "./documentContextDecorator";
 
-// Public `AsyncAPISchemas` section — components.schemas as expandable trees.
+// Public `Schemas` section (spec-agnostic) — components.schemas as expandable trees.
 const document = rawExample as unknown as AsyncAPIDocumentData;
 
 const meta = {
   title: "AsyncAPI/Schemas",
-  component: AsyncAPISchemas,
+  component: Schemas,
   decorators: [centeredDecorator],
   tags: ["autodocs"],
   argTypes: {
@@ -20,7 +20,7 @@ const meta = {
         '`"columns"` (default) reserves a right gutter. `"stacked"` drops it for full-width standalone use.',
     },
   },
-} satisfies Meta<typeof AsyncAPISchemas>;
+} satisfies Meta<typeof Schemas>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
