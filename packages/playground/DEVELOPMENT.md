@@ -98,3 +98,35 @@ save packages/lib/src/**        (playground untouched, page keeps working)
   `vite build`, and writing the marker outside watch mode (e.g. a one-off
   `npm run build:lib`) is harmless — the playground reloads once, with a
   complete `dist/`.
+
+## The linked try-it plugin
+
+The standalone dev app (`src/App.tsx`) registers
+[`@apiuikit/openapi-try-it-plugin`](https://github.com/apiuikit/openapi-try-it-plugin)
+so the OpenAPI preview grows a **Try it** row on the Path side panel
+(`createTryItButtonPlugin`, filling the
+`openapi.operation.reference.supplementary` slot; the package's default export
+is the tab variant instead). It is wired as a local checkout, not an npm
+release:
+
+```
+packages/playground/package.json
+  "@apiuikit/openapi-try-it-plugin": "file:../../../../Projects/openapi-try-it-plugin"
+```
+
+That path is machine-specific — it points at a sibling clone outside this repo,
+so it only resolves on a machine that has one there.
+
+- The plugin is served from its **built** `dist/`, same as the library. Run
+  `npm run dev` (i.e. `vite build --watch`) in the plugin checkout while editing
+  it; the playground picks the rebuild up on the next reload.
+- `resolve.dedupe` in `packages/playground/vite.config.ts` is what makes the
+  link usable. The plugin checkout has its own `node_modules` with React and a
+  released `apiuikit` for its tests, and Vite resolves a linked package's bare
+  imports from the package's real path — without deduping, the plugin would run
+  against a second React and a second `apiuikit` document context and render
+  nothing. With it, `apiuikit/plugin` resolves to `packages/lib/dist/` like
+  everything else.
+- `Playground` itself takes the plugins as a prop rather than importing the
+  package, so the embeddable `build:lib` output stays free of it. `@apiuikit/*`
+  is externalized in lib mode for the same reason.

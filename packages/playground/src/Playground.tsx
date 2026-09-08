@@ -1,5 +1,6 @@
 import { AsyncAPIRenderer, OpenAPIRenderer, defaultConfig } from 'apiuikit'
 import type { ConfigInterface } from 'apiuikit'
+import type { ApiuikitPlugin } from 'apiuikit/plugin'
 import 'apiuikit/style.css'
 import { useEffect, useMemo, useState } from 'react'
 import { DiagnosticsPanel } from './components/DiagnosticsPanel'
@@ -65,6 +66,12 @@ export interface PlaygroundProps {
   defaultUiMode?: UiMode
   /** CSS height of the playground root. Defaults to filling the host container. */
   height?: string
+  /**
+   * Renderer plugins (e.g. the try-it panel) to register on the preview.
+   * Pass a stable array — a fresh literal on every render re-registers the
+   * plugins and resets the operation's selected tab.
+   */
+  plugins?: ApiuikitPlugin[]
 }
 
 export function Playground({
@@ -72,6 +79,7 @@ export function Playground({
   initialConfig,
   defaultUiMode = 'light',
   height = '100%',
+  plugins,
 }: PlaygroundProps) {
   const [activeTab, setActiveTab] = useState<EditorTab>('doc')
   const [uiMode, setUiMode] = useState<UiMode>(() => readStoredUiMode() ?? defaultUiMode)
@@ -171,6 +179,7 @@ export function Playground({
           <OpenAPIRenderer
             raw={debouncedDocText}
             config={previewConfig}
+            plugins={plugins}
             onDiagnostics={(d) => setDiagnostics(d as ParserDiagnostic[])}
           />
         ) : (
