@@ -1,5 +1,13 @@
 # apiuikit
 
+## 1.8.3
+
+### Patch Changes
+
+- 6a635b4: Fix the compact sidebar navigation toggle (the floating circular button shown when the widget is too narrow for the tick "spine") detaching from its bounded preview pane — the same `position: fixed` viewport-relative math already fixed for the document toolbar. The button now sits in a `position: sticky` anchor instead, so it stays bottom-right of the widget's own pane rather than the true browser viewport; the popover it opens now reads its position from the button's own measured on-screen rect instead of recomputing it independently, so the two can't drift out of sync.
+- 44ded5c: Fix the document toolbar (search + "Copy as Markdown") still detaching from its bounded preview pane in some scroll combinations after the 1.8.2 fix — most visibly when scrolling back up past where the pane's own top had scrolled offscreen, which pinned the toolbar to the true viewport top and let it overlap the document's own heading. The previous fix computed the toolbar's `position: fixed` coordinates in JS from the nearest scrolling ancestor's rect, which can't account for every combination of outer-page scroll, an ancestor's own scroll, and a host's fixed navbar at once. The toolbar now uses CSS `position: sticky` instead, so the browser resolves its position against whichever ancestor is actually scrolling every frame, with no JS geometry math and no drift.
+- d866aeb: Fix the document toolbar's empty middle space (between the logo and the search/Copy-as-Markdown controls) painting an opaque background that obscured document content scrolling underneath it. That background came from a row spanning the toolbar's full width, painted even where there was nothing to show — the search and Copy as Markdown buttons already carry their own background for legibility, so the row itself is now transparent.
+
 ## 1.8.2
 
 ### Patch Changes
