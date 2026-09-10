@@ -110,4 +110,36 @@ describe("DocumentTopBar", () => {
 
     vi.useRealTimers();
   });
+
+  /**
+   * Regression: when the widget is embedded in a bounded, independently
+   * scrolling pane elsewhere on a longer host page (e.g. a settings-page
+   * preview, as in the playground), scrolling *inside* that pane sends
+   * rootElement's own rect deeply negative even though the pane itself
+   * hasn't moved. Anchoring `top` to `topOffset` alone then pinned the bar
+   * to the true page top instead of the pane's visible top edge.
+   */
+  it("anchors to a bounded scrolling ancestor's own rect, not the widget's own (possibly very negative) one", () => {
+    const pane = mountElement();
+    pane.style.overflowY = "auto";
+    Object.defineProperty(pane, "scrollHeight", { value: 2000, configurable: true });
+    Object.defineProperty(pane, "clientHeight", { value: 400, configurable: true });
+    pane.getBoundingClientRect = vi.fn(() =>
+      DOMRect.fromRect({ x: 0, y: 300, width: 800, height: 400 }),
+    );
+
+    const rootElement = document.createElement("div");
+    pane.appendChild(rootElement);
+    mountedElements.push(rootElement);
+    // Deeply negative: the pane's content has scrolled internally, not the page.
+    rootElement.getBoundingClientRect = vi.fn(() =>
+      DOMRect.fromRect({ x: 0, y: -500, width: 800, height: 2000 }),
+    );
+
+    const header = renderTopBar(rootElement);
+
+    expect(header.style.position).toBe("fixed");
+    // The pane's own top (300) plus the bar's inset (10), not the viewport top (0 + 10).
+    expect(header.style.top).toBe("310px");
+  });
 });
