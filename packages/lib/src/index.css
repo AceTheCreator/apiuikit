@@ -101,12 +101,17 @@
   transition: transform 0.3s ease-in-out;
 }
 
+/* No background here: this row spans the bar's full width (`justify-content:
+   space-between` leaves a gap between the logo and the controls), and an
+   opaque background on the whole row painted over that gap too — hiding
+   whatever content scrolls underneath the sticky bar in the space where
+   there's nothing to see anyway. The search/copy-markdown buttons carry
+   their own `bg-neutral-100` for legibility, so this stays transparent. */
 .apiuikit-root .document-topbar-inner {
   display: flex;
   height: 40px;
   align-items: center;
   justify-content: space-between;
-  background-color: rgb(var(--color-background) / 1);
 }
 
 .apiuikit-root .document-topbar-controls {
