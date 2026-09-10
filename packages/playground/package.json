@@ -19,7 +19,9 @@
     "dist"
   ],
   "scripts": {
+    "predev": "npm run build --workspace=apiuikit",
     "dev": "npm run docs:assets && vite",
+    "prebuild": "npm run build --workspace=apiuikit",
     "build": "npm run docs:assets && vite build",
     "build:lib": "vite build --mode lib",
     "docs:assets": "node scripts/generateDocsAssets.mjs",
