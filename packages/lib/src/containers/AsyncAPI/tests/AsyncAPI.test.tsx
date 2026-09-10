@@ -103,11 +103,13 @@ describe("AsyncAPI", () => {
     fireEvent.scroll(window);
 
     // The hidden offset is computed from the bar's own geometry rather than
-    // being a flat `-150%`, so it clears the viewport at any host topOffset —
-    // DocumentTopBar.test.tsx covers that property. With no topOffset set it
-    // works out to the bar's 40px height plus 8px of slack.
+    // being a flat `-150%`, so it clears its sticky position at any host
+    // topOffset — DocumentTopBar.test.tsx covers that property. With no
+    // topOffset set it works out to the bar's 40px height plus 8px of slack.
+    // Positioning itself is CSS `position: sticky` (index.css), not asserted
+    // here since jsdom doesn't compute real layout for it.
     await waitFor(() => {
-      expect(toolbar).toHaveStyle({ position: "fixed", transform: "translateY(-48px)" });
+      expect(toolbar).toHaveStyle({ transform: "translateY(-48px)" });
     });
     expect(toolbar.querySelector(".document-logo")).not.toBeNull();
     expect(within(toolbar).getByRole("button", { name: "Search" })).toBeInTheDocument();
@@ -119,7 +121,71 @@ describe("AsyncAPI", () => {
     fireEvent.scroll(window);
 
     await waitFor(() => {
-      expect(toolbar).toHaveStyle({ position: "fixed", transform: "translateY(0px)" });
+      expect(toolbar).toHaveStyle({ transform: "translateY(0px)" });
+    });
+  });
+
+  /**
+   * Regression: the compact nav toggle (the floating bottom-right circle
+   * shown when the widget is too narrow for the tick "spine") used to be
+   * `position: fixed` with its own `left` computed from the widget's rect
+   * and `window.innerWidth` — viewport-relative math that drifts away from
+   * the widget once it's embedded in a bounded, independently-scrolling host
+   * pane, the same failure mode the document toolbar had. It's now wrapped
+   * in a `position: sticky` anchor instead, with the button absolutely
+   * positioned inside it — not asserted here since jsdom doesn't compute
+   * real sticky/absolute layout, but the button itself must no longer carry
+   * its own `position: fixed`, and the popover it opens must be anchored
+   * from the button's own measured rect (DocumentTopBar.test.tsx-style),
+   * not recomputed from the widget's rect independently.
+   */
+  it("wraps the compact nav toggle in a sticky anchor instead of positioning it via viewport math", async () => {
+    const { container } = render(<AsyncAPI asyncapi={asDoc(exampleDoc)} />);
+    const widgetRoot = container.firstElementChild as HTMLElement;
+
+    // Narrow enough to trigger the compact (no-gutter) trigger.
+    vi.spyOn(widgetRoot, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 500,
+      bottom: 800,
+      width: 500,
+      height: 800,
+      toJSON: () => ({}),
+    } as DOMRect);
+    fireEvent.scroll(window);
+
+    const toggle = await screen.findByRole("button", { name: "Open navigation" });
+    expect(toggle.style.position).not.toBe("fixed");
+    expect(toggle.parentElement).toHaveStyle({ position: "sticky", bottom: "0px" });
+
+    // The popover reads its anchor from the button's own measured rect, so
+    // give that rect a distinctive value and confirm the popover's position
+    // is actually derived from it (not from `widgetRoot`/viewport math,
+    // which would ignore this mock entirely).
+    vi.spyOn(toggle, "getBoundingClientRect").mockReturnValue({
+      x: 400,
+      y: 700,
+      top: 700,
+      left: 400,
+      right: 444,
+      bottom: 744,
+      width: 44,
+      height: 44,
+      toJSON: () => ({}),
+    } as DOMRect);
+    fireEvent.scroll(window);
+    fireEvent.click(toggle);
+
+    await screen.findByRole("button", { name: "Close navigation" });
+    const popover = document.querySelector(".shadow-xl") as HTMLElement;
+    expect(popover).toHaveStyle({ position: "fixed" });
+    await waitFor(() => {
+      // window.innerHeight/innerWidth default to 768/1024 in jsdom.
+      expect(popover.style.bottom).toBe(`${768 - 700 + 8}px`);
+      expect(popover.style.right).toBe(`${1024 - 444}px`);
     });
   });
 
