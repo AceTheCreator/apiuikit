@@ -1,4 +1,4 @@
-export function isScrollable(el: Element): boolean {
+function isScrollable(el: Element): boolean {
   const overflowY = getComputedStyle(el).overflowY;
   return (overflowY === "auto" || overflowY === "scroll") && el.scrollHeight > el.clientHeight;
 }

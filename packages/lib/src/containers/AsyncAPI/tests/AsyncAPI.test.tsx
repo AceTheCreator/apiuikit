@@ -103,11 +103,13 @@ describe("AsyncAPI", () => {
     fireEvent.scroll(window);
 
     // The hidden offset is computed from the bar's own geometry rather than
-    // being a flat `-150%`, so it clears the viewport at any host topOffset —
-    // DocumentTopBar.test.tsx covers that property. With no topOffset set it
-    // works out to the bar's 40px height plus 8px of slack.
+    // being a flat `-150%`, so it clears its sticky position at any host
+    // topOffset — DocumentTopBar.test.tsx covers that property. With no
+    // topOffset set it works out to the bar's 40px height plus 8px of slack.
+    // Positioning itself is CSS `position: sticky` (index.css), not asserted
+    // here since jsdom doesn't compute real layout for it.
     await waitFor(() => {
-      expect(toolbar).toHaveStyle({ position: "fixed", transform: "translateY(-48px)" });
+      expect(toolbar).toHaveStyle({ transform: "translateY(-48px)" });
     });
     expect(toolbar.querySelector(".document-logo")).not.toBeNull();
     expect(within(toolbar).getByRole("button", { name: "Search" })).toBeInTheDocument();
@@ -119,7 +121,7 @@ describe("AsyncAPI", () => {
     fireEvent.scroll(window);
 
     await waitFor(() => {
-      expect(toolbar).toHaveStyle({ position: "fixed", transform: "translateY(0px)" });
+      expect(toolbar).toHaveStyle({ transform: "translateY(0px)" });
     });
   });
 

@@ -79,12 +79,21 @@
   }
 
 /* Branding and document actions share one positioned surface so the complete
-   masthead follows the same hide/reveal behavior while scrolling. */
+   masthead follows the same hide/reveal behavior while scrolling.
+   `position: sticky` (not `fixed`) so the browser itself resolves "stuck"
+   against whichever ancestor is actually scrolling — the page, or a bounded
+   host pane with its own `overflow: auto` (e.g. a settings-page preview).
+   A JS-computed `fixed` position can only ever target the true viewport,
+   which drifts away from a scrolled pane's own visible top; sticky can't
+   drift because the browser recomputes it every frame from real layout,
+   not a scroll-event-driven JS measurement. `top`/`transform` still come from
+   JS (`topOffset` is a runtime config value; the hide/reveal transform needs
+   scroll-direction state sticky alone can't express). No `left`/`right`: as
+   a sticky (in-flow) box it already spans its padded parent's content box,
+   unlike `position: absolute`, which resolves against `.apiuikit-root` and
+   skips that parent's padding — hence needed its own explicit inset. */
 .apiuikit-root .document-topbar {
-  position: absolute;
-  top: 10px;
-  left: 16px;
-  right: 16px;
+  position: sticky;
   margin-top: -10px;
   z-index: 40;
   height: 40px;

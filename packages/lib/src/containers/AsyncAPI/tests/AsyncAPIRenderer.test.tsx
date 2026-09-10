@@ -73,7 +73,6 @@ describe("AsyncAPIRenderer", () => {
       "https://cdn.prod.website-files.com/60e49b51af3305d435c286ab/60e78065113f2f12904a43b1_aklivity-logo.svg",
     );
     expect(screen.getAllByRole("img", { name: "logo" })).toHaveLength(1);
-    expect(masthead).toHaveStyle({ left: "16px", right: "16px" });
     expect(masthead.firstElementChild).toHaveClass(
       "@lg:max-w-[calc(70ch+28rem)]",
     );
