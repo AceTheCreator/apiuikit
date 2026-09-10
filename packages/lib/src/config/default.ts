@@ -26,8 +26,11 @@ export const defaultConfig: ConfigInterface = {
         700: "#0d419d",
       },
     },
-    // Matches the :root fallback values in index.css — kept explicit here so light
-    // wins outright over `dark` below per buildThemeVars' precedence rule.
+    // Both palettes are defined so consumers can switch between them via
+    // `theme.mode`. `mode` is intentionally left unset here — this preserves
+    // the library's traditional always-light default for anyone building on
+    // defaultConfig without opting in to mode switching. `light` matches the
+    // :root fallback values in index.css.
     light: {
       background: "#f8fafc",
       surface: "#ffffff",

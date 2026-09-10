@@ -68,8 +68,31 @@
    --color-neutral-800: 30 41 59;
    --color-neutral-900: 15 23 42;
   }
-  
-  
+
+/* Dark-mode fallback for any CSS var not supplied via theme.dark — keep in
+   sync with defaultConfig.theme.dark (config/default.ts) and
+   DARK_NEUTRAL_DEFAULTS (utils/theme.ts). */
+.apiuikit-root[data-theme="dark"] {
+  --color-background: 13 17 23;
+  --color-surface: 22 27 34;
+  --color-border: 48 54 61;
+
+  --color-text-primary: 201 209 217;
+  --color-text-secondary: 139 148 158;
+  --color-text-muted: 110 118 129;
+
+  --color-neutral-50:  15 23 42;
+  --color-neutral-100: 30 41 59;
+  --color-neutral-200: 51 65 85;
+  --color-neutral-300: 71 85 105;
+  --color-neutral-500: 148 163 184;
+  --color-neutral-600: 203 213 225;
+  --color-neutral-700: 226 232 240;
+  --color-neutral-800: 241 245 249;
+  --color-neutral-900: 248 250 252;
+}
+
+
 .apiuikit-root .primary-gradient-color-stop {
     stop-color: var(--color-primary);
   }

@@ -2,11 +2,12 @@ import { useMemo, useState } from "react";
 import { ConfigInterface, defaultConfig } from "../config";
 import type { MarkdownUrlResolver, SidePanelContainment } from "../config/config";
 import { SpecType } from "../contexts";
-import { buildThemeVars } from "../utils/theme";
+import { buildThemeVars, resolveThemeMode } from "../utils/theme";
 import { DEFAULT_DEPTH_COLORS } from "../components/schema/depthColors";
 import { createDocumentDeref } from "../helpers/jsonPointer";
 import type { ApiuikitPlugin } from "../plugins/types";
 import { createPluginSlotRegistry } from "../plugins/registry";
+import { useSystemColorScheme } from "./useSystemColorScheme";
 
 const NO_PLUGINS: ApiuikitPlugin[] = [];
 
@@ -102,7 +103,15 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
     ],
   );
 
-  const themeVars = config.theme ? buildThemeVars(config.theme) : {};
+  const systemPrefersDark = useSystemColorScheme(config.theme?.mode === "system");
+  const resolvedMode = useMemo(
+    () => resolveThemeMode(config.theme, systemPrefersDark),
+    [config.theme, systemPrefersDark],
+  );
+  const themeVars = useMemo(
+    () => (config.theme ? buildThemeVars(config.theme, resolvedMode) : {}),
+    [config.theme, resolvedMode],
+  );
 
-  return { contextValue, themeVars, setPortalHost, setRootElement };
+  return { contextValue, themeVars, resolvedMode, setPortalHost, setRootElement };
 }

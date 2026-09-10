@@ -23,12 +23,13 @@ export function OpenAPIDocumentProvider({
   className = "",
   children,
 }: OpenAPIDocumentProviderProps) {
-  const { contextValue, themeVars, setPortalHost, setRootElement } = useDocumentProviderValue("openapi", openapi, config, plugins);
+  const { contextValue, themeVars, resolvedMode, setPortalHost, setRootElement } = useDocumentProviderValue("openapi", openapi, config, plugins);
 
   return (
     <DocumentContext.Provider value={contextValue}>
       <div
         ref={setRootElement}
+        data-theme={resolvedMode}
         style={themeVars as React.CSSProperties}
         className={`apiuikit-root relative @container bg-background text-foreground ${className}`}
       >

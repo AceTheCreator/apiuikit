@@ -34,6 +34,7 @@ interface ConfigInterface {
   };
   theme?: {
     colors?: ThemeColors;
+    mode?: "light" | "dark" | "system";
     light?: ThemeModeColors;
     dark?: ThemeModeColors;
     depthColors?: string[];
@@ -104,7 +105,9 @@ interface ThemeModeColors {
   - **colors?: ThemeColors** — Brand color scales, applied regardless of which mode is active (they typically don't change between light and dark).
     - **primary / secondary / neutral** — Color scales used for accents, interactive elements, and surface tones. Each scale accepts shades `50`, `100`, `200`, `300`, `500`, `600`, and `700`. You can override as few or as many shades as needed. When `dark` is the active mode, the neutral scale is inverted by default before your overrides are applied.
 
-  - **light? / dark?: ThemeModeColors** — Semantic surface and text colors for that mode. Provide `light` and/or `dark`; whichever you provide is applied, and `dark` wins if you provide both. If neither is provided, the component's built-in light defaults are used untouched.
+  - **mode?: "light" | "dark" | "system"** — Which palette to render. `"light"`/`"dark"` pick that palette outright; `"system"` follows the OS `prefers-color-scheme` setting and updates live if it changes while mounted. Left unset, resolution falls back to whichever single one of `light`/`dark` you provided — `light` wins if you provided both, or neither.
+
+  - **light? / dark?: ThemeModeColors** — Semantic surface and text colors for each mode. Provide both to support switching between them via `mode`; provide just one if you never intend to switch. If neither is provided, the component's built-in light defaults are used untouched.
     - `background` — Page/component background.
     - `surface` — Card and panel backgrounds.
     - `border` — Dividers and input borders.

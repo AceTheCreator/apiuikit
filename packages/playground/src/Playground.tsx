@@ -133,18 +133,13 @@ export function Playground({
     emptyValue: configSeed,
   })
 
-  // The toggle is authoritative over the AsyncAPI preview's light/dark mode: it only
-  // forwards the branch matching the current mode, ignoring whichever theme.light/theme.dark
-  // the user's own edited config also defines for the other mode. Brand `colors` scales
-  // and `depthColors` aren't mode-specific, so they always pass through untouched.
+  // `mode` is the only thing the toggle touches now — apiuikit resolves which
+  // of theme.light/theme.dark to render, so both stay in the user's edited
+  // config untouched instead of being swapped in/out by hand.
   const previewConfig = useMemo<ConfigInterface>(
     () => ({
       ...config.value,
-      theme: {
-        colors: config.value.theme?.colors,
-        depthColors: config.value.theme?.depthColors,
-        ...(uiMode === 'dark' ? { dark: config.value.theme?.dark } : { light: config.value.theme?.light }),
-      },
+      theme: { ...config.value.theme, mode: uiMode },
     }),
     [config.value, uiMode],
   )
