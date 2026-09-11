@@ -17,7 +17,7 @@ function Providers({ children }: { children: ReactNode }) {
         portalHost: null,
         rootElement: null,
         sidePanelContainment: "component",
-        defaultSchemaExpanded: true,
+        resolvedMode: "light",        defaultSchemaExpanded: true,
         depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
         showCodeSamples: true,
