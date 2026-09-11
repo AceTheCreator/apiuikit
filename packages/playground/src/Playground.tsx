@@ -133,16 +133,41 @@ export function Playground({
     emptyValue: configSeed,
   })
 
-  // `mode` is the only thing the toggle touches now — apiuikit resolves which
-  // of theme.light/theme.dark to render, so both stay in the user's edited
-  // config untouched instead of being swapped in/out by hand.
+  // theme.mode typed directly into the config editor is authoritative for the
+  // preview — the toggle only supplies a mode when the config doesn't set one
+  // itself, so editing `mode` in the JSON has a visible effect instead of
+  // being silently overwritten by whatever the toggle last set.
+  const configuredMode = config.value.theme?.mode
   const previewConfig = useMemo<ConfigInterface>(
     () => ({
       ...config.value,
-      theme: { ...config.value.theme, mode: uiMode },
+      theme: { ...config.value.theme, mode: configuredMode ?? uiMode },
     }),
-    [config.value, uiMode],
+    [config.value, configuredMode, uiMode],
   )
+
+  // Keep the toggle (and the playground's own chrome, which is themed by
+  // uiMode) in sync when the user edits theme.mode directly in the config
+  // editor, so the button always reflects what's actually being rendered.
+  useEffect(() => {
+    if (configuredMode === 'light' || configuredMode === 'dark') {
+      setUiMode(configuredMode)
+    }
+  }, [configuredMode])
+
+  // The toggle writes back into the config editor's own text, not just local
+  // state, so clicking it and editing theme.mode by hand are two views onto
+  // the same value rather than the toggle silently winning.
+  const handleUiModeChange = (nextMode: UiMode) => {
+    setUiMode(nextMode)
+    config.onChange(
+      JSON.stringify(
+        { ...config.value, theme: { ...config.value.theme, mode: nextMode } },
+        null,
+        2,
+      ),
+    )
+  }
 
   const { containerRef, splitPercent, handlePointerDown, nudge } = useResizableSplit()
 
@@ -189,7 +214,7 @@ export function Playground({
               trailing={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingRight: '6px' }}>
                   <GitHubLink palette={palette} />
-                  <ThemeToggle mode={uiMode} palette={palette} onChange={setUiMode} />
+                  <ThemeToggle mode={uiMode} palette={palette} onChange={handleUiModeChange} />
                   <ViewToggle expanded palette={palette} onChange={setEditorExpanded} />
                 </div>
               }
@@ -257,7 +282,7 @@ export function Playground({
           }}
         >
           <GitHubLink palette={palette} />
-          <ThemeToggle mode={uiMode} palette={palette} onChange={setUiMode} />
+          <ThemeToggle mode={uiMode} palette={palette} onChange={handleUiModeChange} />
           <ViewToggle expanded={false} palette={palette} onChange={setEditorExpanded} />
         </div>
       )}
