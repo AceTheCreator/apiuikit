@@ -47,12 +47,35 @@ const DARK_NEUTRAL_DEFAULTS: Record<number, string> = {
   900: "248 250 252",
 };
 
-export function buildThemeVars(theme: ThemeConfig): Record<string, string> {
-  const vars: Record<string, string> = {};
+export type ResolvedThemeMode = "light" | "dark";
 
-  // Light wins when both a light and a dark theme are configured.
-  const mode = theme.light ? "light" : theme.dark ? "dark" : null;
-  const modeColors = mode === "dark" ? theme.dark : mode === "light" ? theme.light : undefined;
+/**
+ * Resolves which palette to actually render.
+ *
+ * An explicit `theme.mode` wins outright (`"system"` follows
+ * `systemPrefersDark`). Left unset, this replicates pre-`mode` behavior:
+ * whichever single one of `light`/`dark` is provided wins; light wins if
+ * both — or neither — are provided.
+ */
+export function resolveThemeMode(
+  theme: ThemeConfig | undefined,
+  systemPrefersDark: boolean,
+): ResolvedThemeMode {
+  const configuredMode = theme?.mode;
+
+  if (configuredMode === "light" || configuredMode === "dark") return configuredMode;
+  if (configuredMode === "system") return systemPrefersDark ? "dark" : "light";
+  if (theme?.dark && !theme?.light) return "dark";
+
+  return "light";
+}
+
+export function buildThemeVars(
+  theme: ThemeConfig,
+  mode: ResolvedThemeMode,
+): Record<string, string> {
+  const vars: Record<string, string> = {};
+  const modeColors = mode === "dark" ? theme.dark : theme.light;
 
   if (mode === "dark") {
     // Apply inverted neutral scale as defaults — user's neutral overrides these below
