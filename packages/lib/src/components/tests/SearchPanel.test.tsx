@@ -50,7 +50,7 @@ function renderSearchPanel() {
     portalHost,
     rootElement,
     sidePanelContainment: "component",
-    depthColors: [],
+    resolvedMode: "light",    depthColors: [],
     showExtensions: true,
     showCodeSamples: true,
   } as DocumentContextValue;

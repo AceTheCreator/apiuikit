@@ -26,7 +26,7 @@ function withContext(children: React.ReactNode, plugins?: ApiuikitPlugin[]) {
         portalHost: null,
         rootElement: null,
         sidePanelContainment: "component",
-        depthColors: DEFAULT_DEPTH_COLORS,
+        resolvedMode: "light",        depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
         showCodeSamples: true,
         plugins,

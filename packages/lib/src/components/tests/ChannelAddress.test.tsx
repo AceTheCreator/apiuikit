@@ -17,7 +17,7 @@ function renderAddress(node: ReactNode, portalHost: HTMLElement | null = null) {
         portalHost,
         rootElement: null,
         sidePanelContainment: "component",
-        depthColors: DEFAULT_DEPTH_COLORS,
+        resolvedMode: "light",        depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
         showCodeSamples: true,
       }}
