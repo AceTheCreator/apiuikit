@@ -64,6 +64,22 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
     return undefined;
   }, [configuredMarkdownUrl]);
   const pluginSlotRegistry = useMemo(() => createPluginSlotRegistry(plugins), [plugins]);
+
+  const systemPrefersDark = useSystemColorScheme(config.theme?.mode === "system");
+  const resolvedMode = useMemo(
+    () => resolveThemeMode(config.theme, systemPrefersDark),
+    [config.theme, systemPrefersDark],
+  );
+  const themeVars = useMemo(
+    () => (config.theme ? buildThemeVars(config.theme, resolvedMode) : {}),
+    [config.theme, resolvedMode],
+  );
+
+  // resolvedMode rides along on contextValue (not just the two
+  // *DocumentProvider root divs) so plugins can style themselves consistently
+  // with the active mode instead of reimplementing light/dark precedence
+  // against the raw, unresolved `config.theme` — see DocumentContextBase's
+  // doc comment on `resolvedMode`.
   const contextValue = useMemo(
     () => ({
       specType,
@@ -82,6 +98,7 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
       plugins,
       pluginSlotRegistry,
       config,
+      resolvedMode,
     }),
     [
       specType,
@@ -100,17 +117,8 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
       plugins,
       pluginSlotRegistry,
       config,
+      resolvedMode,
     ],
-  );
-
-  const systemPrefersDark = useSystemColorScheme(config.theme?.mode === "system");
-  const resolvedMode = useMemo(
-    () => resolveThemeMode(config.theme, systemPrefersDark),
-    [config.theme, systemPrefersDark],
-  );
-  const themeVars = useMemo(
-    () => (config.theme ? buildThemeVars(config.theme, resolvedMode) : {}),
-    [config.theme, resolvedMode],
   );
 
   return { contextValue, themeVars, resolvedMode, setPortalHost, setRootElement };

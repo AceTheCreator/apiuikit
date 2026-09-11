@@ -4,6 +4,7 @@ import type { OpenAPIDocumentData } from "../types/openapi";
 import type { ConfigInterface, MarkdownUrlResolver, SidePanelContainment } from "../config/config";
 import type { ApiuikitPlugin } from "../plugins/types";
 import type { PluginSlotRegistry } from "../plugins/registry";
+import type { ResolvedThemeMode } from "../utils/theme";
 
 /** Which spec produced the ambient document. The discriminant of DocumentContextValue. */
 export type SpecType = "asyncapi" | "openapi";
@@ -36,6 +37,16 @@ interface DocumentContextBase {
   pluginSlotRegistry?: PluginSlotRegistry;
   /** The host's as-given `config` prop, unmerged with defaults. For plugins; prefer the derived fields above for apiuikit's own UI. Theme colors: use the CSS custom properties on the document root (see Plugins docs), not `config.theme`. */
   config?: ConfigInterface;
+  /**
+   * Which palette is actually rendering right now ("light" or "dark"),
+   * already resolved from `config.theme.mode`/`light`/`dark` and, for
+   * `mode: "system"`, the OS preference. Plugins that read raw hex values out
+   * of `config.theme` (rather than the CSS custom properties, per the note
+   * above) need this to know which of `theme.light`/`theme.dark` is active —
+   * `config.theme` alone doesn't say, since both may legitimately be set at
+   * once and `mode` decides.
+   */
+  resolvedMode: ResolvedThemeMode;
 }
 
 export interface AsyncAPIDocumentContextValue extends DocumentContextBase {

@@ -40,7 +40,7 @@ function renderTopBar(rootElement: HTMLElement, topOffset?: number) {
     rootElement,
     topOffset,
     sidePanelContainment: "component",
-    depthColors: [],
+    resolvedMode: "light",    depthColors: [],
     showExtensions: true,
     showCodeSamples: true,
   } as DocumentContextValue;
