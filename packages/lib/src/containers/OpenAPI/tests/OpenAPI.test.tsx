@@ -46,8 +46,8 @@ describe("OpenAPI", () => {
 
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
     const widgetRoot = container.firstElementChild as HTMLElement;
-    expect(widgetRoot).not.toHaveClass("pt-14");
-    expect(widgetRoot.children[1]).toHaveClass("pt-14");
+    expect(widgetRoot).not.toHaveClass("pt-18");
+    expect(widgetRoot.children[1]).toHaveClass("pt-18");
   });
 
   it("does not reserve the content-bar row when no content tabs are visible", () => {
@@ -61,8 +61,8 @@ describe("OpenAPI", () => {
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
     expect(screen.queryByRole("tablist", { name: "AsyncAPI sections" })).not.toBeInTheDocument();
     const widgetRoot = container.firstElementChild as HTMLElement;
-    expect(widgetRoot).not.toHaveClass("pt-14");
-    expect(widgetRoot.children[1]).not.toHaveClass("pt-14");
+    expect(widgetRoot).not.toHaveClass("pt-18");
+    expect(widgetRoot.children[1]).not.toHaveClass("pt-18");
   });
 
   it("applies the host top offset to sticky tabs and component-contained panels", () => {

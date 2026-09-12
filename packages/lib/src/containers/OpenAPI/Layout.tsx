@@ -115,7 +115,7 @@ export default function Layout({ openapi, config, plugins }: OpenAPILayoutProps)
 
   return (
     <OpenAPIDocumentProvider document={openapi} config={config} plugins={plugins}>
-      <div className={`px-4 ${hasMasthead && tabs.length > 0 ? "pt-14" : ""}`}>
+      <div className={`px-4 ${hasMasthead && tabs.length > 0 ? "pt-18" : ""}`}>
         {hasMasthead && (
           <DocumentTopBar
             logo={hasTopLogo ? <InformationLogo source={openapi.info} /> : undefined}

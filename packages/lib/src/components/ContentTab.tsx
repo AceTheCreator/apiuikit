@@ -41,10 +41,14 @@ export default function ContentTab({ tabs, current, onChange }: ContentTabProps)
 
   return (
     <div
-      className="sticky z-10 flex w-full justify-center bg-background"
+      // `pb-2` replaces the Section's own bottom margin: the sticky bar's
+      // painted background has to extend a little past the tabs so content
+      // scrolling underneath doesn't touch them, but the full `mb-6` stacked
+      // with the panel's first section to leave a 48px gap under the tabs.
+      className="sticky z-10 flex w-full justify-center bg-background pb-2"
       style={{ top: stickyTop }}
     >
-      <Section content={content} stickySideContent={false} />
+      <Section content={content} stickySideContent={false} bottomSpacing={false} />
     </div>
   );
 }

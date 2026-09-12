@@ -21,7 +21,11 @@ const EDGE_INSET = 16;
  */
 const TOP_INSET = 10;
 const OVERLAP_PULL = 10;
-const BAR_HEIGHT = 40;
+// The bar's full painted height: a 40px row of controls plus the 16px of
+// breathing room above it. That space is *padding inside the bar*, not a gap
+// above it — the background has to reach the top edge, or the document scrolls
+// visibly through the strip above the controls on the way back up.
+const BAR_HEIGHT = 56;
 
 /** A little past the edge, so a shadow or focus ring doesn't peek while hidden. */
 const HIDE_SLACK = 8;

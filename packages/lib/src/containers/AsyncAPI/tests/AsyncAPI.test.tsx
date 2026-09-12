@@ -59,8 +59,8 @@ describe("AsyncAPI", () => {
 
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
     const widgetRoot = container.firstElementChild as HTMLElement;
-    expect(widgetRoot).not.toHaveClass("pt-14");
-    expect(widgetRoot.children[1]).toHaveClass("pt-14");
+    expect(widgetRoot).not.toHaveClass("pt-18");
+    expect(widgetRoot.children[1]).toHaveClass("pt-18");
   });
 
   it("does not reserve the content-bar row when no content tabs are visible", () => {
@@ -74,8 +74,8 @@ describe("AsyncAPI", () => {
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
     expect(screen.queryByRole("tablist", { name: "AsyncAPI sections" })).not.toBeInTheDocument();
     const widgetRoot = container.firstElementChild as HTMLElement;
-    expect(widgetRoot).not.toHaveClass("pt-14");
-    expect(widgetRoot.children[1]).not.toHaveClass("pt-14");
+    expect(widgetRoot).not.toHaveClass("pt-18");
+    expect(widgetRoot.children[1]).not.toHaveClass("pt-18");
   });
 
   it("moves the complete document toolbar as one unit while scrolling", async () => {
@@ -105,9 +105,11 @@ describe("AsyncAPI", () => {
     // The hidden offset is computed from the bar's own geometry rather than
     // being a flat `-150%`, so it clears the viewport at any host topOffset —
     // DocumentTopBar.test.tsx covers that property. With no topOffset set it
-    // works out to the bar's 40px height plus 8px of slack.
+    // works out to the bar's full 56px painted height (16px of padding above a
+    // 40px control row) plus 8px of slack, its 10px top inset and 10px pull
+    // having cancelled out.
     await waitFor(() => {
-      expect(toolbar).toHaveStyle({ position: "fixed", transform: "translateY(-48px)" });
+      expect(toolbar).toHaveStyle({ position: "fixed", transform: "translateY(-64px)" });
     });
     expect(toolbar.querySelector(".document-logo")).not.toBeNull();
     expect(within(toolbar).getByRole("button", { name: "Search" })).toBeInTheDocument();

@@ -87,7 +87,14 @@
   right: 16px;
   margin-top: -10px;
   z-index: 40;
-  height: 40px;
+  /* Breathing room above the controls, as padding *inside* the painted
+     surface rather than a gap above it. Painted here on the outer element so
+     the strip is masked: with the background only on the inner row, the
+     document scrolled visibly through the space above it. Height is left to
+     content — 16px of padding plus the inner row's 40px — so the total
+     doesn't depend on which box model is in effect. */
+  padding-top: 16px;
+  background-color: rgb(var(--color-background) / 1);
   pointer-events: none;
   transition: transform 0.3s ease-in-out;
 }
