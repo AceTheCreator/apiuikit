@@ -20,6 +20,7 @@ interface ConfigInterface {
     messages?: boolean;
     messageExamples?: boolean;
     schemas?: boolean;
+    tryIt?: boolean;
   };
   expand?: {
     messageExamples?: boolean;
@@ -73,7 +74,21 @@ interface ThemeModeColors {
 
   Controls which sections and tabs are rendered. Setting a tab (`operations`, `messages`, `schemas`) to `false` removes it from both the tab bar and the side navigation.
 
-  `search` controls whether the search panel is shown. `schemas` and `messageExamples` default to `false`. All other fields default to `true`.
+  `search` controls whether the search panel is shown. `schemas`, `messageExamples`, and `tryIt` default to `false`. All other fields default to `true`.
+
+- **show.tryIt?: boolean** — OpenAPI only
+
+  Adds a **Try it** button to the operation side panel's header: a request builder that fills in parameters, auth, and a body, sends the request from the reader's browser, and shows the response. Off by default.
+
+  ```ts
+  const config = { show: { tryIt: true } };
+  ```
+
+  Nothing to install — apiuikit depends on the panel and loads it on demand. Off, its code is never fetched: the check happens before the lazy import is reached, so a site that leaves it alone ships nothing extra to readers.
+
+  **Turn it on deliberately.** It changes a documentation page into one that collects credentials from readers — API keys, passwords, tokens, OAuth2 client secrets — and holds them in `sessionStorage` for the tab's lifetime, where any script on the page can read them. Requests go to whichever origin the *document's* `servers` entry names, so if you render specs you don't control, the spec decides where a reader's credentials are sent.
+
+  For other layouts (a full operation tab, or a row inside the Reference panel) and for routing requests through a CORS proxy, install [`@apiuikit/openapi-try-it-plugin`](https://github.com/apiuikit/openapi-try-it-plugin) and register it via `plugins` — see [Plugins](../usage/plugins.md).
 
 - **topOffset?: number**
 

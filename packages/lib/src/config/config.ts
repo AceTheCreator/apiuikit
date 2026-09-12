@@ -107,6 +107,20 @@ export interface ShowConfig {
   codeSamples?: boolean;
   /** The "Copy for LLM" / "View as Markdown" floating button. Defaults to true. */
   copyMarkdown?: boolean;
+  /**
+   * OpenAPI only: the built-in "Try it" panel — a request builder in the
+   * operation side panel that sends real requests from the reader's browser.
+   *
+   * **Defaults to false**, unlike every other flag here. Enabling it turns a
+   * documentation page into one that collects credentials from readers and
+   * holds them in `sessionStorage` for the tab's lifetime, and requests go to
+   * whichever origin the *document's* `servers` entry names — so the decision
+   * belongs to the host, made once, rather than arriving with an upgrade.
+   *
+   * The panel's code is a separate chunk, fetched only when this is on: a
+   * consumer who leaves it off ships nothing extra to their readers.
+   */
+  tryIt?: boolean;
 }
 
 export interface ExpandConfig {

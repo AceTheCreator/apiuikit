@@ -40,6 +40,9 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
     : DEFAULT_DEPTH_COLORS;
   const showExtensions = config.show?.extensions !== false;
   const showCodeSamples = config.show?.codeSamples !== false;
+  // Opt-in, so the test is `=== true` rather than `!== false` like its
+  // neighbours — see `ShowConfig.tryIt` for why this one defaults off.
+  const showTryIt = config.show?.tryIt === true;
   const configuredTopOffset = config.topOffset;
   const topOffset =
     typeof configuredTopOffset === "number" && Number.isFinite(configuredTopOffset)
@@ -77,6 +80,7 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
       depthColors,
       showExtensions,
       showCodeSamples,
+      showTryIt,
       markdownUrl,
       plugins,
       pluginSlotRegistry,
@@ -95,6 +99,7 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
       depthColors,
       showExtensions,
       showCodeSamples,
+      showTryIt,
       markdownUrl,
       plugins,
       pluginSlotRegistry,

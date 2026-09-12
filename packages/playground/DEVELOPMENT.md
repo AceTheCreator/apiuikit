@@ -101,21 +101,22 @@ save packages/lib/src/**        (playground untouched, page keeps working)
 
 ## The linked try-it plugin
 
-The standalone dev app (`src/App.tsx`) registers
+The OpenAPI preview shows a **Try it** button in the operation panel header. That
+comes from apiuikit itself — `packages/lib` depends on
 [`@apiuikit/openapi-try-it-plugin`](https://github.com/apiuikit/openapi-try-it-plugin)
-so the OpenAPI preview grows a **Try it** row on the Path side panel
-(`createTryItButtonPlugin`, filling the
-`openapi.operation.reference.supplementary` slot; the package's default export
-is the tab variant instead). It is wired as a local checkout, not an npm
+and lazy-loads it when `config.show.tryIt` is on, which `Playground.tsx` sets in
+its `DEFAULT_CONFIG`. The playground has no direct dependency on it.
+
+During development the dependency points at a local checkout rather than a
 release:
 
 ```
-packages/playground/package.json
+packages/lib/package.json
   "@apiuikit/openapi-try-it-plugin": "file:../../../../Projects/openapi-try-it-plugin"
 ```
 
-That path is machine-specific — it points at a sibling clone outside this repo,
-so it only resolves on a machine that has one there.
+That path is machine-specific — it resolves only where a sibling clone exists
+at that location, and it needs to become a version range before publishing.
 
 - The plugin is served from its **built** `dist/`, same as the library. Run
   `npm run dev` (i.e. `vite build --watch`) in the plugin checkout while editing
@@ -125,8 +126,9 @@ so it only resolves on a machine that has one there.
   released `apiuikit` for its tests, and Vite resolves a linked package's bare
   imports from the package's real path — without deduping, the plugin would run
   against a second React and a second `apiuikit` document context and render
-  nothing. With it, `apiuikit/plugin` resolves to `packages/lib/dist/` like
-  everything else.
-- `Playground` itself takes the plugins as a prop rather than importing the
-  package, so the embeddable `build:lib` output stays free of it. `@apiuikit/*`
-  is externalized in lib mode for the same reason.
+  nothing. `packages/lib/vitest.config.ts` carries aliases for the same reason,
+  so the library's own tests can render it.
+- The plugin stays **external** in the library build (`/^@apiuikit\//` in
+  `packages/lib/vite.config.ts`), so it resolves from the consumer's own
+  `node_modules` — one apiuikit instance, one `DocumentContext`. Bundling it
+  into the library would create a second of each.

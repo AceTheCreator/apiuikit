@@ -55,6 +55,11 @@ const DEFAULT_CONFIG: ConfigInterface = {
   // The preview is an embedded, independently scrolling pane. Keep overlays
   // inside the rendered docs instead of covering the browser/editor chrome.
   sidePanel: { ...defaultConfig.sidePanel, containment: 'component' },
+  // On here, off everywhere else: `show.tryIt` defaults to false, and the
+  // playground is exactly where you'd want to see what it does. It also puts
+  // the flag in the editable config pane, so visitors can toggle it and watch
+  // the panel header change.
+  show: { ...defaultConfig.show, tryIt: true },
 }
 
 export interface PlaygroundProps {

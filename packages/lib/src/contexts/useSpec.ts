@@ -28,6 +28,11 @@ interface DocumentContextBase {
   showExtensions: boolean;
   /** Whether to render per-operation / per-endpoint code samples. Defaults to true. */
   showCodeSamples: boolean;
+  /** Whether the built-in "Try it" panel is enabled. Optional, and absent
+   * means off — the one context flag that is opt-in, so a context assembled
+   * without it (a test fixture, a bare provider) can't switch it on by
+   * omission. See `ShowConfig.tryIt`. */
+  showTryIt?: boolean;
   /** Resolves the hosted URL serving a target as Markdown, if the consumer serves one (config.markdown.url). */
   markdownUrl?: MarkdownUrlResolver;
   /** Third-party plugins registered on the nearest `<AsyncAPI>`/`<OpenAPI>` (or provider), consumed via `PluginSlot`. Undefined is equivalent to none registered. */

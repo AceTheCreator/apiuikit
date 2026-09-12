@@ -314,6 +314,32 @@ describe("OpenAPI", () => {
     }
   });
 
+  describe("built-in try it", () => {
+    // The panel itself lives in the internal `tryit` package and is loaded
+    // through a dynamic import, so these assert the gate rather than the
+    // panel: whether the lazy element is created at all. That boundary is
+    // the whole point of the flag — see `ShowConfig.tryIt`.
+    it("renders no Try it trigger by default", () => {
+      render(<OpenAPI openapi={asDoc(exampleDoc)} />);
+      fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
+      expect(screen.queryByRole("button", { name: /try it/i })).not.toBeInTheDocument();
+    });
+
+    it("still renders none when show.tryIt is explicitly false", () => {
+      render(<OpenAPI openapi={asDoc(exampleDoc)} config={{ show: { tryIt: false } }} />);
+      fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
+      expect(screen.queryByRole("button", { name: /try it/i })).not.toBeInTheDocument();
+    });
+
+    it("renders the trigger once show.tryIt is on", async () => {
+      render(<OpenAPI openapi={asDoc(exampleDoc)} config={{ show: { tryIt: true } }} />);
+      fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
+      // Awaited: the panel arrives through `lazy()`, so it is absent on the
+      // first paint by design and resolves a tick later.
+      expect(await screen.findByRole("button", { name: /try it/i })).toBeInTheDocument();
+    });
+  });
+
   describe("plugins", () => {
     it("wires a `plugins` prop through to an operation's supplementary slot", () => {
       const annotate = definePlugin({

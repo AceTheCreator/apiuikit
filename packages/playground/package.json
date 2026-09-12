@@ -26,7 +26,6 @@
     "prepublishOnly": "npm run build:lib"
   },
   "dependencies": {
-    "@apiuikit/openapi-try-it-plugin": "file:../../../../Projects/openapi-try-it-plugin",
     "@asyncapi/parser": "^3.6.0",
     "@codemirror/lang-json": "^6.0.2",
     "@codemirror/lang-yaml": "^6.1.3",

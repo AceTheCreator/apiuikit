@@ -85,7 +85,13 @@ export default defineConfig({
     },
     rollupOptions: {
       maxParallelFileOps: 100,
-      external: ['react', 'react-dom', 'react/jsx-runtime'],
+      // @apiuikit/* stays external rather than being inlined: the try-it
+      // package imports `apiuikit/plugin`, and bundling it here would
+      // resolve that to this library's own output — a second copy, and so a
+      // second `DocumentContext`, which `useDocumentContext` would reject
+      // even when correctly nested. External, the consumer's bundler
+      // resolves both to the one apiuikit their app already loaded.
+      external: ['react', 'react-dom', 'react/jsx-runtime', /^@apiuikit\//],
       output: {
         globals: {
           react: 'React',
