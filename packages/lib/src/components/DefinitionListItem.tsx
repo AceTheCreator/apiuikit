@@ -1,4 +1,5 @@
 import { FC, ComponentType, ReactNode } from "react";
+import { isUrl } from "../helpers/common";
 
 interface WrapperProps {
   children: ReactNode;
@@ -24,8 +25,13 @@ export default function DefinitionListItem({
   vertical = false,
   className = "",
 }: DefinitionListItemProps) {
-  const Wrapper: FC<WrapperProps> = href
-    ? (props) => <a href={href} target="_blank" {...props} />
+  // `href` here is often lifted straight from a parsed AsyncAPI/OpenAPI
+  // document (license/externalDocs/contact URLs) — untrusted spec content.
+  // Only render it as a link when it's http(s) or a `mailto:` we constructed
+  // ourselves, so a spec can't smuggle a `javascript:` URI into the DOM.
+  const safeHref = href && (isUrl(href) || href.startsWith("mailto:")) ? href : undefined;
+  const Wrapper: FC<WrapperProps> = safeHref
+    ? (props) => <a href={safeHref} target="_blank" rel="noreferrer" {...props} />
     : (props) => <div {...props} />;
 
   return (

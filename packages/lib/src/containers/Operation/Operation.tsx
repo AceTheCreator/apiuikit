@@ -4,6 +4,7 @@ import Authorization from "../../components/Authorization";
 import Bindings from "../../components/Bindings";
 import CollapsiblePanel from "../../components/CollapsiblePanel";
 import IconExternalLink from "../../icons/ExternalLink";
+import { isUrl } from "../../helpers/common";
 import { ExternalDocs } from "../../types/asyncapi/ExternalDocs";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
 import { Operation as OperationInterface } from "../../types/asyncapi/Operation";
@@ -66,7 +67,7 @@ export default function Operation({ op, id, focusSection = null }: OperationProp
             >
               ID: {id}
             </span>
-            {externalDocs?.url && (
+            {externalDocs?.url && isUrl(externalDocs.url) && (
               <a
                 href={externalDocs.url}
                 target="_blank"
