@@ -230,8 +230,19 @@ export default function Navigation({
   const viewportWidth = typeof window === "undefined" ? 0 : window.innerWidth;
   const viewportHeight = typeof window === "undefined" ? 0 : window.innerHeight;
   const widgetInView = !!rootRect && rootRect.bottom > topOffset && rootRect.top < viewportHeight;
-  const availableViewportHeight = Math.max(0, viewportHeight - topOffset);
-  const viewportContentCenter = topOffset + availableViewportHeight / 2;
+
+  // Centered on whichever part of the *widget* is actually on screen, not on
+  // the browser viewport's own center. `position: fixed` coordinates are
+  // always relative to the screen, so without this clamp the tick renders at
+  // the screen's literal vertical midpoint even when that point falls outside
+  // the widget's own bounds — e.g. a widget shorter than the viewport, or one
+  // embedded alongside other site content above or below it. Clamping to the
+  // widget's visible span keeps the rail pinned to the component itself
+  // rather than leaking into the surrounding page.
+  const widgetVisibleTop = Math.max(rootRect?.top ?? topOffset, topOffset);
+  const widgetVisibleBottom = Math.min(rootRect?.bottom ?? viewportHeight, viewportHeight);
+  const availableViewportHeight = Math.max(0, widgetVisibleBottom - widgetVisibleTop);
+  const viewportContentCenter = (widgetVisibleTop + widgetVisibleBottom) / 2;
 
   // The spine lives in the left gutter that Section's centered content leaves
   // on wide layouts. Below this width there is no gutter (content runs edge
@@ -305,7 +316,10 @@ export default function Navigation({
         top: viewportContentCenter,
         left: (rootRect?.left ?? 0) + NAV_LEFT_OFFSET,
         transform: "translateY(-50%)",
-        maxHeight: `calc(100vh - ${topOffset + 32}px)`,
+        // Bounded by the widget's own visible span (see `availableViewportHeight`
+        // above), not `100vh` — otherwise the popover could size itself past the
+        // widget's own bottom edge and overlap unrelated content below it.
+        maxHeight: `${Math.max(0, availableViewportHeight - 32)}px`,
         zIndex: 52,
       };
 
