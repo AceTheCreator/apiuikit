@@ -6,7 +6,7 @@ import { OpenAPINavigation, OpenAPINavTab } from "../../components/Navigation";
 import SearchPanel from "../../components/SearchPanel";
 import MarkdownExportMenu from "../../components/MarkdownExportMenu";
 import { useOpenAPISearch } from "../../hooks/useOpenAPISearch";
-import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
+import { useSpecLayoutController, SpecLocation } from "../../hooks/useSpecLayoutController";
 import { openApiToMarkdown } from "../../helpers/toMarkdown";
 import { ConfigInterface } from "../../config";
 import type { ApiuikitPlugin } from "../../plugins/types";
@@ -27,6 +27,8 @@ export interface OpenAPILayoutProps {
   openapi: OpenAPIDocumentData;
   config: ConfigInterface;
   plugins?: ApiuikitPlugin[];
+  initialLocation?: SpecLocation<OpenAPITabKey> | null;
+  onLocationChange?: (location: SpecLocation<OpenAPITabKey> | null) => void;
 }
 
 type OpenAPITabKey = OpenAPINavTab;
@@ -34,7 +36,21 @@ type OpenAPITabKey = OpenAPINavTab;
 const isOpenAPITabKey = (value: string): value is OpenAPITabKey =>
   value === "endpoints" || value === "webhooks" || value === "schemas";
 
-export default function Layout({ openapi, config, plugins }: OpenAPILayoutProps) {
+/** Mirrors the id each section already renders its selected item under (see Paths.tsx, Schema/Schemas.tsx, Server/OpenAPIServers.tsx). */
+const getTargetId = (section: OpenAPITabKey | "servers", key: string) => {
+  switch (section) {
+    case "webhooks":
+      return `webhook-${key}`;
+    case "schemas":
+      return `schema-${key}`;
+    case "servers":
+      return `server-${key}`;
+    default:
+      return `endpoint-${key}`;
+  }
+};
+
+export default function Layout({ openapi, config, plugins, initialLocation, onLocationChange }: OpenAPILayoutProps) {
   const show = config.show ?? {};
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMarkdownOpen, setIsMarkdownOpen] = useState(false);
@@ -82,6 +98,9 @@ export default function Layout({ openapi, config, plugins }: OpenAPILayoutProps)
       { id: "servers", visible: show.servers !== false },
     ],
     searchQuery,
+    initialLocation,
+    onLocationChange,
+    getTargetId,
   });
 
   const serverUrls = (openapi.servers ?? []).map((server) => server.url);

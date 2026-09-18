@@ -6,7 +6,7 @@ import { AsyncAPINavigation, NavTab } from "../../components/Navigation";
 import SearchPanel from "../../components/SearchPanel";
 import MarkdownExportMenu from "../../components/MarkdownExportMenu";
 import { useSpecSearch } from "../../hooks/useSpecSearch";
-import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
+import { useSpecLayoutController, SpecLocation } from "../../hooks/useSpecLayoutController";
 import { asyncApiToMarkdown } from "../../helpers/toMarkdown";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
 import { ConfigInterface } from "../../config";
@@ -29,6 +29,8 @@ export interface LayoutProps {
   asyncapi: AsyncAPIDocumentData;
   config: ConfigInterface;
   plugins?: ApiuikitPlugin[];
+  initialLocation?: SpecLocation<AsyncAPITabKey> | null;
+  onLocationChange?: (location: SpecLocation<AsyncAPITabKey> | null) => void;
 }
 
 type AsyncAPITabKey = NavTab;
@@ -36,7 +38,21 @@ type AsyncAPITabKey = NavTab;
 const isAsyncAPITabKey = (value: string): value is AsyncAPITabKey =>
   value === "operations" || value === "messages" || value === "schemas";
 
-export default function Layout({ asyncapi, config, plugins }: LayoutProps) {
+/** Mirrors the id each section already renders its selected item under (see Operation/Operations.tsx, Messages/Messages.tsx, Schema/Schemas.tsx, Server/Servers.tsx). */
+const getTargetId = (section: AsyncAPITabKey | "servers", key: string) => {
+  switch (section) {
+    case "messages":
+      return `message-${key}`;
+    case "schemas":
+      return `schema-${key}`;
+    case "servers":
+      return `server-${key}`;
+    default:
+      return `operation-${key}`;
+  }
+};
+
+export default function Layout({ asyncapi, config, plugins, initialLocation, onLocationChange }: LayoutProps) {
   const show = config.show ?? {};
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMarkdownOpen, setIsMarkdownOpen] = useState(false);
@@ -77,6 +93,9 @@ export default function Layout({ asyncapi, config, plugins }: LayoutProps) {
       { id: "servers", visible: show.servers !== false },
     ],
     searchQuery,
+    initialLocation,
+    onLocationChange,
+    getTargetId,
   });
 
   const serverNames = asyncapi.servers ? Object.keys(asyncapi.servers) : [];

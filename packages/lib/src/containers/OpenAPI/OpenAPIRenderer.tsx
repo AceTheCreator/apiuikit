@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import OpenAPI from "./OpenAPI";
+import type { IOpenAPIProps } from "./OpenAPI";
 import type { OpenAPIDocumentData } from "../../types/openapi";
 import type { ConfigInterface } from "../../config/config";
 import type { ErrorBoundaryFallbackRenderer } from "../../components/ErrorBoundary";
@@ -20,6 +21,10 @@ interface OpenAPIRendererProps {
   errorFallback?: ReactNode | ErrorBoundaryFallbackRenderer;
   /** Called once when a render error is caught. Parse failures arrive via `onDiagnostics` instead: an error boundary only sees synchronous render errors. */
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  /** Selection (nav tab + endpoint/webhook/schema/server key) to seed once the parsed document first mounts, e.g. parsed from a URL. */
+  initialLocation?: IOpenAPIProps["initialLocation"];
+  /** Fired whenever the selected tab/item changes, e.g. to keep a URL in sync. */
+  onLocationChange?: IOpenAPIProps["onLocationChange"];
 }
 
 /**
@@ -28,7 +33,16 @@ interface OpenAPIRendererProps {
  * have a document as text rather than a pre-parsed object, e.g. user-entered
  * or loaded from a file at runtime.
  */
-export function OpenAPIRenderer({ raw, config, plugins, onDiagnostics, errorFallback, onError }: OpenAPIRendererProps) {
+export function OpenAPIRenderer({
+  raw,
+  config,
+  plugins,
+  onDiagnostics,
+  errorFallback,
+  onError,
+  initialLocation,
+  onLocationChange,
+}: OpenAPIRendererProps) {
   const [document, setDocument] = useState<OpenAPIDocumentData | null>(null);
 
   const onDiagnosticsRef = useRef(onDiagnostics);
@@ -55,6 +69,8 @@ export function OpenAPIRenderer({ raw, config, plugins, onDiagnostics, errorFall
       plugins={plugins}
       errorFallback={errorFallback}
       onError={onError}
+      initialLocation={initialLocation}
+      onLocationChange={onLocationChange}
     />
   );
 }
