@@ -85,6 +85,21 @@ describe("AsyncAPIRenderer", () => {
     ).toBeTruthy();
   });
 
+  it("forwards initialLocation/onLocationChange to the parsed document once it mounts", async () => {
+    const onLocationChange = vi.fn();
+    render(
+      <AsyncAPIRenderer
+        raw={raw}
+        initialLocation={{ tab: "operations", key: "receiveLightMeasurement" }}
+        onLocationChange={onLocationChange}
+      />,
+    );
+
+    await screen.findByRole("heading", { name: "Streetlights Kafka API" });
+    expect(document.getElementById("operation-receiveLightMeasurement-detail")).not.toBeNull();
+    expect(onLocationChange).toHaveBeenCalledWith({ tab: "operations", key: "receiveLightMeasurement" });
+  });
+
   it("re-parses when raw changes and reflects the new document", async () => {
     const { rerender } = render(<AsyncAPIRenderer raw={raw} />);
     await screen.findByRole("heading", { name: "Streetlights Kafka API" });

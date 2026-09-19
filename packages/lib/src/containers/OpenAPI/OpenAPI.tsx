@@ -5,7 +5,7 @@ import { OpenAPIDocumentData } from "../../types/openapi";
 import { ErrorBoundary, ErrorBoundaryFallbackRenderer } from "../../components/ErrorBoundary";
 import type { ErrorInfo, ReactNode } from "react";
 import type { ApiuikitPlugin } from "../../plugins/types";
-import Layout from "./Layout";
+import Layout, { OpenAPILayoutProps } from "./Layout";
 
 export interface IOpenAPIProps {
   /** A pre-resolved OpenAPI 3.0/3.1 document object, or one that still contains `$ref`s. */
@@ -20,6 +20,10 @@ export interface IOpenAPIProps {
   errorFallback?: ReactNode | ErrorBoundaryFallbackRenderer;
   /** Called once when a render error is caught, e.g. to report it to your own logging/telemetry. */
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  /** Selection (nav tab + endpoint/webhook/schema/server key) to seed on mount, e.g. parsed from a URL. Applied once. */
+  initialLocation?: OpenAPILayoutProps["initialLocation"];
+  /** Fired whenever the selected tab/item changes, e.g. to keep a URL in sync. */
+  onLocationChange?: OpenAPILayoutProps["onLocationChange"];
 }
 
 /**
@@ -63,7 +67,15 @@ const OpenAPIContent = (props: IOpenAPIProps) => {
   }, [kind, raw, openapi]);
 
   const config = props.config ?? defaultConfig;
-  return <Layout openapi={openapi} config={config} plugins={props.plugins} />;
+  return (
+    <Layout
+      openapi={openapi}
+      config={config}
+      plugins={props.plugins}
+      initialLocation={props.initialLocation}
+      onLocationChange={props.onLocationChange}
+    />
+  );
 };
 
 export default OpenAPI;
