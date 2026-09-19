@@ -11,6 +11,7 @@ import { asyncApiToMarkdown } from "../../helpers/toMarkdown";
 import { MessageObject } from "../../types/asyncapi/MessageObject";
 import { ConfigInterface } from "../../config";
 import type { ApiuikitPlugin } from "../../plugins/types";
+import { PluginSlot } from "../../plugins/PluginSlot";
 import IconMessage from "../../icons/Message";
 import IconOperation from "../../icons/Operation";
 import IconSchema from "../../icons/Schema";
@@ -42,7 +43,12 @@ export default function Layout({ asyncapi, config, plugins }: LayoutProps) {
   const [isMarkdownOpen, setIsMarkdownOpen] = useState(false);
   const hasTopControls = show.search !== false || show.copyMarkdown !== false;
   const hasTopLogo = show.info !== false && hasInformationLogo(asyncapi.info);
-  const hasMasthead = hasTopControls || hasTopLogo;
+  // A plugin filling the topbar slot earns the bar its own existence too —
+  // otherwise a host that hides both built-in controls (and has no logo)
+  // would silently hide every topbar plugin along with them, with no way
+  // for the plugin to opt back in.
+  const hasTopBarPlugin = plugins?.some((plugin) => Boolean(plugin.slots["asyncapi.document.topbar"])) ?? false;
+  const hasMasthead = hasTopControls || hasTopLogo || hasTopBarPlugin;
 
   const tabs: ContentTabItem[] = [
     ...(show.operations !== false ? [{ id: "operations", name: "Operations", icon: IconOperation }] : []),
@@ -111,6 +117,7 @@ export default function Layout({ asyncapi, config, plugins }: LayoutProps) {
             logo={hasTopLogo ? <InformationLogo source={asyncapi.info} /> : undefined}
             forceVisible={isSearchOpen || isMarkdownOpen}
           >
+            <PluginSlot name="asyncapi.document.topbar" context={{ document: asyncapi }} />
             {show.search !== false && (
               <SearchPanel
                 query={searchQuery}

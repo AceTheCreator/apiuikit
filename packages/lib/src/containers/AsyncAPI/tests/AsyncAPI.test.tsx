@@ -457,5 +457,50 @@ describe("AsyncAPI", () => {
       fireEvent.click(screen.getByRole("tab", { name: "Send it" }));
       expect(screen.getByText("send it content for turnOn")).toBeInTheDocument();
     });
+
+    it("wires a `plugins` prop through to the document top bar slot", () => {
+      const askAi = definePlugin({
+        name: "ask-ai",
+        slots: {
+          "asyncapi.document.topbar": () => <button>Ask AI</button>,
+        },
+      });
+
+      render(<AsyncAPI asyncapi={asDoc(exampleDoc)} plugins={[askAi]} />);
+
+      expect(within(screen.getByLabelText("Document toolbar")).getByRole("button", { name: "Ask AI" })).toBeInTheDocument();
+    });
+
+    it("still renders the top bar for a `document.topbar` plugin when search, markdown export, and the logo are all hidden", () => {
+      const askAi = definePlugin({
+        name: "ask-ai",
+        slots: {
+          "asyncapi.document.topbar": () => <button>Ask AI</button>,
+        },
+      });
+
+      render(
+        <AsyncAPI
+          asyncapi={asDoc(exampleDoc)}
+          config={{ show: { search: false, copyMarkdown: false, info: false } }}
+          plugins={[askAi]}
+        />,
+      );
+
+      const masthead = screen.getByLabelText("Document toolbar");
+      expect(within(masthead).getByRole("button", { name: "Ask AI" })).toBeInTheDocument();
+      expect(within(masthead).queryByPlaceholderText("Search document...")).not.toBeInTheDocument();
+    });
+
+    it("hides the top bar entirely when it has no controls, no logo, and no topbar plugin", () => {
+      render(
+        <AsyncAPI
+          asyncapi={asDoc(exampleDoc)}
+          config={{ show: { search: false, copyMarkdown: false, info: false } }}
+        />,
+      );
+
+      expect(screen.queryByLabelText("Document toolbar")).not.toBeInTheDocument();
+    });
   });
 });

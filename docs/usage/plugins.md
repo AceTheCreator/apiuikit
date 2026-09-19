@@ -63,6 +63,8 @@ Two shapes, distinguished by what they're filled with:
 | `asyncapi.operation.tab` | A tab in the AsyncAPI operation panel, alongside "Reference" | `AsyncAPIOperationPluginContext` | `{ label, component }` |
 | `openapi.operation.reference.supplementary` | Inline, under each OpenAPI operation's documentation (after the code samples, before Authorization) | `OpenAPIOperationPluginContext` | bare component |
 | `asyncapi.operation.reference.supplementary` | Inline, under each AsyncAPI operation's documentation (after the code sample) | `AsyncAPIOperationPluginContext` | bare component |
+| `openapi.document.topbar` | In the document top bar, alongside search and the markdown export menu | `OpenAPIDocumentPluginContext` | bare component |
+| `asyncapi.document.topbar` | In the document top bar, alongside search and the markdown export menu | `AsyncAPIDocumentPluginContext` | bare component |
 
 ```ts
 interface OpenAPIOperationPluginContext {
@@ -74,6 +76,14 @@ interface OpenAPIOperationPluginContext {
 interface AsyncAPIOperationPluginContext {
   document: AsyncAPIDocumentData;
   operationId: string; // the operation's key in document.operations
+}
+
+interface OpenAPIDocumentPluginContext {
+  document: OpenAPIDocumentData;
+}
+
+interface AsyncAPIDocumentPluginContext {
+  document: AsyncAPIDocumentData;
 }
 ```
 
@@ -119,6 +129,21 @@ export default definePlugin({
 ```
 
 ![The `openapi.operation.reference.supplementary` slot, outlined in the playground: a small inline element sitting between the code samples and Authorization](./images/plugins/operation-supplementary-slot.png)
+
+### `*.document.topbar`
+
+Renders once per document, in the top bar's controls area, alongside the built-in search and markdown-export controls — not tied to any single operation. Like `*.operation.reference.supplementary`, it takes a bare component and multiple plugins filling it render in registration order:
+
+```tsx
+export default definePlugin({
+  name: "my-plugin",
+  slots: {
+    "openapi.document.topbar": MyTopBarButton,
+  },
+});
+```
+
+![The `openapi.document.topbar` slot, outlined in the playground: a button sitting in the top bar, alongside search and the markdown export menu](./images/plugins/openapi-document-topbar.png)
 
 ## Writing a plugin
 
