@@ -16,6 +16,7 @@ export type {
   ThemeColors,
   ThemeColorScale,
   ThemeConfig,
+  ThemeMode,
   ThemeModeColors,
 } from './config';
 

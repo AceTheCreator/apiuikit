@@ -380,5 +380,50 @@ describe("OpenAPI", () => {
       fireEvent.click(screen.getByRole("tab", { name: "Try it" }));
       expect(screen.getByText("try it content for get /pets")).toBeInTheDocument();
     });
+
+    it("wires a `plugins` prop through to the document top bar slot", () => {
+      const askAi = definePlugin({
+        name: "ask-ai",
+        slots: {
+          "openapi.document.topbar": () => <button>Ask AI</button>,
+        },
+      });
+
+      render(<OpenAPI openapi={asDoc(exampleDoc)} plugins={[askAi]} />);
+
+      expect(within(screen.getByLabelText("Document toolbar")).getByRole("button", { name: "Ask AI" })).toBeInTheDocument();
+    });
+
+    it("still renders the top bar for a `document.topbar` plugin when search, markdown export, and the logo are all hidden", () => {
+      const askAi = definePlugin({
+        name: "ask-ai",
+        slots: {
+          "openapi.document.topbar": () => <button>Ask AI</button>,
+        },
+      });
+
+      render(
+        <OpenAPI
+          openapi={asDoc(exampleDoc)}
+          config={{ show: { search: false, copyMarkdown: false, info: false } }}
+          plugins={[askAi]}
+        />,
+      );
+
+      const masthead = screen.getByLabelText("Document toolbar");
+      expect(within(masthead).getByRole("button", { name: "Ask AI" })).toBeInTheDocument();
+      expect(within(masthead).queryByPlaceholderText("Search document...")).not.toBeInTheDocument();
+    });
+
+    it("hides the top bar entirely when it has no controls, no logo, and no topbar plugin", () => {
+      render(
+        <OpenAPI
+          openapi={asDoc(exampleDoc)}
+          config={{ show: { search: false, copyMarkdown: false, info: false } }}
+        />,
+      );
+
+      expect(screen.queryByLabelText("Document toolbar")).not.toBeInTheDocument();
+    });
   });
 });

@@ -1,5 +1,49 @@
 # apiuikit
 
+## 1.11.0
+
+### Minor Changes
+
+- 3626b9d: Add `openapi.document.topbar`/`asyncapi.document.topbar` plugin slots, rendered once per document in the top bar's controls area alongside the built-in search and markdown-export controls. Existing operation-scoped slots (`*.operation.tab`, `*.operation.reference.supplementary`) are unaffected — this is a new, document-level extension point for plugins that aren't tied to a single operation.
+
+## 1.10.1
+
+### Patch Changes
+
+- f2bff6f: Fix the desktop sidebar rail (and its popover) rendering relative to the browser's own viewport instead of the widget. When embedded as part of a larger page, the rail vertically centered itself on the full screen rather than the widget's own visible bounds, so it could appear detached from — or entirely outside — the rendered doc component. It now centers on whichever part of the widget is actually on screen.
+
+## 1.10.0
+
+### Minor Changes
+
+- 7f0b95e: Expose the resolved theme mode (`"light"` | `"dark"`) on `useDocumentContext()` as `resolvedMode`. Plugins that read raw hex values out of `config.theme` (rather than the recommended CSS custom properties) previously had no way to tell which of `theme.light`/`theme.dark` was actually active now that `mode` can make either one win — `resolvedMode` gives them the same answer apiuikit's own chrome uses.
+
+## 1.9.0
+
+### Minor Changes
+
+- e545e4c: Add `theme.mode` (`"light" | "dark" | "system"`) so the library switches between `theme.light` and `theme.dark` itself, instead of requiring consumers to rebuild the `theme` config object every time their own toggle changes. `"system"` follows the OS `prefers-color-scheme` setting live. Left unset, `mode` preserves prior behavior exactly — whichever single one of `light`/`dark` you provided is used, with `light` winning if you provided both (or neither) — so existing configs render unchanged.
+
+## 1.8.3
+
+### Patch Changes
+
+- 6a635b4: Fix the compact sidebar navigation toggle (the floating circular button shown when the widget is too narrow for the tick "spine") detaching from its bounded preview pane — the same `position: fixed` viewport-relative math already fixed for the document toolbar. The button now sits in a `position: sticky` anchor instead, so it stays bottom-right of the widget's own pane rather than the true browser viewport; the popover it opens now reads its position from the button's own measured on-screen rect instead of recomputing it independently, so the two can't drift out of sync.
+- 44ded5c: Fix the document toolbar (search + "Copy as Markdown") still detaching from its bounded preview pane in some scroll combinations after the 1.8.2 fix — most visibly when scrolling back up past where the pane's own top had scrolled offscreen, which pinned the toolbar to the true viewport top and let it overlap the document's own heading. The previous fix computed the toolbar's `position: fixed` coordinates in JS from the nearest scrolling ancestor's rect, which can't account for every combination of outer-page scroll, an ancestor's own scroll, and a host's fixed navbar at once. The toolbar now uses CSS `position: sticky` instead, so the browser resolves its position against whichever ancestor is actually scrolling every frame, with no JS geometry math and no drift.
+- d866aeb: Fix the document toolbar's empty middle space (between the logo and the search/Copy-as-Markdown controls) painting an opaque background that obscured document content scrolling underneath it. That background came from a row spanning the toolbar's full width, painted even where there was nothing to show — the search and Copy as Markdown buttons already carry their own background for legibility, so the row itself is now transparent.
+
+## 1.8.2
+
+### Patch Changes
+
+- 32b5b40: Fix the document toolbar (search + "Copy as Markdown") pinning to the true browser viewport instead of the widget's own scrollable container when the widget is embedded in a bounded, independently-scrolling pane elsewhere on a host page (e.g. a settings-page preview). Scrolling inside such a pane moved the widget root's own rect deeply negative even though the pane itself hadn't moved, so the toolbar snapped to the top of the browser window instead of staying pinned to the pane's visible top edge. The toolbar now anchors to the nearest ancestor that's actually clipping/scrolling the widget, when one exists.
+
+## 1.8.1
+
+### Patch Changes
+
+- 376d7d1: Fix `ReferenceError: self is not defined` when server-rendering apiuikit's components under Next.js (or any Node-based SSR). `isomorphic-dompurify` was being bundled into apiuikit's dist output, which locked in its browser-only implementation (an unguarded `self.DOMPurify` reference) at build time regardless of the environment actually loading it. It's now left external so each consumer's own bundler resolves the correct Node vs. browser implementation.
+
 ## 1.8.0
 
 ### Minor Changes

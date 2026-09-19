@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Tabs from "./Tabs";
 import Markdown from "./Markdown";
 import { formatArrayToCodeString } from "../helpers/formatEnumDescription";
+import { isUrl } from "../helpers/common";
 import {
   AUTHORIZATION_CODE_DESCRIPTION,
   AUTHORIZATION_CODE_TEXT,
@@ -329,9 +330,13 @@ export const OpenID = ({ security }: { security: SecuritySchemeData }) => {
       )}
       <p>
         The OpenID Connect URL is{" "}
-        <a href={security.openIdConnectUrl} target="_blank" rel="noreferrer">
-          {security.openIdConnectUrl}
-        </a>
+        {isUrl(security.openIdConnectUrl ?? "") ? (
+          <a href={security.openIdConnectUrl} target="_blank" rel="noreferrer">
+            {security.openIdConnectUrl}
+          </a>
+        ) : (
+          security.openIdConnectUrl
+        )}
         .
       </p>
       {scopesValue && scopesValue.length > 0 && (
@@ -401,9 +406,13 @@ export const OAuth2 = ({ security }: { security: SecuritySchemeData }) => {
                         Authorization URL
                       </dt>
                       <dd className="mt-1 text-sm text-foreground @sm:mt-0 @sm:col-span-2">
-                        <a href={flowData.authorizationUrl} target="_blank" rel="noreferrer" className="text-foreground">
-                          {flowData.authorizationUrl}
-                        </a>
+                        {isUrl(flowData.authorizationUrl) ? (
+                          <a href={flowData.authorizationUrl} target="_blank" rel="noreferrer" className="text-foreground">
+                            {flowData.authorizationUrl}
+                          </a>
+                        ) : (
+                          flowData.authorizationUrl
+                        )}
                       </dd>
                     </div>
                   )}
@@ -413,9 +422,13 @@ export const OAuth2 = ({ security }: { security: SecuritySchemeData }) => {
                         Token URL
                       </dt>
                       <dd className="mt-1 text-sm text-foreground @sm:mt-0 @sm:col-span-2">
-                        <a href={flowData.tokenUrl} target="_blank" rel="noreferrer" className="text-foreground">
-                          {flowData.tokenUrl}
-                        </a>
+                        {isUrl(flowData.tokenUrl) ? (
+                          <a href={flowData.tokenUrl} target="_blank" rel="noreferrer" className="text-foreground">
+                            {flowData.tokenUrl}
+                          </a>
+                        ) : (
+                          flowData.tokenUrl
+                        )}
                       </dd>
                     </div>
                   )}
@@ -425,9 +438,13 @@ export const OAuth2 = ({ security }: { security: SecuritySchemeData }) => {
                         Refresh URL
                       </dt>
                       <dd className="mt-1 text-sm text-foreground @sm:mt-0 @sm:col-span-2">
-                        <a href={flowData.refreshUrl} target="_blank" rel="noreferrer" className="text-foreground">
-                          {flowData.refreshUrl}
-                        </a>
+                        {isUrl(flowData.refreshUrl) ? (
+                          <a href={flowData.refreshUrl} target="_blank" rel="noreferrer" className="text-foreground">
+                            {flowData.refreshUrl}
+                          </a>
+                        ) : (
+                          flowData.refreshUrl
+                        )}
                       </dd>
                     </div>
                   )}

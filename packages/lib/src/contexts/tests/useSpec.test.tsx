@@ -20,6 +20,7 @@ const baseContext = {
   portalHost: null,
   rootElement: null,
   sidePanelContainment: "component" as const,
+  resolvedMode: "light" as const,
   depthColors: DEFAULT_DEPTH_COLORS,
   showExtensions: true,
   showCodeSamples: true,

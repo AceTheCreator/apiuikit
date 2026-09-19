@@ -40,7 +40,7 @@ function renderTopBar(rootElement: HTMLElement, topOffset?: number) {
     rootElement,
     topOffset,
     sidePanelContainment: "component",
-    depthColors: [],
+    resolvedMode: "light",    depthColors: [],
     showExtensions: true,
     showCodeSamples: true,
   } as DocumentContextValue;
@@ -77,34 +77,48 @@ function travelPx(transform: string): number {
 }
 
 describe("DocumentTopBar", () => {
-  it("sits in flow while the widget's top is still on screen", () => {
+  it("sticks at topOffset + 10px regardless of the widget's own scroll position", () => {
+    // Positioning is CSS `position: sticky` (set in index.css, not inline —
+    // jsdom doesn't compute layout, so there's nothing browser-geometry-level
+    // to assert here; see DocumentTopBar.tsx's comment on why sticky replaced
+    // JS-computed `position: fixed`). Only the JS-driven `top` and the
+    // hide/reveal `transform` are inline and thus testable here.
     const header = renderTopBar(mountRoot([0]));
-    expect(header.style.position).toBe("");
+    expect(header.style.top).toBe("10px");
     expect(header.style.transform).toBe("translateY(0px)");
+  });
+
+  it.each([
+    { topOffset: undefined, label: "no host navbar" },
+    { topOffset: 72, label: "a 72px host navbar" },
+    { topOffset: 200, label: "a very tall host navbar" },
+  ])("offsets the sticky top by $label", ({ topOffset }) => {
+    const header = renderTopBar(mountRoot([0]), topOffset);
+    expect(header.style.top).toBe(`${(topOffset ?? 0) + 10}px`);
   });
 
   /**
    * Regression: the hide used `translateY(-150%)`, and a transform percentage
-   * resolves against the element's own height — a flat 60px — regardless of
-   * how far down the viewport the bar starts. `topOffset` is documented as the
-   * height of a host site's fixed navbar, and at anything past ~15px the bar
-   * started lower than 60px from the top, so "hidden" left it parked on screen.
+   * resolves against the element's own height — a flat 40px — regardless of
+   * how far down the page the bar actually starts. `topOffset` is documented
+   * as the height of a host site's fixed navbar, and at anything past ~15px
+   * the bar started lower than 40px from the top, so "hidden" left it parked
+   * on screen.
    */
   it.each([
     { topOffset: undefined, label: "no host navbar" },
     { topOffset: 72, label: "a 72px host navbar" },
     { topOffset: 200, label: "a very tall host navbar" },
-  ])("clears the viewport when hidden with $label", ({ topOffset }) => {
+  ])("clears its sticky position when hidden with $label", ({ topOffset }) => {
     vi.useFakeTimers();
     // Second measurement is higher up the page than the first: scrolled down.
     const header = renderTopBar(mountRoot([-100, -400]), topOffset);
     scrollDown();
 
-    expect(header.style.position).toBe("fixed");
-
     // Where the bar's bottom edge lands once the transform has been applied:
-    // its `top` (topOffset + the 10px inset), less the 10px margin pull that
-    // sits it flush, plus its own height. At or below 0 means it's off-screen.
+    // its sticky `top` (topOffset + the 10px inset), less the 10px margin
+    // pull that sits it flush, plus its own height. At or below 0 means it's
+    // scrolled clear of its sticky position.
     const barTop = (topOffset ?? 0) + 10 - 10;
     expect(barTop + BAR_HEIGHT - travelPx(header.style.transform)).toBeLessThanOrEqual(0);
 

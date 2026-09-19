@@ -8,6 +8,8 @@ export type {
   ApiuikitPlugin,
   AsyncAPIOperationPluginContext,
   OpenAPIOperationPluginContext,
+  AsyncAPIDocumentPluginContext,
+  OpenAPIDocumentPluginContext,
   PluginSlotComponent,
   PluginSlotContextMap,
   PluginSlotName,

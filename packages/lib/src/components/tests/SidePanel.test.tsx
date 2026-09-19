@@ -55,7 +55,7 @@ describe("SidePanel", () => {
       portalHost,
       rootElement,
       sidePanelContainment: "component",
-      sidePanelTopOffset: 72,
+      resolvedMode: "light",      sidePanelTopOffset: 72,
       depthColors: [],
       showExtensions: true,
       showCodeSamples: true,

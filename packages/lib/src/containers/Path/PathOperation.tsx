@@ -6,6 +6,7 @@ import Authorization from "../../components/Authorization";
 import CollapsiblePanel from "../../components/CollapsiblePanel";
 import IconExternalLink from "../../icons/ExternalLink";
 import IconShieldCheck from "../../icons/ShieldCheck";
+import { isUrl } from "../../helpers/common";
 import { PARAMETER_GROUPS } from "../../contants";
 import ResponseLinks from "./ResponseLinks";
 import OperationCallbacks from "./OperationCallbacks";
@@ -584,7 +585,7 @@ export default function PathOperation({
                   Deprecated
                 </span>
               )}
-              {op.externalDocs?.url && (
+              {op.externalDocs?.url && isUrl(op.externalDocs.url) && (
                 <a
                   href={op.externalDocs.url}
                   target="_blank"

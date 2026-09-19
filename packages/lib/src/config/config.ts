@@ -163,12 +163,26 @@ export interface ThemeModeColors {
   textMuted?: string;
 }
 
+/**
+ * Which palette to render. `"light"` / `"dark"` pick that palette outright.
+ * `"system"` follows the OS `prefers-color-scheme` setting and updates live
+ * if it changes while mounted.
+ *
+ * Left unset, resolution preserves pre-`mode` behavior: whichever single one
+ * of `light`/`dark` you provided is used; if you provided both (or neither),
+ * `light` is used. Set `mode` explicitly — including `"system"` — to opt in
+ * to OS-driven switching.
+ */
+export type ThemeMode = "light" | "dark" | "system";
+
 export interface ThemeConfig {
   /** Brand color scale overrides, applied regardless of which mode is active. */
   colors?: ThemeColors;
-  /** Applied when a light theme is configured. Wins over `dark` if both are set. */
+  /** Which palette to render — see {@link ThemeMode}. */
+  mode?: ThemeMode;
+  /** Palette applied when the resolved mode is `"light"`. Both `light` and `dark` may be set at once — `mode` decides which renders. */
   light?: ThemeModeColors;
-  /** Applied when only a dark theme is configured. */
+  /** Palette applied when the resolved mode is `"dark"`. */
   dark?: ThemeModeColors;
   /**
    * Colors for the schema tree's depth-indicator lines (and matching label

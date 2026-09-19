@@ -10,6 +10,7 @@ import { useSpecLayoutController } from "../../hooks/useSpecLayoutController";
 import { openApiToMarkdown } from "../../helpers/toMarkdown";
 import { ConfigInterface } from "../../config";
 import type { ApiuikitPlugin } from "../../plugins/types";
+import { PluginSlot } from "../../plugins/PluginSlot";
 import IconConnection from "../../icons/Connection";
 import IconOperation from "../../icons/Operation";
 import IconSchema from "../../icons/Schema";
@@ -40,7 +41,12 @@ export default function Layout({ openapi, config, plugins }: OpenAPILayoutProps)
   const [isMarkdownOpen, setIsMarkdownOpen] = useState(false);
   const hasTopControls = show.search !== false || show.copyMarkdown !== false;
   const hasTopLogo = show.info !== false && hasInformationLogo(openapi.info);
-  const hasMasthead = hasTopControls || hasTopLogo;
+  // A plugin filling the topbar slot earns the bar its own existence too —
+  // otherwise a host that hides both built-in controls (and has no logo)
+  // would silently hide every topbar plugin along with them, with no way
+  // for the plugin to opt back in.
+  const hasTopBarPlugin = plugins?.some((plugin) => Boolean(plugin.slots["openapi.document.topbar"])) ?? false;
+  const hasMasthead = hasTopControls || hasTopLogo || hasTopBarPlugin;
 
   // Webhooks are 3.1-only and rare, so unlike the other tabs this one appears
   // only when the document actually declares some — an always-empty Webhooks
@@ -121,6 +127,7 @@ export default function Layout({ openapi, config, plugins }: OpenAPILayoutProps)
             logo={hasTopLogo ? <InformationLogo source={openapi.info} /> : undefined}
             forceVisible={isSearchOpen || isMarkdownOpen}
           >
+            <PluginSlot name="openapi.document.topbar" context={{ document: openapi }} />
             {show.search !== false && (
               <SearchPanel
                 query={searchQuery}

@@ -20,7 +20,9 @@ import type { AsyncAPIDocumentData } from "../types/schema";
  * slots, these are filled by a bare React component. */
 export type SupplementarySlotName =
   | "openapi.operation.reference.supplementary"
-  | "asyncapi.operation.reference.supplementary";
+  | "asyncapi.operation.reference.supplementary"
+  | "openapi.document.topbar"
+  | "asyncapi.document.topbar";
 
 /** The `*.operation.tab` slots — see `PluginSlotName`'s doc comment for what
  * distinguishes them from inline slots. */
@@ -54,11 +56,26 @@ export interface AsyncAPIOperationPluginContext {
   operationId: string;
 }
 
+/** The whole document, with no specific operation in scope — for slots that
+ * render once per document rather than once per operation (e.g. the document
+ * top bar, alongside search). */
+export interface OpenAPIDocumentPluginContext {
+  document: OpenAPIDocumentData;
+}
+
+/** The whole document, with no specific operation in scope — the AsyncAPI
+ * counterpart to `OpenAPIDocumentPluginContext`. */
+export interface AsyncAPIDocumentPluginContext {
+  document: AsyncAPIDocumentData;
+}
+
 export interface PluginSlotContextMap {
   "openapi.operation.reference.supplementary": OpenAPIOperationPluginContext;
   "asyncapi.operation.reference.supplementary": AsyncAPIOperationPluginContext;
   "openapi.operation.tab": OpenAPIOperationPluginContext;
   "asyncapi.operation.tab": AsyncAPIOperationPluginContext;
+  "openapi.document.topbar": OpenAPIDocumentPluginContext;
+  "asyncapi.document.topbar": AsyncAPIDocumentPluginContext;
 }
 
 export type PluginSlotComponent<N extends PluginSlotName> = ComponentType<PluginSlotContextMap[N]>;

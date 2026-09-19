@@ -68,7 +68,7 @@ function withContext(document: unknown, showCodeSamples: boolean, children: Reac
         portalHost: null,
         rootElement: null,
         sidePanelContainment: "component",
-        depthColors: DEFAULT_DEPTH_COLORS,
+        resolvedMode: "light",        depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
         showCodeSamples,
       }}

@@ -84,6 +84,11 @@ export default function Navigation({
   const { rootElement, portalHost, topOffset = 0 } = useAsyncAPIDocument();
   const toggleRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  // Tracked separately from `toggleRef` (a plain, non-reactive ref) because
+  // the compact popover's position is measured from this element's real,
+  // already-correctly-placed on-screen rect — see the comment above
+  // `compactPopoverStyle` for why that beats computing it by hand.
+  const [compactToggleElement, setCompactToggleElement] = useState<HTMLButtonElement | null>(null);
 
   const visibleSections = useMemo(
     () => sections.filter((section) => section.items.length > 0),
@@ -225,8 +230,19 @@ export default function Navigation({
   const viewportWidth = typeof window === "undefined" ? 0 : window.innerWidth;
   const viewportHeight = typeof window === "undefined" ? 0 : window.innerHeight;
   const widgetInView = !!rootRect && rootRect.bottom > topOffset && rootRect.top < viewportHeight;
-  const availableViewportHeight = Math.max(0, viewportHeight - topOffset);
-  const viewportContentCenter = topOffset + availableViewportHeight / 2;
+
+  // Centered on whichever part of the *widget* is actually on screen, not on
+  // the browser viewport's own center. `position: fixed` coordinates are
+  // always relative to the screen, so without this clamp the tick renders at
+  // the screen's literal vertical midpoint even when that point falls outside
+  // the widget's own bounds — e.g. a widget shorter than the viewport, or one
+  // embedded alongside other site content above or below it. Clamping to the
+  // widget's visible span keeps the rail pinned to the component itself
+  // rather than leaking into the surrounding page.
+  const widgetVisibleTop = Math.max(rootRect?.top ?? topOffset, topOffset);
+  const widgetVisibleBottom = Math.min(rootRect?.bottom ?? viewportHeight, viewportHeight);
+  const availableViewportHeight = Math.max(0, widgetVisibleBottom - widgetVisibleTop);
+  const viewportContentCenter = (widgetVisibleTop + widgetVisibleBottom) / 2;
 
   // The spine lives in the left gutter that Section's centered content leaves
   // on wide layouts. Below this width there is no gutter (content runs edge
@@ -252,16 +268,29 @@ export default function Navigation({
     ...visibilityStyle,
   };
 
-  // Hug the widget's right edge (clamped to the viewport for embeds wider
-  // than the screen), where a thumb naturally rests.
-  const compactToggleLeft = Math.min(rootRect?.right ?? 0, viewportWidth) - 60;
-  const compactToggleStyle: React.CSSProperties = {
-    position: "fixed",
-    bottom: 16,
-    left: compactToggleLeft,
+  // The compact button used to be `position: fixed` with its `left` computed
+  // from `rootRect`/`viewportWidth` — viewport-relative math that (like the
+  // document toolbar before it) drifts away from the widget the moment it's
+  // embedded in a bounded, independently-scrolling host pane rather than
+  // filling the page. `position: sticky` on a zero-height wrapper sidesteps
+  // that the same way: the browser sticks it to the bottom of whichever
+  // ancestor is actually scrolling, so the button (absolutely positioned
+  // inside, bottom-right) stays correctly bounded to the widget's own pane
+  // with no viewport geometry at all. The wrapper's containing block is its
+  // parent — the `px-4` div in Layout.tsx spanning the whole document body —
+  // so it sticks (and un-sticks) across the widget's full scrollable extent.
+  const compactToggleWrapperStyle: React.CSSProperties = {
+    position: "sticky",
+    bottom: 0,
+    height: 0,
     zIndex: 51,
-    ...visibilityStyle,
+    pointerEvents: "none",
   };
+
+  // The button's own real on-screen rect, now that it's correctly bounded to
+  // its pane via sticky — used below to anchor the popover directly against
+  // it instead of re-deriving the button's position from `rootRect` math.
+  const compactToggleRect = useElementRect(compactToggleElement, isCompact);
 
   // Deliberately not spreading `visibilityStyle` here: the popover's own
   // visibility is driven by `isVisible` (open/hover state) via the Tailwind
@@ -273,10 +302,13 @@ export default function Navigation({
   // the ticks, so it must visually cover them once open.
   const popoverStyle: React.CSSProperties = isCompact
     ? {
-        // Anchored just above the compact button, right edges aligned.
+        // Anchored just above the compact button, right edges aligned — read
+        // from the button's own measured rect (already correctly bounded to
+        // the widget's pane) rather than recomputed from viewport math, so
+        // this can't drift out of sync with where the button actually is.
         position: "fixed",
-        bottom: 16 + 44 + 8,
-        right: viewportWidth - (compactToggleLeft + 44),
+        bottom: compactToggleRect ? viewportHeight - compactToggleRect.top + 8 : 16 + 44 + 8,
+        right: compactToggleRect ? viewportWidth - compactToggleRect.right : 16,
         zIndex: 52,
       }
     : {
@@ -284,7 +316,10 @@ export default function Navigation({
         top: viewportContentCenter,
         left: (rootRect?.left ?? 0) + NAV_LEFT_OFFSET,
         transform: "translateY(-50%)",
-        maxHeight: `calc(100vh - ${topOffset + 32}px)`,
+        // Bounded by the widget's own visible span (see `availableViewportHeight`
+        // above), not `100vh` — otherwise the popover could size itself past the
+        // widget's own bottom edge and overlap unrelated content below it.
+        maxHeight: `${Math.max(0, availableViewportHeight - 32)}px`,
         zIndex: 52,
       };
 
@@ -487,22 +522,30 @@ export default function Navigation({
 
       {/* Compact trigger: no gutter for the spine to live in, so a floating
           bottom-right button (echoing the tick motif) opens the very same
-          popover on click — hover doesn't exist on touch. */}
+          popover on click — hover doesn't exist on touch. Wrapped in a
+          zero-height sticky anchor (see compactToggleWrapperStyle) so the
+          button itself, absolutely positioned inside it, stays bottom-right
+          of the widget's own pane instead of the true viewport. */}
       {isCompact && (
-        <button
-          ref={toggleRef}
-          onClick={() => setOpen((v) => !v)}
-          title={open ? "Close navigation" : "Open navigation"}
-          aria-label={open ? "Close navigation" : "Open navigation"}
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background shadow-lg"
-          style={compactToggleStyle}
-        >
-          <span className="flex flex-col items-start gap-1">
-            <span className="block h-[2px] w-4 rounded-full bg-foreground-secondary" />
-            <span className="block h-[2px] w-3 rounded-full bg-neutral-400" />
-            <span className="block h-[2px] w-3 rounded-full bg-neutral-300" />
-          </span>
-        </button>
+        <div style={compactToggleWrapperStyle}>
+          <button
+            ref={(el) => {
+              toggleRef.current = el;
+              setCompactToggleElement(el);
+            }}
+            onClick={() => setOpen((v) => !v)}
+            title={open ? "Close navigation" : "Open navigation"}
+            aria-label={open ? "Close navigation" : "Open navigation"}
+            className="absolute bottom-4 right-4 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background shadow-lg"
+            style={visibilityStyle}
+          >
+            <span className="flex flex-col items-start gap-1">
+              <span className="block h-[2px] w-4 rounded-full bg-foreground-secondary" />
+              <span className="block h-[2px] w-3 rounded-full bg-neutral-400" />
+              <span className="block h-[2px] w-3 rounded-full bg-neutral-300" />
+            </span>
+          </button>
+        </div>
       )}
 
       {portalHost &&

@@ -22,7 +22,7 @@ const withPortalHost = (Story: ComponentType) => {
         portalHost: typeof document !== "undefined" ? document.body : null,
         rootElement: null,
         sidePanelContainment: "component",
-        depthColors: DEFAULT_DEPTH_COLORS,
+        resolvedMode: "light",        depthColors: DEFAULT_DEPTH_COLORS,
         showExtensions: true,
         showCodeSamples: true,
       }}

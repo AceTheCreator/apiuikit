@@ -85,13 +85,16 @@ export default defineConfig({
     },
     rollupOptions: {
       maxParallelFileOps: 100,
-      // @apiuikit/* stays external rather than being inlined: the try-it
-      // package imports `apiuikit/plugin`, and bundling it here would
-      // resolve that to this library's own output — a second copy, and so a
-      // second `DocumentContext`, which `useDocumentContext` would reject
-      // even when correctly nested. External, the consumer's bundler
-      // resolves both to the one apiuikit their app already loaded.
-      external: ['react', 'react-dom', 'react/jsx-runtime', /^@apiuikit\//],
+      // isomorphic-dompurify can't be bundled: its package.json picks a
+      // different implementation per resolver condition (`node` → jsdom-backed,
+      // `browser`/default → assumes a `self`/`window` global with no guard).
+      // Vite's own build always resolves the browser condition, so bundling it
+      // bakes in `self.DOMPurify = ...` at module scope — which throws
+      // `ReferenceError: self is not defined` the moment any consumer
+      // server-renders these components under Node (e.g. Next.js SSR).
+      // Leaving it external lets each consumer's own bundler resolve the
+      // right variant for the environment it's actually compiling for.
+      external: ['react', 'react-dom', 'react/jsx-runtime', 'isomorphic-dompurify'],
       output: {
         globals: {
           react: 'React',

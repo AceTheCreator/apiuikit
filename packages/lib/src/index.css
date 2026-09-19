@@ -68,8 +68,31 @@
    --color-neutral-800: 30 41 59;
    --color-neutral-900: 15 23 42;
   }
-  
-  
+
+/* Dark-mode fallback for any CSS var not supplied via theme.dark — keep in
+   sync with defaultConfig.theme.dark (config/default.ts) and
+   DARK_NEUTRAL_DEFAULTS (utils/theme.ts). */
+.apiuikit-root[data-theme="dark"] {
+  --color-background: 13 17 23;
+  --color-surface: 22 27 34;
+  --color-border: 48 54 61;
+
+  --color-text-primary: 201 209 217;
+  --color-text-secondary: 139 148 158;
+  --color-text-muted: 110 118 129;
+
+  --color-neutral-50:  15 23 42;
+  --color-neutral-100: 30 41 59;
+  --color-neutral-200: 51 65 85;
+  --color-neutral-300: 71 85 105;
+  --color-neutral-500: 148 163 184;
+  --color-neutral-600: 203 213 225;
+  --color-neutral-700: 226 232 240;
+  --color-neutral-800: 241 245 249;
+  --color-neutral-900: 248 250 252;
+}
+
+
 .apiuikit-root .primary-gradient-color-stop {
     stop-color: var(--color-primary);
   }
@@ -79,12 +102,21 @@
   }
 
 /* Branding and document actions share one positioned surface so the complete
-   masthead follows the same hide/reveal behavior while scrolling. */
+   masthead follows the same hide/reveal behavior while scrolling.
+   `position: sticky` (not `fixed`) so the browser itself resolves "stuck"
+   against whichever ancestor is actually scrolling — the page, or a bounded
+   host pane with its own `overflow: auto` (e.g. a settings-page preview).
+   A JS-computed `fixed` position can only ever target the true viewport,
+   which drifts away from a scrolled pane's own visible top; sticky can't
+   drift because the browser recomputes it every frame from real layout,
+   not a scroll-event-driven JS measurement. `top`/`transform` still come from
+   JS (`topOffset` is a runtime config value; the hide/reveal transform needs
+   scroll-direction state sticky alone can't express). No `left`/`right`: as
+   a sticky (in-flow) box it already spans its padded parent's content box,
+   unlike `position: absolute`, which resolves against `.apiuikit-root` and
+   skips that parent's padding — hence needed its own explicit inset. */
 .apiuikit-root .document-topbar {
-  position: absolute;
-  top: 10px;
-  left: 16px;
-  right: 16px;
+  position: sticky;
   margin-top: -10px;
   z-index: 40;
   /* Breathing room above the controls, as padding *inside* the painted
@@ -99,12 +131,17 @@
   transition: transform 0.3s ease-in-out;
 }
 
+/* No background here: this row spans the bar's full width (`justify-content:
+   space-between` leaves a gap between the logo and the controls), and an
+   opaque background on the whole row painted over that gap too — hiding
+   whatever content scrolls underneath the sticky bar in the space where
+   there's nothing to see anyway. The search/copy-markdown buttons carry
+   their own `bg-neutral-100` for legibility, so this stays transparent. */
 .apiuikit-root .document-topbar-inner {
   display: flex;
   height: 40px;
   align-items: center;
   justify-content: space-between;
-  background-color: rgb(var(--color-background) / 1);
 }
 
 .apiuikit-root .document-topbar-controls {
