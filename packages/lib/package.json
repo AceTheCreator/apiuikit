@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "@apiuikit/openapi-try-it-plugin": "file:../../../../Projects/openapi-try-it-plugin",
+    "@apiuikit/ws-try-it-plugin": "file:../../../../Projects/ws-try-it-plugin",
     "@asyncapi/specs": "^6.8.1",
     "@json-schema-tools/reference-resolver": "^1.2.6",
     "@readme/httpsnippet": "^11.4.0",

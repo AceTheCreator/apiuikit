@@ -77,19 +77,24 @@ interface ThemeModeColors {
 
   `search` controls whether the search panel is shown. `schemas`, `messageExamples`, and `tryIt` default to `false`. All other fields default to `true`.
 
-- **show.tryIt?: boolean** — OpenAPI only
+- **show.tryIt?: boolean**
 
-  Adds a **Try it** button to the operation side panel's header: a request builder that fills in parameters, auth, and a body, sends the request from the reader's browser, and shows the response. Off by default.
+  Adds a **Try it** button to the operation side panel's header. Off by default.
+
+  - **OpenAPI:** a request builder that fills in parameters, auth, and a body, sends the request from the reader's browser, and shows the response.
+  - **AsyncAPI:** a WebSocket client that connects to the operation's `ws`/`wss` server, composes and validates messages, and logs frames in both directions. Operations with no WebSocket server show no button.
 
   ```ts
   const config = { show: { tryIt: true } };
   ```
 
-  Nothing to install — apiuikit depends on the panel and loads it on demand. Off, its code is never fetched: the check happens before the lazy import is reached, so a site that leaves it alone ships nothing extra to readers.
+  Nothing to install — apiuikit depends on both panels and loads the one it needs on demand. Off, its code is never fetched: the check happens before the lazy import is reached, so a site that leaves it alone ships nothing extra to readers.
 
   **Turn it on deliberately.** It changes a documentation page into one that collects credentials from readers — API keys, passwords, tokens, OAuth2 client secrets — and holds them in `sessionStorage` for the tab's lifetime, where any script on the page can read them. Requests go to whichever origin the *document's* `servers` entry names, so if you render specs you don't control, the spec decides where a reader's credentials are sent.
 
-  For other layouts (a full operation tab, or a row inside the Reference panel) and for routing requests through a CORS proxy, install [`@apiuikit/openapi-try-it-plugin`](https://github.com/apiuikit/openapi-try-it-plugin) and register it via `plugins` — see [Plugins](../usage/plugins.md).
+  The AsyncAPI panel keeps credentials in memory only, but the same caution applies: connections go to whichever host the document's `servers` entry names.
+
+  For other layouts (a full operation tab, or a row inside the Reference panel) and for options such as a CORS proxy (OpenAPI) or `allowedHosts` and credential providers (AsyncAPI), install [`@apiuikit/openapi-try-it-plugin`](https://github.com/apiuikit/openapi-try-it-plugin) or `@apiuikit/ws-try-it-plugin` and register it via `plugins` — see [Plugins](../usage/plugins.md).
 
 - **topOffset?: number**
 

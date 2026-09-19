@@ -94,7 +94,14 @@ export default defineConfig({
       // server-renders these components under Node (e.g. Next.js SSR).
       // Leaving it external lets each consumer's own bundler resolve the
       // right variant for the environment it's actually compiling for.
-      external: ['react', 'react-dom', 'react/jsx-runtime', 'isomorphic-dompurify'],
+      //
+      // @apiuikit/* stays external rather than being inlined: the try-it
+      // package imports `apiuikit/plugin`, and bundling it here would
+      // resolve that to this library's own output — a second copy, and so a
+      // second `DocumentContext`, which `useDocumentContext` would reject
+      // even when correctly nested. External, the consumer's bundler
+      // resolves both to the one apiuikit their app already loaded.
+      external: ['react', 'react-dom', 'react/jsx-runtime', 'isomorphic-dompurify', /^@apiuikit\//],
       output: {
         globals: {
           react: 'React',

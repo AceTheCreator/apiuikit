@@ -421,6 +421,48 @@ describe("AsyncAPI", () => {
     vi.unstubAllGlobals();
   });
 
+  describe("built-in try it", () => {
+    // Mirrors OpenAPI's: these assert the gate rather than the WebSocket
+    // panel itself, which lives in @apiuikit/ws-try-it-plugin.
+    const wsDoc = asDoc({
+      asyncapi: "3.0.0",
+      info: { title: "Echo", version: "1.0.0" },
+      servers: { local: { host: "localhost:8787", protocol: "ws" } },
+      channels: { echo: { address: "/echo" } },
+      operations: { echo: { action: "send", channel: { address: "/echo" } } },
+    });
+    const kafkaDoc = asDoc({
+      asyncapi: "3.0.0",
+      info: { title: "Kafka", version: "1.0.0" },
+      servers: { broker: { host: "localhost:9092", protocol: "kafka" } },
+      channels: { echo: { address: "/echo" } },
+      operations: { echo: { action: "send", channel: { address: "/echo" } } },
+    });
+    const openOperation = () =>
+      fireEvent.click(screen.getByRole("button", { name: /send.*\/echo/i }));
+
+    it("renders no Try it trigger by default", () => {
+      render(<AsyncAPI asyncapi={wsDoc} />);
+      openOperation();
+      expect(screen.queryByRole("button", { name: /try it/i })).not.toBeInTheDocument();
+    });
+
+    it("renders the trigger once show.tryIt is on", async () => {
+      render(<AsyncAPI asyncapi={wsDoc} config={{ show: { tryIt: true } }} />);
+      openOperation();
+      // Awaited: the panel arrives through `lazy()`.
+      expect(await screen.findByRole("button", { name: /try it/i })).toBeInTheDocument();
+    });
+
+    it("renders none for an operation with no WebSocket server", async () => {
+      render(<AsyncAPI asyncapi={kafkaDoc} config={{ show: { tryIt: true } }} />);
+      openOperation();
+      // Let the lazy chunk resolve, so absence isn't just "not loaded yet".
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(screen.queryByRole("button", { name: /try it/i })).not.toBeInTheDocument();
+    });
+  });
+
   describe("plugins", () => {
     it("wires a `plugins` prop through to an operation's supplementary slot", () => {
       const annotate = definePlugin({
