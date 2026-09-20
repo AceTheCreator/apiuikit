@@ -41,21 +41,6 @@ function readStoredUiMode(): UiMode | null {
   }
 }
 
-// Manual test wiring for the `initialLocation`/`onLocationChange` deep-linking
-// props (not a real feature of the playground) — lets `#tab/key` in the
-// address bar drive the preview so the props can be exercised by hand.
-type PlaygroundLocation = { tab: string; key: string | null }
-
-function parseLocationHash(hash: string): PlaygroundLocation | null {
-  const [tab, key] = hash.replace(/^#/, '').split('/')
-  return tab ? { tab, key: key ? decodeURIComponent(key) : null } : null
-}
-
-function encodeLocationHash(location: PlaygroundLocation | null): string {
-  if (!location) return ''
-  return location.key ? `#${location.tab}/${encodeURIComponent(location.key)}` : `#${location.tab}`
-}
-
 /**
  * The playground boots on the Netlify theme rather than the library's own
  * defaults. Spread over `defaultConfig.theme` rather than replacing it so
@@ -186,29 +171,6 @@ export function Playground({
 
   const { containerRef, splitPercent, handlePointerDown, nudge } = useResizableSplit()
 
-  // Same test-only wiring as above: `key` forces a remount so a later hash
-  // change re-seeds `initialLocation`, since the prop is mount-only by design.
-  const [locationKey, setLocationKey] = useState(0)
-  const [initialLocation, setInitialLocation] = useState<PlaygroundLocation | null>(() =>
-    parseLocationHash(window.location.hash),
-  )
-
-  useEffect(() => {
-    function onHashChange() {
-      setInitialLocation(parseLocationHash(window.location.hash))
-      setLocationKey((k) => k + 1)
-    }
-    window.addEventListener('hashchange', onHashChange)
-    return () => window.removeEventListener('hashchange', onHashChange)
-  }, [])
-
-  function handleLocationChange(location: PlaygroundLocation | null) {
-    const nextHash = location ? encodeLocationHash(location) : ''
-    if (window.location.hash === nextHash) return
-    const { pathname, search } = window.location
-    window.history.replaceState(null, '', `${pathname}${search}${nextHash}`)
-  }
-
   return (
     <div
       ref={containerRef}
@@ -227,24 +189,15 @@ export function Playground({
         <style>{scrollbarStyle('.playground-preview-scroll', palette)}</style>
         {specType === 'openapi' ? (
           <OpenAPIRenderer
-            key={locationKey}
             raw={debouncedDocText}
             config={previewConfig}
             onDiagnostics={(d) => setDiagnostics(d as ParserDiagnostic[])}
-            // `PlaygroundLocation`'s `tab` is a plain string; the library's
-            // TabKey union is runtime-validated, so a bogus/foreign tab just
-            // falls back to the default instead of needing to type-narrow here.
-            initialLocation={initialLocation as never}
-            onLocationChange={handleLocationChange as never}
           />
         ) : (
           <AsyncAPIRenderer
-            key={locationKey}
             raw={debouncedDocText}
             config={previewConfig}
             onDiagnostics={(d) => setDiagnostics(d as ParserDiagnostic[])}
-            initialLocation={initialLocation as never}
-            onLocationChange={handleLocationChange as never}
           />
         )}
       </div>
