@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { ConfigInterface, defaultConfig } from "../config";
 import type { MarkdownUrlResolver, SidePanelContainment } from "../config/config";
 import { SpecType } from "../contexts";
-import { buildThemeVars, resolveThemeMode } from "../utils/theme";
+import { buildThemeVars, mergeTheme, resolveThemeMode } from "../utils/theme";
 import { DEFAULT_DEPTH_COLORS } from "../components/schema/depthColors";
 import { createDocumentDeref } from "../helpers/jsonPointer";
 import type { ApiuikitPlugin } from "../plugins/types";
@@ -73,8 +73,10 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
     () => resolveThemeMode(config.theme, systemPrefersDark),
     [config.theme, systemPrefersDark],
   );
+  // Mode comes from the host's own theme (above); colors from it layered over
+  // the defaults, so a partial theme only changes what it names.
   const themeVars = useMemo(
-    () => (config.theme ? buildThemeVars(config.theme, resolvedMode) : {}),
+    () => buildThemeVars(mergeTheme(defaultConfig.theme, config.theme), resolvedMode),
     [config.theme, resolvedMode],
   );
 

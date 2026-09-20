@@ -50,6 +50,39 @@ const DARK_NEUTRAL_DEFAULTS: Record<number, string> = {
 export type ResolvedThemeMode = "light" | "dark";
 
 /**
+ * Layers a host's theme over the library defaults, key by key: each palette
+ * color and each brand-scale shade the host leaves out keeps its default.
+ * `mode` and `depthColors` replace outright.
+ *
+ * Without this, any `theme` at all replaced the defaults wholesale — a host
+ * setting only `light.background` also lost the default primary scale and
+ * fell through to the stylesheet's fallback, a different color entirely.
+ *
+ * The merged theme always carries both palettes, so resolve the mode from
+ * the host's *unmerged* theme: "only `dark` given → dark" depends on which
+ * palettes the host actually supplied.
+ */
+export function mergeTheme(base: ThemeConfig | undefined, override: ThemeConfig | undefined): ThemeConfig {
+  if (!override) return base ?? {};
+  if (!base) return override;
+
+  const mergeScale = (a?: ThemeColorScale, b?: ThemeColorScale) => (a || b ? { ...a, ...b } : undefined);
+  const mergeMode = (a?: ThemeModeColors, b?: ThemeModeColors) => (a || b ? { ...a, ...b } : undefined);
+
+  return {
+    ...base,
+    ...override,
+    colors: {
+      primary: mergeScale(base.colors?.primary, override.colors?.primary),
+      secondary: mergeScale(base.colors?.secondary, override.colors?.secondary),
+      neutral: mergeScale(base.colors?.neutral, override.colors?.neutral),
+    },
+    light: mergeMode(base.light, override.light),
+    dark: mergeMode(base.dark, override.dark),
+  };
+}
+
+/**
  * Resolves which palette to actually render.
  *
  * An explicit `theme.mode` wins outright (`"system"` follows

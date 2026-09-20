@@ -32,7 +32,7 @@ export const defaultConfig: ConfigInterface = {
     // defaultConfig without opting in to mode switching. `light` matches the
     // :root fallback values in index.css.
     light: {
-      background: "#f8fafc",
+      background: "#ffffff",
       surface: "#ffffff",
       border: "#e2e8f0",
 

@@ -58,9 +58,11 @@ describe("AsyncAPI", () => {
     );
 
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+    // The sticky masthead is in flow and takes its own space; nothing above
+    // it should reserve more (a leftover from when it was position: fixed).
     const widgetRoot = container.firstElementChild as HTMLElement;
-    expect(widgetRoot).not.toHaveClass("pt-18");
-    expect(widgetRoot.children[1]).toHaveClass("pt-18");
+    expect(widgetRoot.className).not.toMatch(/\bpt-/);
+    expect(widgetRoot.children[1].className).not.toMatch(/\bpt-/);
   });
 
   it("does not reserve the content-bar row when no content tabs are visible", () => {
@@ -74,8 +76,7 @@ describe("AsyncAPI", () => {
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
     expect(screen.queryByRole("tablist", { name: "AsyncAPI sections" })).not.toBeInTheDocument();
     const widgetRoot = container.firstElementChild as HTMLElement;
-    expect(widgetRoot).not.toHaveClass("pt-18");
-    expect(widgetRoot.children[1]).not.toHaveClass("pt-18");
+    expect(widgetRoot.children[1].className).not.toMatch(/\bpt-/);
   });
 
   it("moves the complete document toolbar as one unit while scrolling", async () => {
@@ -105,11 +106,12 @@ describe("AsyncAPI", () => {
     // The hidden offset is computed from the bar's own geometry rather than
     // being a flat `-150%`, so it clears its sticky position at any host
     // topOffset — DocumentTopBar.test.tsx covers that property. With no
-    // topOffset set it works out to the bar's 40px height plus 8px of slack.
+    // topOffset set it works out to the bar's 56px height (40px row + 16px
+    // padding) plus 8px of slack.
     // Positioning itself is CSS `position: sticky` (index.css), not asserted
     // here since jsdom doesn't compute real layout for it.
     await waitFor(() => {
-      expect(toolbar).toHaveStyle({ transform: "translateY(-48px)" });
+      expect(toolbar).toHaveStyle({ transform: "translateY(-64px)" });
     });
     expect(toolbar.querySelector(".document-logo")).not.toBeNull();
     expect(within(toolbar).getByRole("button", { name: "Search" })).toBeInTheDocument();

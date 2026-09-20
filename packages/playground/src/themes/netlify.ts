@@ -39,7 +39,7 @@ export const netlifyTheme: ThemeConfig = {
     },
   },
   light: {
-    background: '#F5F8F8',
+    background: '#FFFFFF',
     surface: '#FFFFFF',
     border: '#DDE5E5',
 

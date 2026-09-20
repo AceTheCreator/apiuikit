@@ -11,17 +11,22 @@ interface DocumentTopBarProps {
 }
 
 /**
- * The bar's own vertical geometry, mirroring `.document-topbar` in index.css —
- * its `margin-top` pull and its `height`. Kept here because the hide
- * transform has to travel past both, and a transform can't read them itself.
- * Change one of these and change the stylesheet with it.
+ * The bar's full painted height, mirroring `.document-topbar` in index.css: a
+ * 40px row of controls plus 16px of `padding-top`. Kept here because the hide
+ * transform has to travel past it, and a transform can't read it itself.
+ * Change one and change the stylesheet with it.
+ *
+ * The breathing room above the controls is that padding, *inside* the painted
+ * bar, so the controls sit 16px from the top both in flow and when stuck. The
+ * bar sticks flush at `topOffset` with no inset: it used to stick at
+ * `topOffset + 10` with a `margin-top: -10px` meant to pull it flush, but a
+ * stuck sticky box pins its *border* edge to `top` (margins only move it in
+ * flow), which left an unpainted 10px strip the document scrolled through.
+ *
+ * Being sticky, the bar is in flow and takes its own space, so the layouts
+ * reserve none for it. (They padded the top when it was `position: fixed`,
+ * and that padding outlived the switch as dead space above the bar.)
  */
-const TOP_INSET = 10;
-const OVERLAP_PULL = 10;
-// The bar's full painted height: a 40px row of controls plus the 16px of
-// breathing room above it. That space is *padding inside the bar*, not a gap
-// above it — the background has to reach the top edge, or the document scrolls
-// visibly through the strip above the controls on the way back up.
 const BAR_HEIGHT = 56;
 
 /** A little past the edge, so a shadow or focus ring doesn't peek while hidden. */
@@ -41,16 +46,15 @@ export default function DocumentTopBar({
   const { rootElement, topOffset = 0 } = useDocumentContext();
   const mode = useAutoHideOnScroll(rootElement, forceVisible);
 
-  const stickyTop = topOffset + TOP_INSET;
+  const stickyTop = topOffset;
 
   // How far up the bar has to travel to clear its sticky position entirely.
   // This was `translateY(-150%)`, but a transform percentage resolves
   // against the element's *own height* — a flat 40px — which says nothing
-  // about how far down the page the bar actually starts. With the default
-  // `stickyTop` that happened to clear it; with a host navbar's height in
-  // `topOffset` the bar starts lower, so "hidden" parked it on-screen
-  // instead. Measured from the top edge down.
-  const hiddenOffset = stickyTop - OVERLAP_PULL + BAR_HEIGHT + HIDE_SLACK;
+  // about how far down the page the bar actually starts. With a host navbar's
+  // height in `topOffset` the bar starts lower, so "hidden" parked it
+  // on-screen instead. Measured from the top edge down.
+  const hiddenOffset = stickyTop + BAR_HEIGHT + HIDE_SLACK;
 
   const style: React.CSSProperties = {
     top: stickyTop,

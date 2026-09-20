@@ -121,7 +121,7 @@ export default function Layout({ openapi, config, plugins }: OpenAPILayoutProps)
 
   return (
     <OpenAPIDocumentProvider document={openapi} config={config} plugins={plugins}>
-      <div className={`px-4 ${hasMasthead && tabs.length > 0 ? "pt-18" : ""}`}>
+      <div className="px-4">
         {hasMasthead && (
           <DocumentTopBar
             logo={hasTopLogo ? <InformationLogo source={openapi.info} /> : undefined}
@@ -164,6 +164,17 @@ export default function Layout({ openapi, config, plugins }: OpenAPILayoutProps)
             />
           </div>
         )}
+        <ContentTab tabs={tabs} current={effectiveTab} onChange={handleContentTabChange} />
+        {effectiveTab && (
+          <div id={`panel-${effectiveTab}`} role="tabpanel" aria-labelledby={`tab-${effectiveTab}`}>
+            {activeContent}
+          </div>
+        )}
+        {/* Last on purpose: on narrow layouts the nav's floating button hangs
+            off a zero-height `position: sticky; bottom: 0` anchor rendered
+            here. Sticky only pulls an element *up* to the bottom edge, so the
+            anchor has to sit at the end of the document — rendered mid-way,
+            the button scrolled off with the content once you passed it. */}
         {show.sidebar !== false && (
           <OpenAPINavigation
             paths={show.endpoints !== false ? openapi.paths : undefined}
@@ -177,12 +188,6 @@ export default function Layout({ openapi, config, plugins }: OpenAPILayoutProps)
             onSelectServer={handleNavServerSelect}
             selectedItem={selectedNavItem}
           />
-        )}
-        <ContentTab tabs={tabs} current={effectiveTab} onChange={handleContentTabChange} />
-        {effectiveTab && (
-          <div id={`panel-${effectiveTab}`} role="tabpanel" aria-labelledby={`tab-${effectiveTab}`}>
-            {activeContent}
-          </div>
         )}
       </div>
     </OpenAPIDocumentProvider>

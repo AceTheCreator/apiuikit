@@ -120,7 +120,7 @@ export function ExamplesMenu({ palette, onSelect }: ExamplesMenuProps) {
           fontFamily: 'inherit',
           border: `1px solid ${palette.chromeBorder}`,
           borderRadius: '6px',
-          background: open ? palette.activeIndicator : 'transparent',
+          background: open ? palette.chromeBorder : 'transparent',
           color: open ? palette.textPrimary : palette.textMuted,
           cursor: 'pointer',
           whiteSpace: 'nowrap',
@@ -174,7 +174,7 @@ export function ExamplesMenu({ palette, onSelect }: ExamplesMenuProps) {
                 fontFamily: 'inherit',
                 cursor: 'pointer',
                 color: i === activeIndex ? palette.textPrimary : palette.textMuted,
-                background: i === activeIndex ? palette.activeIndicator : 'transparent',
+                background: i === activeIndex ? palette.chromeBorder : 'transparent',
                 outline: 'none',
               }}
             >
@@ -182,7 +182,6 @@ export function ExamplesMenu({ palette, onSelect }: ExamplesMenuProps) {
               <div
                 style={{
                   fontSize: '0.6875rem',
-                  opacity: 0.7,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',

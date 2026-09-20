@@ -46,7 +46,7 @@ export const UI_PALETTES: Record<UiMode, UiPalette> = {
   // `theme.dark`, so the chrome and the rendered spec read as one theme
   // rather than the chrome sitting a shade brighter than the preview.
   light: {
-    chromeBg: '#f8fafc',
+    chromeBg: '#ffffff',
     chromeBorder: '#e2e8f0',
     textPrimary: '#1e293b',
     textMuted: '#64748b',
@@ -59,7 +59,7 @@ export const UI_PALETTES: Record<UiMode, UiPalette> = {
     warningText: '#b45309',
     handleBg: '#e2e8f0',
     handleBgHover: '#cbd5e1',
-    scrollbarTrack: '#f8fafc',
+    scrollbarTrack: '#ffffff',
     scrollbarThumb: '#cbd5e1',
     scrollbarThumbHover: '#94a3b8',
   },
