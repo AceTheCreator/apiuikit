@@ -358,6 +358,9 @@ describe("OpenAPI", () => {
       // Awaited: the panel arrives through `lazy()`, so it is absent on the
       // first paint by design and resolves a tick later.
       expect(await screen.findByRole("button", { name: /try it/i })).toBeInTheDocument();
+    });
+  });
+
   describe("initialLocation / onLocationChange", () => {
     beforeEach(() => {
       Element.prototype.scrollIntoView = vi.fn();

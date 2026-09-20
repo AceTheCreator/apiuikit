@@ -21,6 +21,16 @@ export default defineConfig({
     },
   },
   test: {
+    // The built-in try-it packages install from the registry, and Vitest
+    // hands regular node_modules deps to Node's resolver, which doesn't see
+    // the aliases above — so their `apiuikit/plugin` import would resolve to
+    // this library's built `dist`: a second module graph, a second
+    // `DocumentContext`, and a panel that throws "must be used within a
+    // document provider" while correctly nested. Inlined, they go through
+    // Vite and pick up the aliases. (Symlinked checkouts were inlined
+    // already, which is why this only surfaced once the deps became real
+    // packages.)
+    server: { deps: { inline: [/@apiuikit\//] } },
     include: ['src/**/*.test.{ts,tsx}'],
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
