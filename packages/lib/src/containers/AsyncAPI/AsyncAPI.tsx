@@ -5,7 +5,7 @@ import { AsyncAPIDocumentData } from "../../types/schema";
 import { ErrorBoundary, ErrorBoundaryFallbackRenderer } from "../../components/ErrorBoundary";
 import type { ErrorInfo, ReactNode } from "react";
 import type { ApiuikitPlugin } from "../../plugins/types";
-import Layout from "./Layout";
+import Layout, { LayoutProps } from "./Layout";
 
 export interface IAsyncAPIProps {
   /** A pre-resolved AsyncAPI 3.0 document object, or one that still contains `$ref`s. */
@@ -20,6 +20,10 @@ export interface IAsyncAPIProps {
   errorFallback?: ReactNode | ErrorBoundaryFallbackRenderer;
   /** Called once when a render error is caught, e.g. to report it to your own logging/telemetry. */
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  /** Selection (nav tab + operation/message/schema/server key) to seed on mount, e.g. parsed from a URL. Applied once. */
+  initialLocation?: LayoutProps["initialLocation"];
+  /** Fired whenever the selected tab/item changes, e.g. to keep a URL in sync. */
+  onLocationChange?: LayoutProps["onLocationChange"];
 }
 
 /**
@@ -63,7 +67,15 @@ const AsyncAPIContent = (props: IAsyncAPIProps) => {
   }, [kind, raw, asyncapi]);
 
   const config = props.config ?? defaultConfig;
-  return <Layout asyncapi={asyncapi} config={config} plugins={props.plugins} />;
+  return (
+    <Layout
+      asyncapi={asyncapi}
+      config={config}
+      plugins={props.plugins}
+      initialLocation={props.initialLocation}
+      onLocationChange={props.onLocationChange}
+    />
+  );
 };
 
 export default AsyncAPI;
