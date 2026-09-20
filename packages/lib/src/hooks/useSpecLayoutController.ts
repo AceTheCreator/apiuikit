@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ContentTabItem } from "../components/ContentTab";
 import { SearchEntry } from "../helpers/searchIndex";
 import { clearSearchHighlight } from "../helpers/textHighlight";
@@ -7,6 +7,12 @@ import { useSearchResultFocus, ActiveHighlight } from "./useSearchResultFocus";
 export interface SchemaFocusTarget {
   tokens: string[];
   id: string;
+}
+
+/** Which section/item is selected, independent of any single spec's own tab-key union. */
+export interface SpecLocation<TabKey extends string> {
+  tab: TabKey | "servers";
+  key: string | null;
 }
 
 export interface LayoutSection<TabKey extends string> {
@@ -28,6 +34,17 @@ export interface SpecLayoutControllerOptions<TabKey extends string> {
   sections: readonly LayoutSection<TabKey>[];
   /** Current search input, used to tag highlights and clear them when it empties. */
   searchQuery: string;
+  /** Selection to seed on mount (e.g. parsed from a URL hash), in place of the hardcoded defaults. */
+  initialLocation?: SpecLocation<TabKey> | null;
+  /** Fired whenever the effective tab/selection changes: nav clicks, tab clicks, search-select, and the initial seed. */
+  onLocationChange?: (location: SpecLocation<TabKey> | null) => void;
+  /**
+   * Maps a section + selected key to the DOM id to scroll into view for
+   * `initialLocation` on mount. Each layout already owns this id scheme
+   * (idPrefixes, `schema-`/`operation-`/`message-` roots, ...), so it's
+   * supplied rather than guessed here. Omit it to skip the initial scroll.
+   */
+  getTargetId?: (section: TabKey | "servers", key: string) => string;
 }
 
 /**
@@ -43,18 +60,35 @@ export function useSpecLayoutController<TabKey extends string>({
   isTabKey,
   sections,
   searchQuery,
+  initialLocation,
+  onLocationChange,
+  getTargetId,
 }: SpecLayoutControllerOptions<TabKey>) {
   type SectionId = TabKey | "servers";
 
   const firstTab = (tabs[0]?.id ?? defaultTab) as TabKey;
-  const [activeTab, setActiveTab] = useState<TabKey>(firstTab);
-  const [focusedNavSection, setFocusedNavSection] = useState<SectionId | null>(null);
+  // Runtime-validated (not just trusted from the type) since `initialLocation`
+  // often comes from parsing an untrusted URL fragment: a bogus/stale tab
+  // name should degrade to the default tab rather than propagate.
+  const initialSectionId: SectionId | null =
+    initialLocation && (initialLocation.tab === "servers" || isTabKey(initialLocation.tab))
+      ? (initialLocation.tab as SectionId)
+      : null;
+
+  const [activeTab, setActiveTab] = useState<TabKey>(() =>
+    initialSectionId && initialSectionId !== "servers" ? (initialSectionId as TabKey) : firstTab,
+  );
+  const [focusedNavSection, setFocusedNavSection] = useState<SectionId | null>(() => initialSectionId);
   const focusTab = (tab: TabKey) => {
     setActiveTab(tab);
     setFocusedNavSection(tab);
   };
 
-  const [rawSelected, setRawSelected] = useState<Partial<Record<SectionId, string | null>>>({});
+  const [rawSelected, setRawSelected] = useState<Partial<Record<SectionId, string | null>>>(() => {
+    const initial: Partial<Record<SectionId, string | null>> = {};
+    if (initialSectionId && initialLocation?.key) initial[initialSectionId] = initialLocation.key;
+    return initial;
+  });
 
   // `activeTab` and the selections can go stale when a live config edit hides
   // their section (e.g. `show.operations: false` while Operations is active),
@@ -122,13 +156,17 @@ export function useSpecLayoutController<TabKey extends string>({
     if (isTabKey(id)) focusTab(id);
   };
 
-  const selectedNavItem = (() => {
-    for (const section of sections) {
-      const key = selected[section.id];
-      if (key) return { tab: section.id, key };
-    }
-    return null;
-  })();
+  const selectedNavItem = useMemo(
+    () => {
+      for (const section of sections) {
+        const key = selected[section.id];
+        if (key) return { tab: section.id, key };
+      }
+      return null;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [...sections.map((section) => selected[section.id])],
+  );
 
   useSearchResultFocus(activeHighlight, [
     effectiveTab,
@@ -136,6 +174,24 @@ export function useSpecLayoutController<TabKey extends string>({
     schemaFocusTarget,
     ...sections.map((section) => selected[section.id]),
   ]);
+
+  // Scrolls to `initialLocation`'s target once on mount, reusing the same
+  // find-and-scroll retry loop search results use (`highlight: false` since
+  // this isn't a text match). Seeded via a state initializer so it stays
+  // referentially stable and only re-fires if the target wasn't mounted yet.
+  const [initialScrollTarget] = useState<ActiveHighlight | null>(() =>
+    initialSectionId && initialLocation?.key && getTargetId
+      ? { targetId: getTargetId(initialSectionId, initialLocation.key), query: "", highlight: false }
+      : null,
+  );
+  useSearchResultFocus(initialScrollTarget, [effectiveTab]);
+
+  useEffect(() => {
+    onLocationChange?.(
+      selectedNavItem ? { tab: selectedNavItem.tab, key: selectedNavItem.key } : { tab: effectiveTab, key: null },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveTab, selectedNavItem]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {

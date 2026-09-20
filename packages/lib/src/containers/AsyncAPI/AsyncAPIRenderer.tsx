@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import AsyncAPI from "./AsyncAPI";
+import type { IAsyncAPIProps } from "./AsyncAPI";
 import type { AsyncAPIDocumentData } from "../../types/schema";
 import type { ConfigInterface } from "../../config/config";
 import type { ErrorBoundaryFallbackRenderer } from "../../components/ErrorBoundary";
@@ -20,6 +21,10 @@ interface AsyncAPIRendererProps {
   errorFallback?: ReactNode | ErrorBoundaryFallbackRenderer;
   /** Called once when a render error is caught. Parse failures arrive via `onDiagnostics` instead: an error boundary only sees synchronous render errors. */
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  /** Selection (nav tab + operation/message/schema/server key) to seed once the parsed document first mounts, e.g. parsed from a URL. */
+  initialLocation?: IAsyncAPIProps["initialLocation"];
+  /** Fired whenever the selected tab/item changes, e.g. to keep a URL in sync. */
+  onLocationChange?: IAsyncAPIProps["onLocationChange"];
 }
 
 /**
@@ -28,7 +33,16 @@ interface AsyncAPIRendererProps {
  * document as text rather than a pre-parsed object, e.g. user-entered or
  * loaded from a file at runtime.
  */
-export function AsyncAPIRenderer({ raw, config, plugins, onDiagnostics, errorFallback, onError }: AsyncAPIRendererProps) {
+export function AsyncAPIRenderer({
+  raw,
+  config,
+  plugins,
+  onDiagnostics,
+  errorFallback,
+  onError,
+  initialLocation,
+  onLocationChange,
+}: AsyncAPIRendererProps) {
   const [document, setDocument] = useState<AsyncAPIDocumentData | null>(null);
 
   // Keep the latest onDiagnostics without making the effect below re-run (and
@@ -60,6 +74,8 @@ export function AsyncAPIRenderer({ raw, config, plugins, onDiagnostics, errorFal
       plugins={plugins}
       errorFallback={errorFallback}
       onError={onError}
+      initialLocation={initialLocation}
+      onLocationChange={onLocationChange}
     />
   );
 }

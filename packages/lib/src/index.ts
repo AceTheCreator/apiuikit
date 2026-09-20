@@ -39,6 +39,10 @@ export {
 } from './helpers/toMarkdown';
 export { defaultConfig } from './config';
 
+// Deep-linking: the selected tab/item for a document, shared between
+// OpenAPI's and AsyncAPI's `initialLocation`/`onLocationChange` props.
+export type { SpecLocation } from './hooks/useSpecLayoutController';
+
 export type { AsyncAPIDocumentData } from './types/schema';
 export type {
   HttpMethod,

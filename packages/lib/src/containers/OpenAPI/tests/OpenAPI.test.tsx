@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import OpenAPI from "../OpenAPI";
 import { definePlugin } from "../../../plugins/types";
 import type { OpenAPIDocumentData } from "../../../types/openapi";
@@ -312,6 +312,46 @@ describe("OpenAPI", () => {
     } finally {
       warn.mockRestore();
     }
+  });
+
+  describe("initialLocation / onLocationChange", () => {
+    beforeEach(() => {
+      Element.prototype.scrollIntoView = vi.fn();
+    });
+
+    it("selects, highlights, and scrolls to the endpoint named by initialLocation", async () => {
+      render(<OpenAPI openapi={asDoc(exampleDoc)} initialLocation={{ tab: "endpoints", key: "get /pets" }} />);
+
+      const detail = within(document.getElementById("endpoint-get /pets-detail")!);
+      expect(detail.getByText("List all pets")).toBeInTheDocument();
+
+      await vi.waitFor(() => {
+        expect(document.getElementById("endpoint-get /pets")!.scrollIntoView).toHaveBeenCalled();
+      });
+    });
+
+    it("selects the schemas tab named by initialLocation", () => {
+      render(<OpenAPI openapi={asDoc(exampleDoc)} initialLocation={{ tab: "schemas", key: "Pet" }} />);
+
+      expect(screen.getByRole("tab", { name: "Schemas", selected: true })).toBeInTheDocument();
+      expect(within(document.getElementById("panel-schemas")!).getByText("Pet")).toBeInTheDocument();
+    });
+
+    it("falls back to the default tab for a bogus initialLocation without crashing", () => {
+      render(<OpenAPI openapi={asDoc(exampleDoc)} initialLocation={{ tab: "not-a-real-tab" as never, key: "x" }} />);
+
+      expect(document.getElementById("panel-endpoints")).not.toBeNull();
+    });
+
+    it("calls onLocationChange when a nav item is selected", () => {
+      const onLocationChange = vi.fn();
+      render(<OpenAPI openapi={asDoc(exampleDoc)} onLocationChange={onLocationChange} />);
+      onLocationChange.mockClear();
+
+      fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
+
+      expect(onLocationChange).toHaveBeenCalledWith({ tab: "endpoints", key: "get /pets" });
+    });
   });
 
   describe("plugins", () => {

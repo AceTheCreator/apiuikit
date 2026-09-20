@@ -53,6 +53,20 @@ describe("OpenAPIRenderer", () => {
     expect(await screen.findByRole("heading", { name: "Updated API" })).toBeInTheDocument();
   });
 
+  it("forwards initialLocation/onLocationChange to the parsed document once it mounts", async () => {
+    const onLocationChange = vi.fn();
+    render(
+      <OpenAPIRenderer
+        raw={raw}
+        initialLocation={{ tab: "endpoints", key: "get /pets" }}
+        onLocationChange={onLocationChange}
+      />,
+    );
+
+    expect(await screen.findByText("List all pets")).toBeInTheDocument();
+    expect(onLocationChange).toHaveBeenCalledWith({ tab: "endpoints", key: "get /pets" });
+  });
+
   it("parses YAML input", async () => {
     const yamlDoc = [
       "openapi: 3.0.3",
