@@ -36,7 +36,7 @@ function buildCompleteMarker(): Plugin {
 }
 
 export default defineConfig({
-  // Library builds shouldn't ship the Vite demo's public/ assets (e.g. vite.svg).
+  // Library package — no public/ static assets to copy into dist/.
   publicDir: false,
   resolve: {
     alias: {
