@@ -7,7 +7,6 @@ export default {
   // host classes cannot override the widget (or vice versa).
   important: '.apiuikit-root',
   content: [
-    "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
     "../x-tensions/src/**/*.{js,ts,jsx,tsx}",
   ],

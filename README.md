@@ -150,56 +150,6 @@ import myPlugin from "@yourscope/apiuikit-plugin-whatever";
 
 See [Plugins](./docs/usage/plugins.md) for the full reference, including how to write and publish your own.
 
-## Development
+## Contributing
 
-This is a monorepo. The sections below are for contributors working on the library itself, skip these if you're just consuming the published package.
-
-### Structure
-
-```
-packages/
-  lib/                      : the component library (published as "apiuikit")
-  web-component/            : framework-agnostic custom elements (published as "@apiuikit/web-component")
-  playground/               : local dev app that consumes the library as a real package would
-  x-tensions/               : catalog of x-* spec-extension renderers, bundled into lib (see its own README)
-```
-
-### Commands
-
-All commands run from the repo root.
-
-#### Library
-
-```bash
-npm run build:lib    # build the library → packages/lib/dist/
-npm run dev:lib      # start the library dev server (Vite)
-npm run storybook    # run Storybook on localhost:6006
-```
-
-#### Playground
-
-```bash
-npm run build:lib    # required once before first run
-npm run playground   # starts both the library watcher and the playground dev server
-```
-
-The library rebuilds automatically whenever you change a file in `packages/lib/src/`. Reload the playground tab to pick up the new build.
-
-#### Web Components
-
-```bash
-npm run build:web-component   # builds packages/lib then packages/web-component → packages/web-component/dist/
-npm run demo:wc                # builds both, then serves packages/web-component/demo/ on :8735
-```
-
-`@apiuikit/web-component` depends on `apiuikit` (the workspace package) and bundles it, along with React and ReactDOM, into a single self-contained build. Rebuild `packages/lib` first whenever you change its source.
-
-### Publishing
-
-Each package under `packages/` publishes independently. From `packages/lib/` or `packages/web-component/`:
-
-```bash
-npm publish          # runs prepublishOnly (vite build) automatically, then publishes
-```
-
-In this repo, releases are normally driven by [changesets](https://github.com/changesets/changesets) instead: run `npm run changeset` to record a change, and merging to `master` opens (or updates) a "Version Packages" PR; merging that PR triggers the `release` GitHub Action, which builds and publishes every package with a pending version bump.
+This is a monorepo. To work on the library itself (setup, playground, Storybook, tests, PRs, releases), see [CONTRIBUTING.md](./CONTRIBUTING.md).

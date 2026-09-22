@@ -24,6 +24,7 @@ function contextValue(portalHost: HTMLElement): DocumentContextValue {
     portalHost,
     rootElement: null,
     sidePanelContainment: "viewport",
+    resolvedMode: "light",
     depthColors: [],
     showExtensions: true,
     showCodeSamples: true,

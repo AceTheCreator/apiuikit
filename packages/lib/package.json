@@ -41,7 +41,6 @@
     "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
-    "dev": "vite",
     "build": "vite build && node scripts/verifyCssIsolation.mjs && vite build --config vite.markdown.config.ts && vite build --config vite.plugin.config.ts && node scripts/verifyPackageExports.mjs",
     "watch": "vite build --watch",
     "prepublishOnly": "cp ../../README.md ./README.md && npm run build",
@@ -50,7 +49,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "generate:models": "tsx src/scripts/generateAsyncAPIModel.ts"

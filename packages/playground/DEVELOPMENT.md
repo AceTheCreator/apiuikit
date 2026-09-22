@@ -1,75 +1,19 @@
-# Playground dev loop: how library rebuilds reach the browser
+# Playground development
 
-`npm run playground` (repo root) runs two processes with `concurrently`:
+Local app for trying `apiuikit` the way a real consumer would: it imports the
+**built** package from `packages/lib/dist/`, not the TypeScript source.
 
-- `[0]` `vite build --watch` in `packages/lib` — rebuilds the library into `packages/lib/dist/` on every source change
-- `[1]` `vite` dev server in `packages/playground` — serves the playground app
+For the one-liner to start it, see the [root CONTRIBUTING.md](../../CONTRIBUTING.md#playground).
 
-The playground imports `apiuikit` through the npm workspace symlink
-(`node_modules/apiuikit -> packages/lib`), so Vite serves the **built files** in
-`packages/lib/dist/` directly (you'll see them as `/@fs/...` URLs). That is
-intentional: the playground exercises the same artifact that gets published to
-npm, not the raw source.
+## Run it
 
-## The race this setup has to avoid
+From the repo root:
 
-A library rebuild is not atomic. Without safeguards, `vite build --watch` can
-**empty `dist/`** (`emptyOutDir`) and then fail mid-rebuild — notably Vite 6's
-`[commonjs] Cannot read properties of undefined (reading 'resolved')` on
-incremental rebuilds — leaving `dist/` without `apiuikit.es.js` /
-`apiuikit.css`. Refreshing the playground then keeps failing until a later
-build succeeds.
-
-Even when the rebuild succeeds, if the playground watched `dist/` directly the
-first file written would trigger an HMR/full-reload **while sibling outputs
-were still missing** — blank screen with `Failed to load url ...apiuikit.es.js`.
-
-Watch mode therefore keeps the previous `dist/` (`emptyOutDir: false`) and
-applies Rollup workarounds so incremental rebuilds complete; the playground
-still only reloads off the completion marker (below), not off mid-write file
-events.
-
-## How it works now
-
-Two small pieces, loosely coupled through one marker file, deterministic in
-ordering:
-
-1. **`packages/lib/vite.config.ts`** — the inline `buildCompleteMarker` plugin
-   writes a timestamp to **`packages/lib/.build-complete`** in its
-   `closeBundle` hook. In watch mode Vite closes the bundle after every rebuild
-   (`BUNDLE_END`), and `closeBundle` runs only after **all** outputs (both the
-   `es` and `cjs` files and their chunks) are fully written. So "the marker's
-   mtime changed" is a reliable signal for "dist/ is complete again".
-
-   The marker deliberately lives *outside* `dist/` — anything inside `dist/`
-   is deleted by `emptyOutDir` at the *start* of the next rebuild, which would
-   turn the marker itself into a mid-build signal. It is gitignored
-   (`.build-complete` in the root `.gitignore`) and never published
-   (`files: ["dist"]` in `packages/lib/package.json`).
-
-2. **`packages/playground/vite.config.ts`** — two changes:
-   - `server.watch.ignored: ['**/packages/lib/dist/**']` makes the dev server
-     blind to `dist/` churn. No file event from a rebuild-in-progress can
-     trigger a reload anymore.
-   - The inline `libRebuildReload` plugin polls the marker with
-     `fs.watchFile` (`fs.watchFile` is used instead of `fs.watch`/chokidar
-     because it tolerates the file not existing yet on first startup and
-     coalesces each touch into one event). When the marker's mtime changes it
-     calls `server.moduleGraph.invalidateAll()` — required because the ignored
-     dist files are no longer auto-invalidated by Vite — and sends one
-     `full-reload` to the browser, which now finds a complete `dist/`.
-
-The resulting flow on every library edit:
-
-```
-save packages/lib/src/**        (playground untouched, page keeps working)
-  └─ [0] build started...       dist/ rewritten in place (~3–6s; previous files kept if rebuild fails)
-       └─ closeBundle           .build-complete touched
-            └─ [1] marker seen  invalidateAll + single full-reload
-                 └─ browser     fresh, complete bundle
+```bash
+npm run playground
 ```
 
-## Things to know / gotchas
+That will:
 
 - **Watch rebuilds keep the previous `dist/`.** Lib `vite.config.ts` sets
   `emptyOutDir: false` when `--watch` is on, so a failed incremental rebuild
@@ -99,36 +43,91 @@ save packages/lib/src/**        (playground untouched, page keeps working)
   `npm run build:lib`) is harmless — the playground reloads once, with a
   complete `dist/`.
 
-## The linked try-it plugin
+## Try it plugins
 
-The OpenAPI preview shows a **Try it** button in the operation panel header. That
-comes from apiuikit itself — `packages/lib` depends on
-[`@apiuikit/openapi-try-it-plugin`](https://github.com/apiuikit/openapi-try-it-plugin)
-and lazy-loads it when `config.show.tryIt` is on, which `Playground.tsx` sets in
-its `DEFAULT_CONFIG`. The playground has no direct dependency on it.
+The preview shows a **Try it** button in the operation side panel's header, for
+both spec types. The button comes from apiuikit itself, not from the playground.
+`packages/lib` depends on one plugin per spec type:
 
-During development the dependency points at a local checkout rather than a
-release:
+| Spec | Package | What it does | Loaded from |
+| --- | --- | --- | --- |
+| OpenAPI | [`@apiuikit/openapi-try-it-plugin`](https://github.com/apiuikit/openapi-try-it-plugin) | Request builder that sends real HTTP requests from the browser | `containers/Path/Paths.tsx` |
+| AsyncAPI | [`@apiuikit/ws-try-it-plugin`](https://www.npmjs.com/package/@apiuikit/ws-try-it-plugin) | WebSocket client for operations with a `ws`/`wss` server | `containers/Operation/Operations.tsx` |
+
+Both are wired the same way:
+
+- **Gated on `config.show.tryIt`.** This defaults to `false` because the panels
+  send real traffic and can collect credentials. `Playground.tsx` turns it on in
+  its `DEFAULT_CONFIG`, so it also shows up in the editable config pane and you
+  can toggle it live.
+- **Lazy-loaded.** Each plugin is a `lazy()` import, and the flag is checked
+  before the element is created. While `tryIt` is off, the chunk is never
+  fetched.
+- **External in the lib build.** `/^@apiuikit\//` is in `external` in
+  `packages/lib/vite.config.ts`, so the plugins resolve from the consumer's
+  `node_modules` and share the same `DocumentContext` instance.
+- **Wrapped in `PluginBoundary`** (`built-in:openapi.operation.tryIt` /
+  `built-in:asyncapi.operation.tryIt`), so if a plugin crashes, only the button
+  is lost, not the whole panel.
+
+The WebSocket button renders nothing for an operation with no `ws`/`wss` server.
+To see it, load an AsyncAPI document that declares one, e.g. the Gemini
+websocket example in `src/data/suggestedSchemas.ts`. The bundled Kraken example
+(`src/examples/example2.json`) has no `servers`, so it shows no button.
+
+The playground has no direct dependency on either plugin. To try a local
+plugin change, `npm link` it into `packages/lib` (or bump the version there),
+not into the playground.
+
+## Editing
+
+| You change… | What happens |
+| --- | --- |
+| `packages/playground/src/**` | Instant HMR, like a normal Vite app |
+| `packages/lib/src/**` | Library rebuilds (~3–6s), then the browser full-reloads automatically |
+
+Wait for `[0] built in …` in the terminal if the page looks wrong after a lib edit. Reloading mid-build can briefly hit a half-written `dist/`.
+
+On first start you may see one extra reload — the watch build finishes after the initial build. Harmless.
+
+## Troubleshooting
+
+**Page blank / `Failed to load url …apiuikit.es.js`**
+- Check `[0]` for a library build error. No successful build → no reload → stale or missing files in `dist/`.
+- Fix the error, wait for `[0] built in …`, then the page should recover on its own.
+
+**Lib edits don't show up**
+- Confirm `[0]` is still running and printing rebuilds when you save.
+- Playground-only changes should still HMR; if those also fail, restart `npm run playground`.
+
+**Manual refresh during a rebuild looks broken**
+- Expected. Prefer the automatic reload (or wait for `[0] built in …`).
+
+## Why this setup exists (optional)
+
+The playground must exercise the same `dist/` artifact that gets published to npm.
+A library rebuild is not atomic: watching `dist/` directly can reload while files
+are still being written (or after a failed rebuild wiped them), which blanks the page.
+
+So:
+
+- Watch mode keeps the previous `dist/` on failure (`emptyOutDir: false` in the lib config).
+- The playground ignores `packages/lib/dist/**` for Vite's file watcher.
+- When a rebuild finishes, the lib build touches `packages/lib/.build-complete`.
+- The playground watches that marker and does one full reload only then.
 
 ```
-packages/lib/package.json
-  "@apiuikit/openapi-try-it-plugin": "file:../../../../Projects/openapi-try-it-plugin"
+save packages/lib/src/**
+  → [0] rebuilds dist/ (~3–6s)
+  → touches .build-complete
+  → [1] invalidates modules + full-reload
+  → browser loads a complete bundle
 ```
 
-That path is machine-specific — it resolves only where a sibling clone exists
-at that location, and it needs to become a version range before publishing.
+Relevant code:
 
-- The plugin is served from its **built** `dist/`, same as the library. Run
-  `npm run dev` (i.e. `vite build --watch`) in the plugin checkout while editing
-  it; the playground picks the rebuild up on the next reload.
-- `resolve.dedupe` in `packages/playground/vite.config.ts` is what makes the
-  link usable. The plugin checkout has its own `node_modules` with React and a
-  released `apiuikit` for its tests, and Vite resolves a linked package's bare
-  imports from the package's real path — without deduping, the plugin would run
-  against a second React and a second `apiuikit` document context and render
-  nothing. `packages/lib/vitest.config.ts` carries aliases for the same reason,
-  so the library's own tests can render it.
-- The plugin stays **external** in the library build (`/^@apiuikit\//` in
-  `packages/lib/vite.config.ts`), so it resolves from the consumer's own
-  `node_modules` — one apiuikit instance, one `DocumentContext`. Bundling it
-  into the library would create a second of each.
+- Marker: `buildCompleteMarker` in `packages/lib/vite.config.ts` (`writeBundle`)
+- Reload: `libRebuildReload` in `packages/playground/vite.config.ts`
+
+If you rename/move `dist/` or the marker, update **both** configs. The marker is
+gitignored and never published. Storybook and Vitest are unaffected.
