@@ -25,6 +25,13 @@ interface SectionProps {
    * Operations table) so long addresses aren't force-truncated.
    */
   layout?: SectionLayout;
+  /**
+   * Keeps the section's default bottom margin. Set false where the section
+   * sits directly above related content that brings its own `mt-6`: Section
+   * is a flex item in both places, and flex-item margins don't collapse, so
+   * the two stack into a gap twice the intended rhythm.
+   */
+  bottomSpacing?: boolean;
 }
 
 export default function Section({
@@ -36,6 +43,7 @@ export default function Section({
   reverseLayoutOnMobile = false,
   mobileLeadContent,
   layout = "columns",
+  bottomSpacing = true,
 }: SectionProps) {
   const stacked = layout === "stacked";
   const hasSideContent = sideContent != null && sideContent !== false;
@@ -47,7 +55,7 @@ export default function Section({
 
   return (
     <div
-      className={`w-full mt-6 mb-6 ${
+      className={`w-full mt-6 ${bottomSpacing ? "mb-6" : ""} ${
         stacked ? "" : SECTION_COLUMNS_WIDTH
       }`}
     >

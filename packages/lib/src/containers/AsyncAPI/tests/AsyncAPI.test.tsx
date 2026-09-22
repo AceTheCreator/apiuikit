@@ -58,9 +58,11 @@ describe("AsyncAPI", () => {
     );
 
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+    // The sticky masthead is in flow and takes its own space; nothing above
+    // it should reserve more (a leftover from when it was position: fixed).
     const widgetRoot = container.firstElementChild as HTMLElement;
-    expect(widgetRoot).not.toHaveClass("pt-14");
-    expect(widgetRoot.children[1]).toHaveClass("pt-14");
+    expect(widgetRoot.className).not.toMatch(/\bpt-/);
+    expect(widgetRoot.children[1].className).not.toMatch(/\bpt-/);
   });
 
   it("does not reserve the content-bar row when no content tabs are visible", () => {
@@ -74,8 +76,7 @@ describe("AsyncAPI", () => {
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
     expect(screen.queryByRole("tablist", { name: "AsyncAPI sections" })).not.toBeInTheDocument();
     const widgetRoot = container.firstElementChild as HTMLElement;
-    expect(widgetRoot).not.toHaveClass("pt-14");
-    expect(widgetRoot.children[1]).not.toHaveClass("pt-14");
+    expect(widgetRoot.children[1].className).not.toMatch(/\bpt-/);
   });
 
   it("moves the complete document toolbar as one unit while scrolling", async () => {
@@ -105,11 +106,12 @@ describe("AsyncAPI", () => {
     // The hidden offset is computed from the bar's own geometry rather than
     // being a flat `-150%`, so it clears its sticky position at any host
     // topOffset — DocumentTopBar.test.tsx covers that property. With no
-    // topOffset set it works out to the bar's 40px height plus 8px of slack.
+    // topOffset set it works out to the bar's 56px height (40px row + 16px
+    // padding) plus 8px of slack.
     // Positioning itself is CSS `position: sticky` (index.css), not asserted
     // here since jsdom doesn't compute real layout for it.
     await waitFor(() => {
-      expect(toolbar).toHaveStyle({ transform: "translateY(-48px)" });
+      expect(toolbar).toHaveStyle({ transform: "translateY(-64px)" });
     });
     expect(toolbar.querySelector(".document-logo")).not.toBeNull();
     expect(within(toolbar).getByRole("button", { name: "Search" })).toBeInTheDocument();
@@ -419,6 +421,48 @@ describe("AsyncAPI", () => {
     expect(open).toHaveBeenCalledWith("blob:mock-url", "_blank");
 
     vi.unstubAllGlobals();
+  });
+
+  describe("built-in try it", () => {
+    // Mirrors OpenAPI's: these assert the gate rather than the WebSocket
+    // panel itself, which lives in @apiuikit/ws-try-it-plugin.
+    const wsDoc = asDoc({
+      asyncapi: "3.0.0",
+      info: { title: "Echo", version: "1.0.0" },
+      servers: { local: { host: "localhost:8787", protocol: "ws" } },
+      channels: { echo: { address: "/echo" } },
+      operations: { echo: { action: "send", channel: { address: "/echo" } } },
+    });
+    const kafkaDoc = asDoc({
+      asyncapi: "3.0.0",
+      info: { title: "Kafka", version: "1.0.0" },
+      servers: { broker: { host: "localhost:9092", protocol: "kafka" } },
+      channels: { echo: { address: "/echo" } },
+      operations: { echo: { action: "send", channel: { address: "/echo" } } },
+    });
+    const openOperation = () =>
+      fireEvent.click(screen.getByRole("button", { name: /send.*\/echo/i }));
+
+    it("renders no Try it trigger by default", () => {
+      render(<AsyncAPI asyncapi={wsDoc} />);
+      openOperation();
+      expect(screen.queryByRole("button", { name: /try it/i })).not.toBeInTheDocument();
+    });
+
+    it("renders the trigger once show.tryIt is on", async () => {
+      render(<AsyncAPI asyncapi={wsDoc} config={{ show: { tryIt: true } }} />);
+      openOperation();
+      // Awaited: the panel arrives through `lazy()`.
+      expect(await screen.findByRole("button", { name: /try it/i })).toBeInTheDocument();
+    });
+
+    it("renders none for an operation with no WebSocket server", async () => {
+      render(<AsyncAPI asyncapi={kafkaDoc} config={{ show: { tryIt: true } }} />);
+      openOperation();
+      // Let the lazy chunk resolve, so absence isn't just "not loaded yet".
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(screen.queryByRole("button", { name: /try it/i })).not.toBeInTheDocument();
+    });
   });
 
   describe("plugins", () => {

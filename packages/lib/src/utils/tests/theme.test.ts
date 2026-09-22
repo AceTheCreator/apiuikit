@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildThemeVars, resolveThemeMode } from "../theme";
+import { buildThemeVars, mergeTheme, resolveThemeMode } from "../theme";
 
 describe("buildThemeVars", () => {
   it("returns no vars when no theme is configured", () => {
@@ -84,5 +84,36 @@ describe("resolveThemeMode", () => {
   it("resolves system mode from the OS preference", () => {
     expect(resolveThemeMode({ mode: "system" }, true)).toBe("dark");
     expect(resolveThemeMode({ mode: "system" }, false)).toBe("light");
+  });
+});
+
+describe("mergeTheme", () => {
+  const base = {
+    colors: { primary: { 500: "#0000ff", 600: "#0000aa" } },
+    light: { background: "#ffffff", textPrimary: "#111111" },
+    dark: { background: "#000000", textPrimary: "#eeeeee" },
+    depthColors: ["#aaaaaa", "#bbbbbb"],
+  };
+
+  it("returns the defaults when the host gives no theme", () => {
+    expect(mergeTheme(base, undefined)).toBe(base);
+  });
+
+  it("keeps default brand scales when the host only changes a palette color", () => {
+    const merged = mergeTheme(base, { light: { background: "#fafafa" } });
+    expect(merged.colors?.primary).toEqual({ 500: "#0000ff", 600: "#0000aa" });
+    expect(merged.light).toEqual({ background: "#fafafa", textPrimary: "#111111" });
+    expect(merged.dark).toEqual(base.dark);
+  });
+
+  it("merges brand scales shade by shade", () => {
+    const merged = mergeTheme(base, { colors: { primary: { 600: "#ff0000" } } });
+    expect(merged.colors?.primary).toEqual({ 500: "#0000ff", 600: "#ff0000" });
+  });
+
+  it("replaces mode and depthColors outright", () => {
+    const merged = mergeTheme(base, { mode: "dark", depthColors: ["#123456"] });
+    expect(merged.mode).toBe("dark");
+    expect(merged.depthColors).toEqual(["#123456"]);
   });
 });

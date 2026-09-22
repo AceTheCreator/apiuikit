@@ -64,7 +64,7 @@ function scrollDown() {
 }
 
 /** The bar's height in the stylesheet, and so the basis a `%` transform resolves against. */
-const BAR_HEIGHT = 40;
+const BAR_HEIGHT = 56;
 
 /**
  * How far up the bar actually travels, in pixels. Resolves a percentage the
@@ -77,14 +77,14 @@ function travelPx(transform: string): number {
 }
 
 describe("DocumentTopBar", () => {
-  it("sticks at topOffset + 10px regardless of the widget's own scroll position", () => {
+  it("sticks flush at topOffset regardless of the widget's own scroll position", () => {
     // Positioning is CSS `position: sticky` (set in index.css, not inline —
     // jsdom doesn't compute layout, so there's nothing browser-geometry-level
     // to assert here; see DocumentTopBar.tsx's comment on why sticky replaced
     // JS-computed `position: fixed`). Only the JS-driven `top` and the
     // hide/reveal `transform` are inline and thus testable here.
     const header = renderTopBar(mountRoot([0]));
-    expect(header.style.top).toBe("10px");
+    expect(header.style.top).toBe("0px");
     expect(header.style.transform).toBe("translateY(0px)");
   });
 
@@ -94,7 +94,7 @@ describe("DocumentTopBar", () => {
     { topOffset: 200, label: "a very tall host navbar" },
   ])("offsets the sticky top by $label", ({ topOffset }) => {
     const header = renderTopBar(mountRoot([0]), topOffset);
-    expect(header.style.top).toBe(`${(topOffset ?? 0) + 10}px`);
+    expect(header.style.top).toBe(`${topOffset ?? 0}px`);
   });
 
   /**
@@ -116,10 +116,10 @@ describe("DocumentTopBar", () => {
     scrollDown();
 
     // Where the bar's bottom edge lands once the transform has been applied:
-    // its sticky `top` (topOffset + the 10px inset), less the 10px margin
-    // pull that sits it flush, plus its own height. At or below 0 means it's
-    // scrolled clear of its sticky position.
-    const barTop = (topOffset ?? 0) + 10 - 10;
+    // its sticky `top` (topOffset — a stuck box pins its border edge there,
+    // so the stylesheet's negative margin doesn't apply) plus its own height.
+    // At or below 0 means it's scrolled clear of its sticky position.
+    const barTop = topOffset ?? 0;
     expect(barTop + BAR_HEIGHT - travelPx(header.style.transform)).toBeLessThanOrEqual(0);
 
     vi.useRealTimers();

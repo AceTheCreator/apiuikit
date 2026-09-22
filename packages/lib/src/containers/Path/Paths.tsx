@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, lazy, useEffect, useMemo, useState } from "react";
 import Section, { type SectionLayout } from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
 import { ChannelAddress, ChannelAddressParameterDetail } from "../../components/ChannelAddress";
@@ -14,6 +14,24 @@ import {
   resolveOperationParameters,
 } from "../../types/openapi";
 import PathOperation from "./PathOperation";
+import { useDocumentContext } from "../../contexts";
+import { PluginBoundary } from "../../plugins/PluginSlot";
+
+// The built-in "Try it" panel. A dependency rather than vendored source, and
+// external in the build (see vite.config.ts), so it resolves from the
+// consumer's own node_modules — the same apiuikit instance their app loaded,
+// and therefore the same DocumentContext.
+//
+// A loader rather than a static import so bundlers split it into its own
+// chunk, and the `showTryIt` check below sits at the *call site*, before this
+// element is ever created: a consumer who leaves `show.tryIt` off never
+// fetches it. Guarding inside the component would download it, then render
+// null — which is what `show.codeSamples` does today.
+const TryItHeaderButton = lazy(() =>
+  import("@apiuikit/openapi-try-it-plugin").then(({ TryItHeaderButton: component }) => ({
+    default: component,
+  })),
+);
 
 interface PathsProps {
   paths: Record<string, OpenAPIPathItemData | undefined>;
@@ -73,6 +91,16 @@ export default function Paths({
   layout,
 }: PathsProps) {
   const setSelectedKey = (key: string | null) => onSelectKey?.(key);
+  // The panel header is owned here rather than by PathOperation, so the
+  // header slot's context is assembled here too. Read spec-agnostically and
+  // narrowed rather than via useOpenAPIDocumentContext: an OpenAPI section
+  // mis-nested under an AsyncAPI provider warns and renders empty instead of
+  // throwing (see openapiSections' useDocument), and this must not be what
+  // makes it crash. The slot goes unfilled there — its context needs an
+  // OpenAPI document.
+  const context = useDocumentContext();
+  const document = context.specType === "openapi" ? context.document : null;
+  const showTryIt = context.showTryIt === true;
 
   const endpoints = useMemo(() => flattenEndpoints(paths), [paths]);
 
@@ -295,6 +323,28 @@ export default function Paths({
         side="right"
         onClose={() => setSelectedKey(null)}
         title={panelTitle}
+        headerActions={
+          showTryIt && selected && document && (
+            // `shrink-0`: the address beside it is `min-w-0 flex-1`, so
+            // without this the button would win the row and squeeze the
+            // address instead of letting it truncate as designed.
+            <div className="flex shrink-0 items-center gap-2">
+              {/* The same isolation a third-party fill gets: error boundary
+                  plus Suspense. Rendering this directly rather than through a
+                  slot is what keeps the header out of the public plugin
+                  contract, but it shouldn't also mean the built-in is the one
+                  piece of plugin code that can take the document down with
+                  it. */}
+              <PluginBoundary label="built-in:openapi.operation.tryIt">
+                <TryItHeaderButton
+                  document={document}
+                  method={selected.method}
+                  path={selected.path}
+                />
+              </PluginBoundary>
+            </div>
+          )
+        }
       >
         {selected && selectedOp && (
           <PathOperation

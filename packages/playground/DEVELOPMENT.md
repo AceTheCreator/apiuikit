@@ -15,11 +15,69 @@ npm run playground
 
 That will:
 
-1. Build `packages/lib` once
-2. Start a library watcher (`[0]` in the terminal)
-3. Start the playground Vite server (`[1]`)
+- **Watch rebuilds keep the previous `dist/`.** Lib `vite.config.ts` sets
+  `emptyOutDir: false` when `--watch` is on, so a failed incremental rebuild
+  (e.g. the Vite 6 `[commonjs] Cannot read properties of undefined` race)
+  does not wipe a good bundle and leave the playground blank on refresh.
+  One-shot `vite build` still empties `dist/` as usual. Watch mode also skips
+  `vite-plugin-dts` (types still emit on publish/`build:lib`) and ignores
+  `.build-complete` + `dist/` in chokidar so those writes cannot loop a rebuild.
+- **One extra reload on startup.** The root `playground` script builds the lib
+  once, then starts the watch build, whose first build also touches the
+  marker. So the browser may reload once shortly after the dev server opens.
+  Harmless.
+- **Reload latency = library build time.** The browser intentionally waits for
+  `[0] built in Xms` before reloading. If reloads feel like they stopped
+  working, check the `[0]` process for a build error — no completed build, no
+  marker touch, no reload. Playground-only edits (`packages/playground/src`)
+  still use normal instant HMR and are unaffected by any of this.
+- **Manually reloading the tab mid-build** can briefly serve a half-written
+  bundle while files are being overwritten. Wait for `[0] built in …` (or the
+  automatic reload) if the page looks wrong.
+- **If you rename/move `packages/lib/dist` or the marker file**, update both
+  vite configs together: the `ignored` glob and `libMarker` path in
+  `packages/playground/vite.config.ts`, and the marker path in
+  `packages/lib/vite.config.ts`. Nothing else ties them together.
+- **`vitest`/`storybook` are unaffected**: the marker plugin only runs during
+  `vite build`, and writing the marker outside watch mode (e.g. a one-off
+  `npm run build:lib`) is harmless — the playground reloads once, with a
+  complete `dist/`.
 
-Open the URL Vite prints (usually `http://localhost:5173`).
+## Try it plugins
+
+The preview shows a **Try it** button in the operation side panel's header, for
+both spec types. The button comes from apiuikit itself, not from the playground.
+`packages/lib` depends on one plugin per spec type:
+
+| Spec | Package | What it does | Loaded from |
+| --- | --- | --- | --- |
+| OpenAPI | [`@apiuikit/openapi-try-it-plugin`](https://github.com/apiuikit/openapi-try-it-plugin) | Request builder that sends real HTTP requests from the browser | `containers/Path/Paths.tsx` |
+| AsyncAPI | [`@apiuikit/ws-try-it-plugin`](https://www.npmjs.com/package/@apiuikit/ws-try-it-plugin) | WebSocket client for operations with a `ws`/`wss` server | `containers/Operation/Operations.tsx` |
+
+Both are wired the same way:
+
+- **Gated on `config.show.tryIt`.** This defaults to `false` because the panels
+  send real traffic and can collect credentials. `Playground.tsx` turns it on in
+  its `DEFAULT_CONFIG`, so it also shows up in the editable config pane and you
+  can toggle it live.
+- **Lazy-loaded.** Each plugin is a `lazy()` import, and the flag is checked
+  before the element is created. While `tryIt` is off, the chunk is never
+  fetched.
+- **External in the lib build.** `/^@apiuikit\//` is in `external` in
+  `packages/lib/vite.config.ts`, so the plugins resolve from the consumer's
+  `node_modules` and share the same `DocumentContext` instance.
+- **Wrapped in `PluginBoundary`** (`built-in:openapi.operation.tryIt` /
+  `built-in:asyncapi.operation.tryIt`), so if a plugin crashes, only the button
+  is lost, not the whole panel.
+
+The WebSocket button renders nothing for an operation with no `ws`/`wss` server.
+To see it, load an AsyncAPI document that declares one, e.g. the Gemini
+websocket example in `src/data/suggestedSchemas.ts`. The bundled Kraken example
+(`src/examples/example2.json`) has no `servers`, so it shows no button.
+
+The playground has no direct dependency on either plugin. To try a local
+plugin change, `npm link` it into `packages/lib` (or bump the version there),
+not into the playground.
 
 ## Editing
 

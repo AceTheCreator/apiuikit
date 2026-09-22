@@ -33,6 +33,26 @@ describe("OpenAPI", () => {
     expect(screen.queryByText("api.example.com", { exact: false })).not.toBeInTheDocument();
   });
 
+  it("keeps the default theme for anything a partial theme leaves out", () => {
+    // Regression: any `config` replaced the defaults wholesale, so a host
+    // setting only one palette color also lost the default primary scale.
+    const { container } = render(
+      <OpenAPI openapi={asDoc(exampleDoc)} config={{ theme: { light: { background: "#fafafa" } } }} />,
+    );
+    const root = container.querySelector(".apiuikit-root") as HTMLElement;
+    expect(root.style.getPropertyValue("--color-background")).toBe("250 250 250");
+    expect(root.style.getPropertyValue("--color-primary-600")).toBe("31 111 235");
+    expect(root.style.getPropertyValue("--color-text-primary")).toBe("30 41 59");
+  });
+
+  it("applies the default theme when config has no theme at all", () => {
+    const { container } = render(
+      <OpenAPI openapi={asDoc(exampleDoc)} config={{ show: { search: false } }} />,
+    );
+    const root = container.querySelector(".apiuikit-root") as HTMLElement;
+    expect(root.style.getPropertyValue("--color-primary-600")).toBe("31 111 235");
+  });
+
   it("hides the search panel when show.search is false", () => {
     render(<OpenAPI openapi={asDoc(exampleDoc)} config={{ show: { search: false } }} />);
 
@@ -45,9 +65,11 @@ describe("OpenAPI", () => {
     );
 
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+    // The sticky masthead is in flow and takes its own space; nothing above
+    // it should reserve more (a leftover from when it was position: fixed).
     const widgetRoot = container.firstElementChild as HTMLElement;
-    expect(widgetRoot).not.toHaveClass("pt-14");
-    expect(widgetRoot.children[1]).toHaveClass("pt-14");
+    expect(widgetRoot.className).not.toMatch(/\bpt-/);
+    expect(widgetRoot.children[1].className).not.toMatch(/\bpt-/);
   });
 
   it("does not reserve the content-bar row when no content tabs are visible", () => {
@@ -61,8 +83,7 @@ describe("OpenAPI", () => {
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
     expect(screen.queryByRole("tablist", { name: "AsyncAPI sections" })).not.toBeInTheDocument();
     const widgetRoot = container.firstElementChild as HTMLElement;
-    expect(widgetRoot).not.toHaveClass("pt-14");
-    expect(widgetRoot.children[1]).not.toHaveClass("pt-14");
+    expect(widgetRoot.children[1].className).not.toMatch(/\bpt-/);
   });
 
   it("applies the host top offset to sticky tabs and component-contained panels", () => {
@@ -312,6 +333,32 @@ describe("OpenAPI", () => {
     } finally {
       warn.mockRestore();
     }
+  });
+
+  describe("built-in try it", () => {
+    // The panel itself lives in the internal `tryit` package and is loaded
+    // through a dynamic import, so these assert the gate rather than the
+    // panel: whether the lazy element is created at all. That boundary is
+    // the whole point of the flag — see `ShowConfig.tryIt`.
+    it("renders no Try it trigger by default", () => {
+      render(<OpenAPI openapi={asDoc(exampleDoc)} />);
+      fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
+      expect(screen.queryByRole("button", { name: /try it/i })).not.toBeInTheDocument();
+    });
+
+    it("still renders none when show.tryIt is explicitly false", () => {
+      render(<OpenAPI openapi={asDoc(exampleDoc)} config={{ show: { tryIt: false } }} />);
+      fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
+      expect(screen.queryByRole("button", { name: /try it/i })).not.toBeInTheDocument();
+    });
+
+    it("renders the trigger once show.tryIt is on", async () => {
+      render(<OpenAPI openapi={asDoc(exampleDoc)} config={{ show: { tryIt: true } }} />);
+      fireEvent.click(screen.getByRole("button", { name: "GET /pets" }));
+      // Awaited: the panel arrives through `lazy()`, so it is absent on the
+      // first paint by design and resolves a tick later.
+      expect(await screen.findByRole("button", { name: /try it/i })).toBeInTheDocument();
+    });
   });
 
   describe("initialLocation / onLocationChange", () => {
