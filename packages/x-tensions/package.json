@@ -1,7 +1,7 @@
 {
   "name": "x-tensions",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Internal catalog of API spec-extension (x-*) renderers, bundled into apiuikit at build time. Never published on its own.",
   "type": "module",
   "main": "src/index.ts",
