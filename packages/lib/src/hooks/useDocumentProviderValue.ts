@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { ConfigInterface, defaultConfig } from "../config";
 import type { MarkdownUrlResolver, SidePanelContainment } from "../config/config";
 import { SpecType } from "../contexts";
-import { buildThemeVars, resolveThemeMode } from "../utils/theme";
+import { buildThemeVars, mergeTheme, resolveThemeMode } from "../utils/theme";
 import { DEFAULT_DEPTH_COLORS } from "../components/schema/depthColors";
 import { createDocumentDeref } from "../helpers/jsonPointer";
 import type { ApiuikitPlugin } from "../plugins/types";
@@ -41,6 +41,9 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
     : DEFAULT_DEPTH_COLORS;
   const showExtensions = config.show?.extensions !== false;
   const showCodeSamples = config.show?.codeSamples !== false;
+  // Opt-in, so the test is `=== true` rather than `!== false` like its
+  // neighbours — see `ShowConfig.tryIt` for why this one defaults off.
+  const showTryIt = config.show?.tryIt === true;
   const configuredTopOffset = config.topOffset;
   const topOffset =
     typeof configuredTopOffset === "number" && Number.isFinite(configuredTopOffset)
@@ -70,8 +73,10 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
     () => resolveThemeMode(config.theme, systemPrefersDark),
     [config.theme, systemPrefersDark],
   );
+  // Mode comes from the host's own theme (above); colors from it layered over
+  // the defaults, so a partial theme only changes what it names.
   const themeVars = useMemo(
-    () => (config.theme ? buildThemeVars(config.theme, resolvedMode) : {}),
+    () => buildThemeVars(mergeTheme(defaultConfig.theme, config.theme), resolvedMode),
     [config.theme, resolvedMode],
   );
 
@@ -94,6 +99,7 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
       depthColors,
       showExtensions,
       showCodeSamples,
+      showTryIt,
       markdownUrl,
       plugins,
       pluginSlotRegistry,
@@ -113,6 +119,7 @@ export function useDocumentProviderValue<S extends SpecType, D extends object>(
       depthColors,
       showExtensions,
       showCodeSamples,
+      showTryIt,
       markdownUrl,
       plugins,
       pluginSlotRegistry,

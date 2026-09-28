@@ -20,6 +20,7 @@ interface ConfigInterface {
     messages?: boolean;
     messageExamples?: boolean;
     schemas?: boolean;
+    tryIt?: boolean;
   };
   expand?: {
     messageExamples?: boolean;
@@ -74,7 +75,26 @@ interface ThemeModeColors {
 
   Controls which sections and tabs are rendered. Setting a tab (`operations`, `messages`, `schemas`) to `false` removes it from both the tab bar and the side navigation.
 
-  `search` controls whether the search panel is shown. `schemas` and `messageExamples` default to `false`. All other fields default to `true`.
+  `search` controls whether the search panel is shown. `schemas`, `messageExamples`, and `tryIt` default to `false`. All other fields default to `true`.
+
+- **show.tryIt?: boolean**
+
+  Adds a **Try it** button to the operation side panel's header. Off by default.
+
+  - **OpenAPI:** a request builder that fills in parameters, auth, and a body, sends the request from the reader's browser, and shows the response.
+  - **AsyncAPI:** a WebSocket client that connects to the operation's `ws`/`wss` server, composes and validates messages, and logs frames in both directions. Operations with no WebSocket server show no button.
+
+  ```ts
+  const config = { show: { tryIt: true } };
+  ```
+
+  Nothing to install — apiuikit depends on both panels and loads the one it needs on demand. Off, its code is never fetched: the check happens before the lazy import is reached, so a site that leaves it alone ships nothing extra to readers.
+
+  **Turn it on deliberately.** It changes a documentation page into one that collects credentials from readers — API keys, passwords, tokens, OAuth2 client secrets — and holds them in `sessionStorage` for the tab's lifetime, where any script on the page can read them. Requests go to whichever origin the *document's* `servers` entry names, so if you render specs you don't control, the spec decides where a reader's credentials are sent.
+
+  The AsyncAPI panel keeps credentials in memory only, but the same caution applies: connections go to whichever host the document's `servers` entry names.
+
+  For other layouts (a full operation tab, or a row inside the Reference panel) and for options such as a CORS proxy (OpenAPI) or `allowedHosts` and credential providers (AsyncAPI), install [`@apiuikit/openapi-try-it-plugin`](https://github.com/apiuikit/openapi-try-it-plugin) or `@apiuikit/ws-try-it-plugin` and register it via `plugins` — see [Plugins](../usage/plugins.md).
 
 - **topOffset?: number**
 
@@ -90,7 +110,7 @@ interface ThemeModeColors {
 
   Controls where SidePanel overlays (opened from Operations / endpoints) are clipped.
 
-  `containment`: `"viewport"` (default) covers the full browser viewport edge-to-edge, preserving the existing behavior. `"component"` clips the overlay to the widget's root element — useful for contained embeds and standalone sections.
+  `containment`: `"viewport"` (default) covers the full browser viewport edge-to-edge, preserving the existing behavior. `"component"` clips the overlay to the widget's root element — useful for contained embeds and standalone sections. The widget fills its container's height when the container has one (`min-height: 100%`), so in a full-height pane the panel reaches the bottom even for a short document. In a container with no set height, the widget and a contained panel are only as tall as the content.
 
   `topOffset`: optionally overrides the widget-wide `topOffset` for component-contained panels. It does not affect `"viewport"` containment.
 
@@ -100,7 +120,7 @@ interface ThemeModeColors {
 
 - **theme?: Partial\<ThemeConfig\>**
 
-  Customises the visual appearance of the component. All color values must be hex strings (e.g. `"#0EA5E9"`).
+  Customises the visual appearance of the component. All color values must be hex strings (e.g. `"#0EA5E9"`). Anything you set is layered over the default theme, so a partial theme only changes what it names: setting `light.background` alone keeps every other default color.
 
   - **colors?: ThemeColors** — Brand color scales, applied regardless of which mode is active (they typically don't change between light and dark).
     - **primary / secondary / neutral** — Color scales used for accents, interactive elements, and surface tones. Each scale accepts shades `50`, `100`, `200`, `300`, `500`, `600`, and `700`. You can override as few or as many shades as needed. When `dark` is the active mode, the neutral scale is inverted by default before your overrides are applied.
@@ -108,7 +128,7 @@ interface ThemeModeColors {
   - **mode?: "light" | "dark" | "system"** — Which palette to render. `"light"`/`"dark"` pick that palette outright; `"system"` follows the OS `prefers-color-scheme` setting and updates live if it changes while mounted. Left unset, resolution falls back to whichever single one of `light`/`dark` you provided — `light` wins if you provided both, or neither.
 
   - **light? / dark?: ThemeModeColors** — Semantic surface and text colors for each mode. Provide both to support switching between them via `mode`; provide just one if you never intend to switch. If neither is provided, the component's built-in light defaults are used untouched.
-    - `background` — Page/component background.
+    - `background` — Page/component background. Defaults to white in light mode. The sticky navbar, content tabs and side panels paint it too, so if your page isn't white, set this to your page's color so the widget blends in.
     - `surface` — Card and panel backgrounds.
     - `border` — Dividers and input borders.
     - `textPrimary` — Primary body text.

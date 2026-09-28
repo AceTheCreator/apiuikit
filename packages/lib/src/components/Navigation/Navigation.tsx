@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useAsyncAPIDocument } from "../../contexts";
 import { useElementRect } from "../../utils/useElementRect";
 import { allocateSpineTicks, spineTickBudget } from "./spineTicks";
+import { SECTION_COLUMNS_WIDTH } from "../Section";
 
 export interface NavItemState {
   isSelected: boolean;
@@ -52,6 +53,17 @@ interface NavigationProps {
 // appears exactly where the ticks are (not beside them), so hovering the
 // ticks lands the cursor on the popover with no gap to cross.
 const NAV_LEFT_OFFSET = 20;
+/** Preferred space between the rail's right edge and the content column's left
+ * edge, used whenever the gutter has room for it. */
+const RAIL_COLUMN_GAP = 96;
+/** The least space the rail may keep from the column before it gives way to
+ * the compact trigger. Separate from the preferred gap so pushing the rail
+ * further out doesn't also make narrower layouts fall back to compact sooner. */
+const RAIL_COLUMN_MIN_GAP = 48;
+/** The rail's width: its widest (active) tick, `w-6`, plus the button's `p-2`
+ * on each side. A constant rather than measured, because it's needed to decide
+ * whether the rail fits even while it isn't rendered (compact mode). */
+const SPINE_WIDTH = 24 + 8 * 2;
 
 /**
  * The sidebar navigation shared by AsyncAPI and OpenAPI, styled after Medium's
@@ -89,6 +101,7 @@ export default function Navigation({
   // already-correctly-placed on-screen rect — see the comment above
   // `compactPopoverStyle` for why that beats computing it by hand.
   const [compactToggleElement, setCompactToggleElement] = useState<HTMLButtonElement | null>(null);
+  const [columnElement, setColumnElement] = useState<HTMLDivElement | null>(null);
 
   const visibleSections = useMemo(
     () => sections.filter((section) => section.items.length > 0),
@@ -244,14 +257,50 @@ export default function Navigation({
   const availableViewportHeight = Math.max(0, widgetVisibleBottom - widgetVisibleTop);
   const viewportContentCenter = (widgetVisibleTop + widgetVisibleBottom) / 2;
 
-  // The spine lives in the left gutter that Section's centered content leaves
-  // on wide layouts. Below this width there is no gutter (content runs edge
-  // to edge), so the ticks would sit on top of the text — swap the trigger
-  // for a floating bottom-right button instead. The popover itself is the
-  // same in both modes; only what summons it differs (hover the ticks vs.
-  // click the button). Measured on the widget, not the viewport, so a narrow
-  // embed on a wide screen gets the compact trigger too.
-  const isCompact = !!rootRect && rootRect.width < 1024;
+  // The spine lives in the left gutter beside the content column, and hugs
+  // the column rather than the widget's left edge: the column is centered
+  // with a max width (SECTION_COLUMNS_WIDTH), so on an ultra-wide widget the
+  // edge can sit far from the content. The column is measured off a
+  // zero-height element carrying the same classes (rendered below), since
+  // its width includes a font-relative `70ch` — and measured in both modes,
+  // so the decision below can't flip-flop with the mode it picks.
+  const [columnOffset, setColumnOffset] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (!columnElement || !rootElement) return;
+    // Only the horizontal offset matters. Vertical scrolling cannot change it.
+    const measure = () => {
+      const offset = columnElement.getBoundingClientRect().left - rootElement.getBoundingClientRect().left;
+      setColumnOffset((previous) => previous === offset ? previous : offset);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(columnElement);
+    observer.observe(rootElement);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [columnElement, rootElement]);
+  const columnLeft = columnOffset === null ? null : (rootRect?.left ?? 0) + columnOffset;
+  const widgetEdgeLeft = (rootRect?.left ?? 0) + NAV_LEFT_OFFSET;
+  const railLeft = columnLeft !== null
+    ? Math.max(widgetEdgeLeft, columnLeft - SPINE_WIDTH - RAIL_COLUMN_GAP)
+    : widgetEdgeLeft;
+
+  // Once the gutter is too narrow for the rail, the ticks would sit on top
+  // of the text — swap the trigger for a floating bottom-right button. The
+  // popover itself is the same in both modes; only what summons it differs
+  // (hover the ticks vs. click the button). Decided by the gutter itself, not
+  // a fixed breakpoint: a 1024px cutoff left roughly 1024–1300px (tablets)
+  // with the rail overlapping the content. Measured on the widget, not the
+  // viewport, so a narrow embed on a wide screen gets the compact trigger
+  // too. The width check covers the first render, before the column's
+  // measured.
+  const railFits = columnLeft !== null
+    ? columnLeft - widgetEdgeLeft >= SPINE_WIDTH + RAIL_COLUMN_MIN_GAP
+    : !!rootRect && rootRect.width >= 1024;
+  const isCompact = !!rootRect && !railFits;
 
   const visibilityStyle: React.CSSProperties = {
     opacity: widgetInView ? 1 : 0,
@@ -262,9 +311,12 @@ export default function Navigation({
   const spineStyle: React.CSSProperties = {
     position: "fixed",
     top: viewportContentCenter,
-    left: (rootRect?.left ?? 0) + NAV_LEFT_OFFSET,
+    left: railLeft,
     transform: "translateY(-50%)",
-    zIndex: 51,
+    // Above the document topbar (z-40) but below the operation side panel's
+    // overlay (z-50): an open panel must cover the rail, or its ticks stay
+    // hoverable (and open the popover) through the panel's backdrop.
+    zIndex: 45,
     ...visibilityStyle,
   };
 
@@ -279,11 +331,14 @@ export default function Navigation({
   // with no viewport geometry at all. The wrapper's containing block is its
   // parent — the `px-4` div in Layout.tsx spanning the whole document body —
   // so it sticks (and un-sticks) across the widget's full scrollable extent.
+  // That only holds if the Navigation is rendered *last* in that div: sticky
+  // `bottom` pulls an element up to the edge but never down, so an anchor
+  // placed mid-document scrolls away once the reader passes it.
   const compactToggleWrapperStyle: React.CSSProperties = {
     position: "sticky",
     bottom: 0,
     height: 0,
-    zIndex: 51,
+    zIndex: 45,
     pointerEvents: "none",
   };
 
@@ -298,8 +353,9 @@ export default function Navigation({
   // it on `widgetInView` too would make it hidden-by-default logic get
   // clobbered — inline `style` always wins over a class for the same
   // property, so an `opacity: 1` here would override `opacity-0`.
-  // z-52: above both triggers (z-51) — on desktop it appears directly over
-  // the ticks, so it must visually cover them once open.
+  // z-46: above both triggers (z-45) — on desktop it appears directly over
+  // the ticks, so it must visually cover them once open — and, like them,
+  // below the side panel (z-50).
   const popoverStyle: React.CSSProperties = isCompact
     ? {
         // Anchored just above the compact button, right edges aligned — read
@@ -309,25 +365,29 @@ export default function Navigation({
         position: "fixed",
         bottom: compactToggleRect ? viewportHeight - compactToggleRect.top + 8 : 16 + 44 + 8,
         right: compactToggleRect ? viewportWidth - compactToggleRect.right : 16,
-        zIndex: 52,
+        zIndex: 46,
       }
     : {
         position: "fixed",
         top: viewportContentCenter,
-        left: (rootRect?.left ?? 0) + NAV_LEFT_OFFSET,
+        left: railLeft,
         transform: "translateY(-50%)",
         // Bounded by the widget's own visible span (see `availableViewportHeight`
         // above), not `100vh` — otherwise the popover could size itself past the
         // widget's own bottom edge and overlap unrelated content below it.
         maxHeight: `${Math.max(0, availableViewportHeight - 32)}px`,
-        zIndex: 52,
+        zIndex: 46,
       };
 
   useEffect(() => {
     if (!open) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        setHovering(false);
+        toggleRef.current?.focus();
+      }
     };
     const handlePointerDown = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -400,7 +460,7 @@ export default function Navigation({
           <span
             className={`ml-auto inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 font-mono text-[10px] transition-colors ${
               isSectionActive
-                ? "border border-primary-200 bg-primary-100 text-primary-500"
+                ? "border border-primary-200 bg-primary-100 text-primary-700"
                 : "bg-neutral-100 text-foreground-muted"
             }`}
           >
@@ -425,7 +485,7 @@ export default function Navigation({
                     }}
                     className={`flex w-full items-center gap-2 rounded-md px-2 py-0.5 text-left text-xs transition-colors ${
                       isSelected
-                        ? "bg-primary-50 font-medium text-primary-500"
+                        ? "bg-primary-50 font-medium text-primary-700"
                         : isSectionActive
                         ? "text-foreground-secondary hover:bg-primary-50 hover:text-foreground"
                         : "text-foreground-muted hover:bg-neutral-50 hover:text-foreground-secondary"
@@ -499,6 +559,11 @@ export default function Navigation({
 
   return (
     <>
+      {/* Zero-height stand-in for the content column: same width classes as
+          every Section, in the same container, so its rect is the column's.
+          Positions the rail (see `railLeft`); renders nothing visible. */}
+      <div ref={setColumnElement} aria-hidden="true" className={`w-full ${SECTION_COLUMNS_WIDTH}`} style={{ height: 0 }} />
+
       {/* A bare table-of-contents "spine" (Medium-style): one tick per section,
           no background/border/icon, fixed to the viewport's vertical center. The
           active section's tick is longer and darker, and grows one smaller
@@ -514,7 +579,8 @@ export default function Navigation({
           title={isVisible ? "Close navigation" : "Open navigation"}
           aria-label={isVisible ? "Close navigation" : "Open navigation"}
           className="group flex flex-col items-start gap-3 p-2"
-          style={spineStyle}
+          aria-expanded={isVisible}
+          style={{ ...spineStyle, visibility: widgetInView ? "visible" : "hidden" }}
         >
           {spineTicks}
         </button>
@@ -537,7 +603,8 @@ export default function Navigation({
             title={open ? "Close navigation" : "Open navigation"}
             aria-label={open ? "Close navigation" : "Open navigation"}
             className="absolute bottom-4 right-4 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background shadow-lg"
-            style={visibilityStyle}
+            aria-expanded={isVisible}
+            style={{ ...visibilityStyle, visibility: widgetInView ? "visible" : "hidden" }}
           >
             <span className="flex flex-col items-start gap-1">
               <span className="block h-[2px] w-4 rounded-full bg-foreground-secondary" />
@@ -559,7 +626,8 @@ export default function Navigation({
             } ${
               isVisible ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"
             }`}
-            style={popoverStyle}
+            // visibility also removes hidden descendants from keyboard navigation.
+            style={{ ...popoverStyle, visibility: isVisible ? "visible" : "hidden" }}
           >
             {sectionList}
           </div>,

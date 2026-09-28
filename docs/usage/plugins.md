@@ -218,6 +218,30 @@ const sendButtonStyle = {
 
 For anything beyond color (or to read the config the host actually passed, unresolved), `useDocumentContext().config` has the raw `ConfigInterface`. Prefer the derived fields on that same context (`showCodeSamples`, `deref`, …) over re-deriving them from `config`.
 
+### Overlays and the Escape key
+
+A plugin rendering a modal, popover, or menu shares the Escape key with whatever apiuikit chrome is underneath it. The operation side panel closes on Escape, listening on `document` in the **bubble** phase. A plugin overlay that also closes on Escape — the obvious `document.addEventListener("keydown", ...)` — therefore fires alongside it, and one keypress dismisses the overlay *and* collapses the panel behind it.
+
+To own the key, listen in the **capture** phase and stop the event before it can reach the panel:
+
+```tsx
+useEffect(() => {
+  if (!isOpen) return;
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    setIsOpen(false);
+  };
+  document.addEventListener("keydown", onKeyDown, true);
+  return () => document.removeEventListener("keydown", onKeyDown, true);
+}, [isOpen]);
+```
+
+Capture listeners on `document` run before the event reaches its target and before any bubble-phase listener on the same node, so `stopImmediatePropagation()` keeps the panel from ever seeing it.
+
+If your plugin nests overlays — a menu inside a modal, say — capture alone isn't enough. Capture listeners on the same node fire in *registration* order, which is outermost-first, so the outer overlay would swallow Escape meant for the inner one. Track which layer is on top and have each listener act only while it is, rather than relying on listener order.
+
 ### Error isolation
 
 Each plugin filling a slot is wrapped in its own error boundary and `Suspense` — one broken or slow-loading plugin can't take down the document, or a sibling plugin filling the same slot. A plugin that throws during render is skipped (no user-facing fallback) and logged as `[apiuikit] plugin error in slot "…":`. There is no user-facing fallback UI for a plugin crash today.

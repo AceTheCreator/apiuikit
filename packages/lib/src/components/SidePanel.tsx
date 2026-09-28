@@ -22,13 +22,20 @@ export interface ISidePanelProps {
 }
 
 export const SidePanel = forwardRef<HTMLDivElement, ISidePanelProps>(function SidePanel({ isOpen, side, onClose, title, headerActions, children, width = "w-[50rem]" }, ref) {
+  // Bubble phase, and only while open. An overlay layered above the panel (a
+  // plugin's modal, or one of our own popovers like QueryParameters) claims
+  // Escape by listening on `document` in the *capture* phase and calling
+  // `stopImmediatePropagation()`, which keeps the event from ever reaching
+  // this listener — otherwise one Escape would dismiss the overlay and
+  // collapse the panel underneath it. See docs/usage/plugins.md.
   useEffect(() => {
+    if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
+  }, [isOpen, onClose]);
 
   const panelPosition = side === "right" ? "right-0" : "left-0";
   // Uses an inline `transform` instead of Tailwind's `translate-x-full` utility: that

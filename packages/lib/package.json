@@ -54,6 +54,8 @@
     "generate:models": "tsx src/scripts/generateAsyncAPIModel.ts"
   },
   "dependencies": {
+    "@apiuikit/openapi-try-it-plugin": "^0.3.0",
+    "@apiuikit/ws-try-it-plugin": "^0.1.0",
     "@asyncapi/specs": "^6.8.1",
     "@json-schema-tools/reference-resolver": "^1.2.6",
     "@readme/httpsnippet": "^11.4.0",
@@ -88,9 +90,9 @@
   "devDependencies": {
     "@asyncapi/modelina": "^5.10.1",
     "@asyncapi/parser": "^3.6.0",
-    "@scalar/openapi-parser": "^0.28.10",
     "@chromatic-com/storybook": "^3.2.3",
     "@eslint/js": "^9.17.0",
+    "@scalar/openapi-parser": "^0.28.10",
     "@storybook/addon-a11y": "^8.6.18",
     "@storybook/addon-essentials": "^8.6.18",
     "@storybook/addon-interactions": "^8.6.18",
