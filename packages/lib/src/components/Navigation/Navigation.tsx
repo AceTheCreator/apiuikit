@@ -53,8 +53,13 @@ interface NavigationProps {
 // appears exactly where the ticks are (not beside them), so hovering the
 // ticks lands the cursor on the popover with no gap to cross.
 const NAV_LEFT_OFFSET = 20;
-/** Space between the rail's right edge and the content column's left edge. */
-const RAIL_COLUMN_GAP = 48;
+/** Preferred space between the rail's right edge and the content column's left
+ * edge, used whenever the gutter has room for it. */
+const RAIL_COLUMN_GAP = 96;
+/** The least space the rail may keep from the column before it gives way to
+ * the compact trigger. Separate from the preferred gap so pushing the rail
+ * further out doesn't also make narrower layouts fall back to compact sooner. */
+const RAIL_COLUMN_MIN_GAP = 48;
 /** The rail's width: its widest (active) tick, `w-6`, plus the button's `p-2`
  * on each side. A constant rather than measured, because it's needed to decide
  * whether the rail fits even while it isn't rendered (compact mode). */
@@ -293,7 +298,7 @@ export default function Navigation({
   // too. The width check covers the first render, before the column's
   // measured.
   const railFits = columnLeft !== null
-    ? columnLeft - widgetEdgeLeft >= SPINE_WIDTH + RAIL_COLUMN_GAP
+    ? columnLeft - widgetEdgeLeft >= SPINE_WIDTH + RAIL_COLUMN_MIN_GAP
     : !!rootRect && rootRect.width >= 1024;
   const isCompact = !!rootRect && !railFits;
 
@@ -308,7 +313,10 @@ export default function Navigation({
     top: viewportContentCenter,
     left: railLeft,
     transform: "translateY(-50%)",
-    zIndex: 51,
+    // Above the document topbar (z-40) but below the operation side panel's
+    // overlay (z-50): an open panel must cover the rail, or its ticks stay
+    // hoverable (and open the popover) through the panel's backdrop.
+    zIndex: 45,
     ...visibilityStyle,
   };
 
@@ -330,7 +338,7 @@ export default function Navigation({
     position: "sticky",
     bottom: 0,
     height: 0,
-    zIndex: 51,
+    zIndex: 45,
     pointerEvents: "none",
   };
 
@@ -345,8 +353,9 @@ export default function Navigation({
   // it on `widgetInView` too would make it hidden-by-default logic get
   // clobbered — inline `style` always wins over a class for the same
   // property, so an `opacity: 1` here would override `opacity-0`.
-  // z-52: above both triggers (z-51) — on desktop it appears directly over
-  // the ticks, so it must visually cover them once open.
+  // z-46: above both triggers (z-45) — on desktop it appears directly over
+  // the ticks, so it must visually cover them once open — and, like them,
+  // below the side panel (z-50).
   const popoverStyle: React.CSSProperties = isCompact
     ? {
         // Anchored just above the compact button, right edges aligned — read
@@ -356,7 +365,7 @@ export default function Navigation({
         position: "fixed",
         bottom: compactToggleRect ? viewportHeight - compactToggleRect.top + 8 : 16 + 44 + 8,
         right: compactToggleRect ? viewportWidth - compactToggleRect.right : 16,
-        zIndex: 52,
+        zIndex: 46,
       }
     : {
         position: "fixed",
@@ -367,7 +376,7 @@ export default function Navigation({
         // above), not `100vh` — otherwise the popover could size itself past the
         // widget's own bottom edge and overlap unrelated content below it.
         maxHeight: `${Math.max(0, availableViewportHeight - 32)}px`,
-        zIndex: 52,
+        zIndex: 46,
       };
 
   useEffect(() => {
