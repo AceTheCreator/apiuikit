@@ -1,3 +1,4 @@
+import { lazy } from "react";
 import { ChannelAddress } from "../../components/ChannelAddress";
 import Section, { type SectionLayout } from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
@@ -7,6 +8,18 @@ import { Channel } from "../../types/asyncapi/Channel";
 import { Parameter } from "../../types/asyncapi/Parameter";
 import { Operation as OperationType } from "../../types/asyncapi/Operation";
 import Operation from "./Operation";
+import { useDocumentContext } from "../../contexts";
+import { PluginBoundary } from "../../plugins/PluginSlot";
+
+// The built-in WebSocket "Try it" panel — the AsyncAPI counterpart to the
+// OpenAPI one in Paths.tsx, loaded the same way and for the same reasons: a
+// dependency kept external in the build, and a lazy chunk gated on
+// `show.tryIt` at the call site so it's never fetched while the flag is off.
+const WsHeaderButton = lazy(() =>
+  import("@apiuikit/ws-try-it-plugin").then(({ WsHeaderButton: component }) => ({
+    default: component,
+  })),
+);
 
 interface OperationsProps {
   operations: Record<string, OperationType>;
@@ -19,6 +32,11 @@ interface OperationsProps {
 
 export default function Operations({ operations, selectedKey = null, onSelectKey, focusSection = null, layout }: OperationsProps) {
   const setSelectedKey = (key: string | null) => onSelectKey?.(key);
+  // Read spec-agnostically and narrowed, as Paths.tsx does for its header:
+  // a mis-nested section must not crash on this.
+  const context = useDocumentContext();
+  const document = context.specType === "asyncapi" ? context.document : null;
+  const showTryIt = context.showTryIt === true;
 
   if (!Object.keys(operations).length) {
     return null;
@@ -123,6 +141,17 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
         side="right"
         onClose={() => setSelectedKey(null)}
         title={panelTitle}
+        headerActions={
+          // The button renders nothing for an operation with no WebSocket
+          // server, so non-WS documents get an unchanged header.
+          showTryIt && selectedOp && selectedKey && document && (
+            <div className="flex shrink-0 items-center gap-2">
+              <PluginBoundary label="built-in:asyncapi.operation.tryIt">
+                <WsHeaderButton document={document} operationId={selectedKey} />
+              </PluginBoundary>
+            </div>
+          )
+        }
       >
         {selectedOp && (
           // Remounts on every operation switch — see Paths.tsx's identical `key`.

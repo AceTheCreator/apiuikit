@@ -6,6 +6,24 @@ import dts from 'vite-plugin-dts'
 
 const libMarker = fileURLToPath(new URL('../lib/.build-complete', import.meta.url))
 
+// The built-in try-it plugins (@apiuikit/openapi-try-it-plugin,
+// @apiuikit/ws-try-it-plugin) are linked from checkouts outside this repo
+// (file: dependency -> symlink). Their own node_modules carry copies of React
+// and apiuikit for their tests/builds, and Vite resolves a linked package's bare
+// imports from the package's real path — so without deduping, a plugin would
+// render against a second React and a second apiuikit context and see no
+// document. Everything below keeps a single copy of each.
+const linkedDeps = ['react', 'react-dom', 'react/jsx-runtime', 'apiuikit']
+// Real paths, so the dev server may serve them from outside the workspace.
+// Installed at the repo root (npm hoists workspace deps), not under playground.
+const linkedPluginDirs = ['openapi-try-it-plugin', 'ws-try-it-plugin'].flatMap((name) => {
+  try {
+    return [fs.realpathSync(fileURLToPath(new URL(`../../node_modules/@apiuikit/${name}`, import.meta.url)))]
+  } catch {
+    return [] // not installed — nothing to allow
+  }
+})
+
 // The lib watch build empties dist/ for a few seconds on every rebuild, so
 // reloading off dist file events lands mid-build on missing files (blank
 // screen). Reload only when the library signals a completed build via its
@@ -55,6 +73,7 @@ export default defineConfig(({ mode }) => {
             'react-dom',
             'react/jsx-runtime',
             /^apiuikit(\/|$)/,
+            /^@apiuikit\//,
             /^@codemirror\//,
             /^@uiw\//,
             /^@asyncapi\//,
@@ -67,7 +86,12 @@ export default defineConfig(({ mode }) => {
   // Dev server + standalone demo app build.
   return {
     plugins: [react(), libRebuildReload()],
+    resolve: { dedupe: linkedDeps },
     server: {
+      fs: {
+        // The linked try-it plugins live outside the workspace root.
+        allow: [fileURLToPath(new URL('../..', import.meta.url)), ...linkedPluginDirs],
+      },
       watch: {
         // dist/ churns while the library rebuilds; the marker plugin above owns reloads.
         ignored: ['**/packages/lib/dist/**'],

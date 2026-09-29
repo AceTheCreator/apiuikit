@@ -15,7 +15,7 @@
     "storybook": "npm run storybook --workspace=packages/lib",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "npm run build --workspace=packages/lib && npm run build --workspace=packages/web-component && changeset publish"
+    "release": "cp README.md packages/lib/README.md && npm run build --workspace=packages/lib && npm run build --workspace=packages/web-component && npm_config_ignore_scripts=true changeset publish"
   },
   "peerDependencies": {
     "@asyncapi/parser": "^3.6.0",

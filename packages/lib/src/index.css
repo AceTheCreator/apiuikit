@@ -11,6 +11,11 @@
 .apiuikit-root {
   position: relative;
   container-type: inline-size;
+  /* Fill the host's container when it has a definite height (a full-height
+     pane or page slot), so the background, and a side panel contained to the
+     component, reach its bottom even for a short document. Against a
+     container with no set height this computes to `auto`: no change. */
+  min-height: 100%;
   color: rgb(var(--color-text-primary) / 1);
   background-color: rgb(var(--color-background) / 1);
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
@@ -24,7 +29,7 @@
 
 .apiuikit-root {
 
-  --color-background: 248 250 252;
+  --color-background: 255 255 255;
   --color-surface: 255 255 255;
   --color-border: 226 232 240;
 
@@ -35,14 +40,16 @@
     /* --color-primary: #64748B;
     --color-primary-light: #E2E8F0; */
 
-    /* Primary theme scale — orange by default */
-    --color-primary-50:  255 247 237;
-    --color-primary-100: 255 237 213;
-    --color-primary-200: 254 215 170;
-    --color-primary-300: 253 186 116;
-    --color-primary-500: 249 115 22;
-    --color-primary-600: 234 88 12;
-    --color-primary-700: 194 65 12;
+    /* Primary theme scale — keep in sync with defaultConfig.theme.colors.primary
+       (config/default.ts). The provider always sets these from the merged
+       theme; this is only what renders before it does. */
+    --color-primary-50:  221 244 255;
+    --color-primary-100: 182 227 255;
+    --color-primary-200: 128 204 255;
+    --color-primary-300: 84 174 255;
+    --color-primary-500: 88 166 255;
+    --color-primary-600: 31 111 235;
+    --color-primary-700: 13 65 157;
 
     /* Secondary theme scale — indigo */
     --color-secondary-50:  238 242 255;
@@ -117,9 +124,15 @@
    skips that parent's padding — hence needed its own explicit inset. */
 .apiuikit-root .document-topbar {
   position: sticky;
-  margin-top: -10px;
   z-index: 40;
-  height: 40px;
+  /* Breathing room above the controls, as padding *inside* the painted
+     surface rather than a gap above it. Painted here on the outer element so
+     the strip is masked: with the background only on the inner row, the
+     document scrolled visibly through the space above it. Height is left to
+     content — 16px of padding plus the inner row's 40px — so the total
+     doesn't depend on which box model is in effect. */
+  padding-top: 16px;
+  background-color: rgb(var(--color-background) / 1);
   pointer-events: none;
   transition: transform 0.3s ease-in-out;
 }

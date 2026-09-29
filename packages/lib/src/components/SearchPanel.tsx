@@ -216,8 +216,8 @@ export default function SearchPanel({
       {isModalOpen &&
         portalHost &&
         createPortal(
-          // z-[60] — above this search toggle, the nav spine (z-51), and the
-          // nav popover (z-52), so the backdrop dims them along with the rest
+          // z-[60] — above this search toggle, the nav spine (z-45), and the
+          // nav popover (z-46), so the backdrop dims them along with the rest
           // of the page instead of leaving them floating on top of it.
           <div
             className="fixed inset-0 z-[60] flex justify-center px-4 pt-24"
