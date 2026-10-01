@@ -88,7 +88,7 @@ export function Playground({
 }: PlaygroundProps) {
   const [activeTab, setActiveTab] = useState<EditorTab>('doc')
   const [uiMode, setUiMode] = useState<UiMode>(() => readStoredUiMode() ?? defaultUiMode)
-  const [editorExpanded, setEditorExpanded] = useState(true)
+  const [editorExpanded, setEditorExpanded] = useState(false)
   const palette = UI_PALETTES[uiMode]
 
   useEffect(() => {
