@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import OpenAPI from "./OpenAPI";
 import type { IOpenAPIProps } from "./OpenAPI";
-import type { OpenAPIDocumentData } from "../../types/openapi";
 import type { ConfigInterface } from "../../config/config";
 import type { ErrorBoundaryFallbackRenderer } from "../../components/ErrorBoundary";
 import type { ErrorInfo, ReactNode } from "react";
 import type { ApiuikitPlugin } from "../../plugins/types";
-import { parseDocument } from "../../helpers/openapiParser";
+import { parseDocument, type OpenAPIParseResult } from "../../helpers/openapiParser";
 
 interface OpenAPIRendererProps {
-  /** Raw OpenAPI document as a YAML or JSON string, parsed and validated internally via `@readme/openapi-parser`. */
+  /** Raw OpenAPI document as a YAML or JSON string, parsed and validated internally via `@scalar/openapi-parser`. */
   raw: string;
   /** UI configuration: theme, which sections to show, sidebar options, and more. */
   config?: ConfigInterface;
@@ -28,7 +27,7 @@ interface OpenAPIRendererProps {
 }
 
 /**
- * Parses a raw OpenAPI YAML/JSON string (via `@readme/openapi-parser`) and
+ * Parses a raw OpenAPI YAML/JSON string (via `@scalar/openapi-parser`) and
  * renders the same full documentation page as `OpenAPI`. Use this when you
  * have a document as text rather than a pre-parsed object, e.g. user-entered
  * or loaded from a file at runtime.
@@ -43,27 +42,27 @@ export function OpenAPIRenderer({
   initialLocation,
   onLocationChange,
 }: OpenAPIRendererProps) {
-  const [document, setDocument] = useState<OpenAPIDocumentData | null>(null);
+  const [result, setResult] = useState<OpenAPIParseResult | null>(null);
 
   const onDiagnosticsRef = useRef(onDiagnostics);
   onDiagnosticsRef.current = onDiagnostics;
 
   useEffect(() => {
     let active = true;
-    parseDocument(raw).then(({ document, diagnostics }) => {
+    parseDocument(raw).then((parsed) => {
       if (!active) return;
-      setDocument(document);
-      onDiagnosticsRef.current?.(diagnostics);
+      setResult(parsed);
+      onDiagnosticsRef.current?.(parsed.diagnostics);
     });
     return () => {
       active = false;
     };
   }, [raw]);
 
+  const document = result?.document;
   if (!document) return null;
   return (
     <OpenAPI
-      kind="resolved"
       openapi={document}
       config={config}
       plugins={plugins}

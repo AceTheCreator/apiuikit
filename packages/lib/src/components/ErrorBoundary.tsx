@@ -4,6 +4,8 @@ export type ErrorBoundaryFallbackRenderer = (error: Error, reset: () => void) =>
 
 export interface ErrorBoundaryProps {
   children: ReactNode;
+  /** Retry automatically when the document or selected content changes. */
+  resetKey?: unknown;
   /** Custom fallback UI. Either a static node or a render function that also gets a `reset` callback. */
   fallback?: ReactNode | ErrorBoundaryFallbackRenderer;
   /** Called once when a render error is caught, in addition to the default console.error. */
@@ -30,6 +32,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("[apiuikit] Rendering error:", error, errorInfo.componentStack);
     this.props.onError?.(error, errorInfo);
+  }
+
+  componentDidUpdate(previous: ErrorBoundaryProps) {
+    if (this.state.error && previous.resetKey !== this.props.resetKey) this.reset();
   }
 
   reset = () => {

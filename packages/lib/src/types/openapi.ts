@@ -78,8 +78,12 @@ export function resolveOperationParameters(
   operation: OpenAPIOperationData | null | undefined,
 ): OpenAPIParameterData[] {
   const merged = new Map<string, OpenAPIParameterData>();
-  for (const param of pathItem?.parameters ?? []) merged.set(`${param.in}:${param.name}`, param);
-  for (const param of operation?.parameters ?? []) merged.set(`${param.in}:${param.name}`, param);
+  for (const parameters of [pathItem?.parameters, operation?.parameters]) {
+    if (!Array.isArray(parameters)) continue;
+    for (const param of parameters) {
+      if (param && typeof param === "object") merged.set(`${param.in}:${param.name}`, param);
+    }
+  }
   return Array.from(merged.values());
 }
 
