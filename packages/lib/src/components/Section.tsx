@@ -88,8 +88,14 @@ export default function Section({
             </div>
           )
         ) : (
+          // Empty, the column only exists to reserve the `@lg` gutter; below
+          // that it would be a zero-height flex item that still earns the
+          // section's `gap-6`, padding narrow layouts with space large ones
+          // don't have.
           <div
-            className="@lg:pl-12 @lg:w-[400px] shrink-0"
+            className={`@lg:pl-12 @lg:w-[400px] shrink-0 ${
+              hasSideContent ? "" : "hidden @lg:block"
+            }`}
             data-testid="section-side-column"
           >
             <div className={`${stickySideContent && "@lg:sticky @lg:top-4"}`}>

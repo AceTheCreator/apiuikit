@@ -37,7 +37,7 @@ const AsyncAPI = (props: IAsyncAPIProps) => (
   // React only catches throws from a boundary's *descendants*, so document
   // resolution has to happen one level down (in AsyncAPIContent) to be covered
   // by it. Resolving here would put it outside its own boundary.
-  <ErrorBoundary fallback={props.errorFallback} onError={props.onError}>
+  <ErrorBoundary resetKey={props.asyncapi} fallback={props.errorFallback} onError={props.onError}>
     <AsyncAPIContent {...props} />
   </ErrorBoundary>
 );

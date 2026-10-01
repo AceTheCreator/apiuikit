@@ -28,7 +28,7 @@ export default function ContentTab({ tabs, current, onChange }: ContentTabProps)
       : 0;
 
   const content = (
-    <div className="w-full mt-10 @lg:mt-0">
+    <div className="w-full">
       <Tabs
         tabs={tabs}
         current={current}
