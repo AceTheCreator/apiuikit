@@ -61,10 +61,14 @@ jobs:
           else
             target=(--alias "pr-$PR_NUMBER")
           fi
+          # --filter: the CLI detects the npm workspaces and refuses to guess which
+          # one to deploy. Absolute paths so they don't depend on whether the CLI
+          # resolves them from the repo root or the filtered package.
           npx -y netlify-cli@27.10.2 deploy \
+            --filter playground \
             --no-build \
-            --dir packages/playground/dist-app \
-            --functions packages/playground/netlify/functions \
+            --dir "$GITHUB_WORKSPACE/packages/playground/dist-app" \
+            --functions "$GITHUB_WORKSPACE/packages/playground/netlify/functions" \
             --message "Deploy ${{ github.sha }}" \
             --json \
             "${target[@]}" > netlify-deploy.json
