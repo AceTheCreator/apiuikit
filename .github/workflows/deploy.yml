@@ -22,26 +22,70 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     steps:
+      # Checkout + install so the CLI can bundle the share function
+      # (packages/playground/netlify/functions) with its dependencies.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Download playground build
         uses: actions/download-artifact@v4
         with:
           name: playground-dist
           path: packages/playground/dist-app
 
+      # The Netlify CLI rather than nwtgck/actions-netlify: that action's bundled
+      # Netlify client predates modern functions (`export default` + `config.path`),
+      # so it can't deploy the /api/share function.
+      #
       # Requires two repo secrets (Settings -> Secrets and variables -> Actions):
       #   NETLIFY_AUTH_TOKEN — a personal/team access token from Netlify (User settings -> Applications)
       #   NETLIFY_SITE_ID    — the target site's API ID (Site settings -> General -> Site details)
       - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3
-        with:
-          publish-dir: packages/playground/dist-app
-          production-branch: master
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy ${{ github.sha }}"
-          enable-pull-request-comment: true
-          enable-commit-comment: false
-          overwrites-pull-request-comment: true
+        id: netlify
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            target=(--prod)
+          else
+            target=(--alias "pr-$PR_NUMBER")
+          fi
+          npx -y netlify-cli@27.10.2 deploy \
+            --no-build \
+            --dir packages/playground/dist-app \
+            --functions packages/playground/netlify/functions \
+            --message "Deploy ${{ github.sha }}" \
+            --json \
+            "${target[@]}" > netlify-deploy.json
+          echo "url=$(jq -r '.deploy_url' netlify-deploy.json)" >> "$GITHUB_OUTPUT"
         timeout-minutes: 5
+
+      - name: Comment preview URL on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          DEPLOY_URL: ${{ steps.netlify.outputs.url }}
+        with:
+          script: |
+            const marker = '<!-- playground-deploy-preview -->'
+            const body = `${marker}\n🚀 Playground deploy preview: ${process.env.DEPLOY_URL}\n\nCommit: ${context.sha}`
+            const { owner, repo } = context.repo
+            const issue_number = context.issue.number
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number })
+            const existing = comments.find((c) => c.body?.includes(marker))
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body })
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body })
+            }

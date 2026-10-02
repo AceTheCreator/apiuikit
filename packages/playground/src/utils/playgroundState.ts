@@ -75,6 +75,9 @@ export async function createShare(endpoint: string, snapshot: PlaygroundSnapshot
     headers: { 'Content-Type': 'application/json' },
     body,
   })
+  // A 404 here means the share endpoint itself is missing (e.g. the function
+  // wasn't deployed), not a missing share.
+  if (res.status === 404) throw new Error('Share service unavailable')
   if (!res.ok) throw new Error(shareErrorMessage(res.status))
   const { id } = (await res.json()) as { id: string }
   const url = new URL(window.location.href)
