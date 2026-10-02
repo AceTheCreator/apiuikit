@@ -1,3 +1,7 @@
 [build]
   command = "npm --workspace playground run build"
   publish = "packages/playground/dist-app"
+
+[functions]
+  # Share-link API (/api/share) backed by Netlify Blobs — see netlify/functions/share.mts.
+  directory = "packages/playground/netlify/functions"

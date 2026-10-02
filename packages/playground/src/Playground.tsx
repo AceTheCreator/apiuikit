@@ -2,7 +2,7 @@ import { AsyncAPIRenderer, OpenAPIRenderer, defaultConfig } from 'apiuikit'
 import type { ConfigInterface } from 'apiuikit'
 import type { ApiuikitPlugin } from 'apiuikit/plugin'
 import 'apiuikit/style.css'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { DiagnosticsPanel } from './components/DiagnosticsPanel'
 import type { ParserDiagnostic } from './components/DiagnosticsPanel'
 import { EditorPane } from './components/EditorPane'
@@ -11,6 +11,7 @@ import type { EditorTab } from './components/EditorTabs'
 import { FetchSchema } from './components/FetchSchema'
 import { GitHubLink } from './components/GitHubLink'
 import { ResizeHandle } from './components/ResizeHandle'
+import { ShareButton } from './components/ShareButton'
 import { ThemeToggle } from './components/ThemeToggle'
 import { ViewToggle } from './components/ViewToggle'
 import { DEFAULT_SUGGESTED_SCHEMA, SUGGESTED_SCHEMAS } from './data/suggestedSchemas'
@@ -20,6 +21,14 @@ import { useResizableSplit } from './hooks/useResizableSplit'
 import { scrollbarStyle, UI_PALETTES } from './theme'
 import type { UiMode } from './theme'
 import { netlifyTheme } from './themes/netlify'
+import {
+  clearShareId,
+  createShare,
+  fetchShare,
+  readShareId,
+  readStoredSnapshot,
+  writeStoredSnapshot,
+} from './utils/playgroundState'
 
 const DEFAULT_DOC_TEXT = DEFAULT_SUGGESTED_SCHEMA.content
 const UI_MODE_STORAGE_KEY = 'apiuikit-playground-ui-mode'
@@ -77,7 +86,20 @@ export interface PlaygroundProps {
    * plugins and resets the operation's selected tab.
    */
   plugins?: ApiuikitPlugin[]
+  /**
+   * Save the document and config text to localStorage and restore them on
+   * mount (taking precedence over `initialDocument` / `initialConfig`).
+   */
+  persist?: boolean
+  /**
+   * Share-link API base (e.g. `/api/share`). When set, a Share button uploads
+   * the current document + config and copies a `?s=<id>` link, and a `?s=`
+   * param in the page URL is loaded on mount.
+   */
+  shareEndpoint?: string
 }
+
+type ShareLoad = { status: 'idle' } | { status: 'loading' } | { status: 'error'; message: string }
 
 export function Playground({
   initialDocument,
@@ -85,6 +107,8 @@ export function Playground({
   defaultUiMode = 'light',
   height = '100%',
   plugins,
+  persist = false,
+  shareEndpoint,
 }: PlaygroundProps) {
   const [activeTab, setActiveTab] = useState<EditorTab>('doc')
   const [uiMode, setUiMode] = useState<UiMode>(() => readStoredUiMode() ?? defaultUiMode)
@@ -101,7 +125,19 @@ export function Playground({
 
   // AsyncAPIRenderer parses `raw` itself via the real @asyncapi/parser and reports
   // real spec diagnostics — no need for our own JSON.parse validation on this side.
-  const [docText, setDocText] = useState(initialDocument ?? DEFAULT_DOC_TEXT)
+  // Uncontrolled props: capture the mount-time values so a re-rendering parent
+  // passing fresh literals doesn't reset the editors. A persisted session wins
+  // over the props.
+  const [seed] = useState(() => {
+    const stored = persist ? readStoredSnapshot() : null
+    const configSeed = initialConfig ?? DEFAULT_CONFIG
+    return {
+      doc: stored?.doc ?? initialDocument ?? DEFAULT_DOC_TEXT,
+      configText: stored?.config ?? JSON.stringify(configSeed, null, 2),
+      configSeed,
+    }
+  })
+  const [docText, setDocText] = useState(seed.doc)
   // Parsing hits the real spec-validating parser (~500ms) — debounce so typing doesn't
   // fire a fresh parse on every keystroke.
   const debouncedDocText = useDebouncedValue(docText, 400)
@@ -139,12 +175,54 @@ export function Playground({
     return match[1] === 'asyncapi' ? 'asyncapi' : 'openapi'
   }, [docText])
 
-  // Uncontrolled prop: capture the mount-time value so a re-rendering parent
-  // passing a fresh object literal doesn't reset the editor.
-  const [configSeed] = useState(() => initialConfig ?? DEFAULT_CONFIG)
-  const config = useJsonEditor<ConfigInterface>(JSON.stringify(configSeed, null, 2), configSeed, {
-    emptyValue: configSeed,
+  const config = useJsonEditor<ConfigInterface>(seed.configText, seed.configSeed, {
+    emptyValue: seed.configSeed,
   })
+  const { onChange: setConfigText } = config
+
+  // A `?s=<id>` share link replaces whatever was seeded above once it loads.
+  const [shareLoad, setShareLoad] = useState<ShareLoad>(() =>
+    shareEndpoint && readShareId() ? { status: 'loading' } : { status: 'idle' },
+  )
+  const shareFetchStarted = useRef(false) // StrictMode runs mount effects twice
+  useEffect(() => {
+    if (!shareEndpoint || shareFetchStarted.current) return
+    const id = readShareId()
+    if (!id) return
+    shareFetchStarted.current = true
+    fetchShare(shareEndpoint, id)
+      .then((snapshot) => {
+        setDocText(snapshot.doc)
+        setConfigText(snapshot.config)
+        // From here on the session is the user's own — a reload should restore
+        // their edits from localStorage, not re-fetch the original share.
+        clearShareId()
+        setShareLoad({ status: 'idle' })
+      })
+      .catch((err: Error) => setShareLoad({ status: 'error', message: err.message }))
+  }, [shareEndpoint, setConfigText])
+
+  // Debounced so typing in a large spec doesn't re-serialize it on every keystroke.
+  const persistedDoc = useDebouncedValue(docText, 500)
+  const persistedConfig = useDebouncedValue(config.text, 500)
+  useEffect(() => {
+    // Hold off while a share link loads so the pre-share state isn't written over it.
+    if (!persist || shareLoad.status === 'loading') return
+    writeStoredSnapshot({ v: 1, doc: persistedDoc, config: persistedConfig })
+  }, [persist, shareLoad.status, persistedDoc, persistedConfig])
+
+  // Reopening the share dialog without editing reuses the last link instead of
+  // re-uploading (ids are content hashes, so it would be the same link anyway).
+  const lastShare = useRef<{ doc: string; config: string; url: string } | null>(null)
+  const handleShare = async () => {
+    const doc = docText
+    const configText = config.text
+    const last = lastShare.current
+    if (last && last.doc === doc && last.config === configText) return last.url
+    const url = await createShare(shareEndpoint!, { v: 1, doc, config: configText })
+    lastShare.current = { doc, config: configText, url }
+    return url
+  }
 
   // theme.mode typed directly into the config editor is authoritative for the
   // preview — the toggle only supplies a mode when the config doesn't set one
@@ -227,6 +305,7 @@ export function Playground({
               palette={palette}
               trailing={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingRight: '6px' }}>
+                  {shareEndpoint && <ShareButton palette={palette} onShare={handleShare} />}
                   <GitHubLink palette={palette} />
                   <ThemeToggle mode={uiMode} palette={palette} onChange={handleUiModeChange} />
                   <ViewToggle expanded palette={palette} onChange={setEditorExpanded} />
@@ -276,6 +355,41 @@ export function Playground({
         </>
       )}
 
+      {shareLoad.status !== 'idle' && (
+        <div
+          role={shareLoad.status === 'error' ? 'alert' : 'status'}
+          style={{
+            position: 'absolute',
+            top: '12px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '6px 10px',
+            fontSize: '13px',
+            background: shareLoad.status === 'error' ? palette.errorBg : palette.chromeBg,
+            color: shareLoad.status === 'error' ? palette.errorText : palette.textPrimary,
+            border: `1px solid ${shareLoad.status === 'error' ? palette.errorBorder : palette.chromeBorder}`,
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            zIndex: 50,
+          }}
+        >
+          {shareLoad.status === 'loading' ? 'Loading shared spec…' : shareLoad.message}
+          {shareLoad.status === 'error' && (
+            <button
+              type="button"
+              onClick={() => setShareLoad({ status: 'idle' })}
+              aria-label="Dismiss"
+              style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: '14px', padding: 0 }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+      )}
+
       {!editorExpanded && (
         <div
           style={{
@@ -295,6 +409,7 @@ export function Playground({
             zIndex: 40,
           }}
         >
+          {shareEndpoint && <ShareButton palette={palette} onShare={handleShare} />}
           <GitHubLink palette={palette} />
           <ThemeToggle mode={uiMode} palette={palette} onChange={handleUiModeChange} />
           <ViewToggle expanded={false} palette={palette} onChange={setEditorExpanded} />
