@@ -2,6 +2,22 @@
   "name": "@apiuikit/web-component",
   "version": "2.0.0",
   "description": "Framework-agnostic web components for apiuikit — full-document and per-section (servers, operations, messages, schemas, info) custom elements for AsyncAPI and OpenAPI",
+  "keywords": [
+    "web-components",
+    "custom-elements",
+    "framework-agnostic",
+    "openapi",
+    "asyncapi",
+    "swagger",
+    "api-documentation",
+    "api-docs",
+    "api-reference",
+    "documentation",
+    "websocket",
+    "try-it",
+    "api-explorer",
+    "developer-portal"
+  ],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

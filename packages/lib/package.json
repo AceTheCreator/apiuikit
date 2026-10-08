@@ -2,6 +2,22 @@
   "name": "apiuikit",
   "version": "2.0.0",
   "description": "A React UI library for rendering your API specifications",
+  "keywords": [
+    "react",
+    "react-components",
+    "ui-kit",
+    "openapi",
+    "asyncapi",
+    "swagger",
+    "api-documentation",
+    "api-docs",
+    "api-reference",
+    "documentation",
+    "websocket",
+    "try-it",
+    "api-explorer",
+    "developer-portal"
+  ],
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/AceTheCreator/apiuikit/issues"
