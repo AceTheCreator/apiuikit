@@ -1,5 +1,11 @@
 # apiuikit
 
+## 2.0.1
+
+### Patch Changes
+
+- 29a34bf: Add npm keywords so the packages are discoverable in npm search.
+
 ## 2.0.0
 
 ### Major Changes
