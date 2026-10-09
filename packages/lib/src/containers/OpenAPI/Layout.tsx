@@ -1,3 +1,4 @@
+import { ErrorBoundary } from "../../components/ErrorBoundary";
 import { useState } from "react";
 import OpenAPIDocumentProvider from "./OpenAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
@@ -186,7 +187,13 @@ export default function Layout({ openapi, config, plugins, initialLocation, onLo
         <ContentTab tabs={tabs} current={effectiveTab} onChange={handleContentTabChange} />
         {effectiveTab && (
           <div id={`panel-${effectiveTab}`} role="tabpanel" aria-labelledby={`tab-${effectiveTab}`}>
-            {activeContent}
+            <ErrorBoundary
+              resetKey={openapi}
+              key={`${effectiveTab}-${selected.endpoints}-${selected.webhooks}-${selected.schemas}`}
+              fallback={<p role="alert">This section could not be rendered. Other sections are still available.</p>}
+            >
+              {activeContent}
+            </ErrorBoundary>
           </div>
         )}
         {/* Last on purpose: on narrow layouts the nav's floating button hangs

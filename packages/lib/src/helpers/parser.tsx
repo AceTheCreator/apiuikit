@@ -44,7 +44,11 @@ export async function parseDocument(raw: string): Promise<{
     const { registerProtobufSchemaParser } = await import("./protobuf/protobufSchemaParser");
     registerProtobufSchemaParser(parser);
 
-    const { document, diagnostics } = await parser.parse(raw);
+    // Keep validation diagnostics without discarding usable documents. The
+    // parser still runs reference resolution, traits and schema conversion.
+    const { document, diagnostics } = await parser.parse(raw, {
+      validateOptions: { allowedSeverity: { error: true } },
+    });
 
     return {
       diagnostics,

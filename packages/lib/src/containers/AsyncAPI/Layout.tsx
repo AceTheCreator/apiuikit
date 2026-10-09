@@ -1,3 +1,4 @@
+import { ErrorBoundary } from "../../components/ErrorBoundary";
 import { useState } from "react";
 import AsyncAPIDocumentProvider from "./AsyncAPIDocumentProvider";
 import ContentTab, { ContentTabItem } from "../../components/ContentTab";
@@ -172,7 +173,13 @@ export default function Layout({ asyncapi, config, plugins, initialLocation, onL
         <ContentTab tabs={tabs} current={effectiveTab} onChange={handleContentTabChange} />
         {effectiveTab && (
           <div id={`panel-${effectiveTab}`} role="tabpanel" aria-labelledby={`tab-${effectiveTab}`}>
-            {activeContent}
+            <ErrorBoundary
+              resetKey={asyncapi}
+              key={`${effectiveTab}-${selected.operations}-${selected.messages}-${selected.schemas}`}
+              fallback={<p role="alert">This section could not be rendered. Other sections are still available.</p>}
+            >
+              {activeContent}
+            </ErrorBoundary>
           </div>
         )}
         {/* Last on purpose: on narrow layouts the nav's floating button hangs

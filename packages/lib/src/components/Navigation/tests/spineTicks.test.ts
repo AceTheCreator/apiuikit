@@ -50,8 +50,15 @@ describe("spineTickBudget", () => {
     }
   });
 
-  it("allows more ticks on a taller viewport", () => {
-    expect(spineTickBudget(1440, 4)).toBeGreaterThan(spineTickBudget(700, 4));
+  it("allows more ticks on a taller viewport, up to the height cap", () => {
+    expect(spineTickBudget(340, 4)).toBeGreaterThan(spineTickBudget(240, 4));
+  });
+
+  it("stops growing past a fixed height, however tall the viewport", () => {
+    expect(spineTickBudget(2160, 4)).toBe(spineTickBudget(1080, 4));
+    for (const viewportHeight of [800, 1080, 1440, 2160]) {
+      expect(renderedHeight(spineTickBudget(viewportHeight, 4), 4)).toBeLessThanOrEqual(240);
+    }
   });
 
   it("leaves fewer ticks for items as sections take up more of the rail", () => {
