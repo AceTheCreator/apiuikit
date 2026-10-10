@@ -5,17 +5,21 @@ import { OpenAPIDocumentProvider } from "../containers/OpenAPI/OpenAPIDocumentPr
 import { resolveDocument } from "../helpers/resolveDocument";
 import { ConfigInterface } from "../config";
 import type { ApiuikitPlugin } from "../plugins/types";
-import { OpenAPIDocumentData } from "../types/openapi";
+import { HTTP_METHODS, HttpMethod, OpenAPIDocumentData } from "../types/openapi";
 import OpenAPIServersContainer from "../containers/Server/OpenAPIServers";
 import PathsContainer from "../containers/Path/Paths";
+import EndpointContainer from "../containers/Path/Endpoint";
+import { describeEndpointSelector, EndpointSelector, findEndpoint } from "../helpers/findItem";
 import OpenAPIInformation from "../containers/Information/OpenAPIInformation";
 import type { SectionLayout } from "../components/Section";
 import { createSectionRoot } from "./createSectionRoot";
+import { useNotFoundWarning } from "./useNotFoundWarning";
 
 /**
  * Standalone, composable OpenAPI section components — mirrors public/sections.tsx
  * (AsyncAPI). Each renders one part of an OpenAPI document (servers, endpoints,
- * schemas, info) on its own, dual-mode:
+ * schemas, info) on its own, dual-mode. `OpenAPIEndpoint` / `OpenAPIWebhook`
+ * render a single item inline instead of the whole list:
  *   - Standalone: <OpenAPIEndpoints document={doc} />
  *   - Composed: <OpenAPIProvider document={doc}><OpenAPIServers /><OpenAPIEndpoints /></OpenAPIProvider>
  */
@@ -31,12 +35,14 @@ export interface OpenAPISectionProps {
    * Theme and display options, such as schema expansion.
    * Used when this component loads the document itself.
    * Inside OpenAPIProvider, set `config` on the provider.
+   * See [Configuration](https://apiuikit.com/docs/configuration).
    */
   config?: ConfigInterface;
   /**
    * Plugins for this component.
    * Used when this component loads the document itself.
    * Inside OpenAPIProvider, set `plugins` on the provider.
+   * See [Plugins](https://apiuikit.com/docs/plugins).
    */
   plugins?: ApiuikitPlugin[];
   /**
@@ -44,6 +50,7 @@ export interface OpenAPISectionProps {
    * lines up with Info and Servers.
    * `stacked` uses the full width; choose it when the section is on the page by itself.
    * For Info and Servers, `stacked` also moves the side content below the main content.
+   * See [Composables](https://apiuikit.com/docs/sections).
    */
   layout?: SectionLayout;
 }
@@ -55,8 +62,9 @@ export function OpenAPIProvider({
   children,
 }: {
   document: OpenAPIDocumentData;
+  /** Theme, which sections to show, and other display options. See [Configuration](https://apiuikit.com/docs/configuration). */
   config?: ConfigInterface;
-  /** Third-party plugins shared with sections inside. */
+  /** Third-party plugins shared with sections inside. See [Plugins](https://apiuikit.com/docs/plugins). */
   plugins?: ApiuikitPlugin[];
   children: ReactNode;
 }) {
@@ -171,6 +179,123 @@ export function OpenAPIWebhooks({ layout, ...providerProps }: OpenAPISectionProp
   return (
     <SectionRoot {...providerProps}>
       <OpenAPIWebhooksBody layout={layout} />
+    </SectionRoot>
+  );
+}
+
+// --- Single endpoint / webhook ----------------------------------------------
+
+interface SingleItemProps extends OpenAPISectionProps {
+  /**
+   * Called with an `operationId` when a response link to another operation is
+   * followed, so the host page can scroll to or route to wherever it shows
+   * that operation. Without it, such links render as plain text.
+   */
+  onNavigate?: (operationId: string) => void;
+}
+
+/**
+ * Props for {@link OpenAPIEndpoint}: the shared section props plus either an
+ * `operationId` or a `method` + `path` pair naming the endpoint.
+ */
+export type OpenAPIEndpointProps = SingleItemProps & EndpointSelector;
+
+function OpenAPIEndpointBody({
+  selector,
+  onNavigate,
+  layout,
+}: {
+  selector: EndpointSelector;
+  onNavigate?: (operationId: string) => void;
+  layout?: SectionLayout;
+}) {
+  const document = useDocument();
+  const paths = useMemo(() => document.paths ?? {}, [document.paths]);
+  const found = findEndpoint(paths, selector);
+  useNotFoundWarning(!found, `OpenAPIEndpoint: no endpoint with ${describeEndpointSelector(selector)} in this document.`);
+  if (!found) return null;
+  return (
+    <EndpointContainer
+      {...found}
+      paths={paths}
+      security={document.security}
+      securitySchemes={document.components?.securitySchemes}
+      onNavigate={onNavigate}
+      layout={layout}
+    />
+  );
+}
+
+/**
+ * One endpoint, rendered inline: its header and full detail (parameters,
+ * body, responses, code samples), without the list or the side panel.
+ *
+ *   <OpenAPIEndpoint document={doc} operationId="addPet" />
+ *   <OpenAPIEndpoint document={doc} method="get" path="/pets/{petId}" />
+ *
+ * Renders nothing (and warns) when no endpoint matches.
+ */
+export function OpenAPIEndpoint(props: OpenAPIEndpointProps) {
+  const { document, config, plugins, layout = "stacked", onNavigate } = props;
+  const selector: EndpointSelector =
+    "operationId" in props ? { operationId: props.operationId } : { method: props.method, path: props.path };
+  return (
+    <SectionRoot document={document} config={config} plugins={plugins}>
+      <OpenAPIEndpointBody selector={selector} onNavigate={onNavigate} layout={layout} />
+    </SectionRoot>
+  );
+}
+
+export interface OpenAPIWebhookProps extends SingleItemProps {
+  /** The webhook's key under the document's top-level `webhooks`. */
+  name: string;
+  /** Which method to show. Optional: defaults to the first one the webhook declares, which is usually its only one. */
+  method?: HttpMethod;
+}
+
+function OpenAPIWebhookBody({
+  name,
+  method,
+  onNavigate,
+  layout,
+}: Pick<OpenAPIWebhookProps, "name" | "method" | "onNavigate" | "layout">) {
+  const document = useDocument();
+  const webhooks = useMemo(() => document.webhooks ?? {}, [document.webhooks]);
+  const pathItem = webhooks[name];
+  const resolvedMethod = method
+    ? (method.toLowerCase() as HttpMethod)
+    : pathItem && HTTP_METHODS.find((m) => pathItem[m]);
+  const found = pathItem && resolvedMethod && pathItem[resolvedMethod];
+  useNotFoundWarning(
+    !found,
+    `OpenAPIWebhook: no webhook "${name}"${method ? ` with method ${method.toUpperCase()}` : ""} in this document.`,
+  );
+  if (!found || !pathItem || !resolvedMethod) return null;
+  return (
+    <EndpointContainer
+      method={resolvedMethod}
+      path={name}
+      pathItem={pathItem}
+      paths={webhooks}
+      security={document.security}
+      securitySchemes={document.components?.securitySchemes}
+      idPrefix="webhook"
+      onNavigate={onNavigate}
+      layout={layout}
+    />
+  );
+}
+
+/**
+ * One OpenAPI 3.1 webhook, rendered inline — the webhook counterpart to
+ * {@link OpenAPIEndpoint}.
+ *
+ *   <OpenAPIWebhook document={doc} name="newPet" />
+ */
+export function OpenAPIWebhook({ name, method, onNavigate, layout = "stacked", ...providerProps }: OpenAPIWebhookProps) {
+  return (
+    <SectionRoot {...providerProps}>
+      <OpenAPIWebhookBody name={name} method={method} onNavigate={onNavigate} layout={layout} />
     </SectionRoot>
   );
 }

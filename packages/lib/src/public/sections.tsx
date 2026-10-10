@@ -9,10 +9,13 @@ import { AsyncAPIDocumentData } from "../types/schema";
 import { MessageObject } from "../types/asyncapi/MessageObject";
 import ServersContainer from "../containers/Server/Servers";
 import OperationsContainer from "../containers/Operation/Operations";
+import OperationCard from "../containers/Operation/OperationCard";
 import MessagesContainer from "../containers/Messages/Messages";
+import MessageCard from "../containers/Messages/MessageCard";
 import Information from "../containers/Information/Information";
 import type { SectionLayout } from "../components/Section";
 import { createSectionRoot } from "./createSectionRoot";
+import { useNotFoundWarning } from "./useNotFoundWarning";
 
 /**
  * Standalone, composable section components. Each renders one part of an
@@ -43,12 +46,14 @@ export interface SectionProps {
    * Theme and display options, such as schema expansion.
    * Used when this component loads the document itself.
    * Inside AsyncAPIProvider, set `config` on the provider.
+   * See [Configuration](https://apiuikit.com/docs/configuration).
    */
   config?: ConfigInterface;
   /**
    * Plugins for this component.
    * Used when this component loads the document itself.
    * Inside AsyncAPIProvider, set `plugins` on the provider.
+   * See [Plugins](https://apiuikit.com/docs/plugins).
    */
   plugins?: ApiuikitPlugin[];
   /**
@@ -56,6 +61,7 @@ export interface SectionProps {
    * lines up with Info and Servers.
    * `stacked` uses the full width; choose it when the section is on the page by itself.
    * For Info and Servers, `stacked` also moves the side content below the main content.
+   * See [Composables](https://apiuikit.com/docs/sections).
    */
   layout?: SectionLayout;
 }
@@ -72,9 +78,9 @@ export function AsyncAPIProvider({
 }: {
   /** The AsyncAPI document to resolve and share with sections inside. */
   document: AsyncAPIDocumentData;
-  /** UI configuration (theme, schema expansion defaults) shared with sections inside. */
+  /** UI configuration (theme, schema expansion defaults) shared with sections inside. See [Configuration](https://apiuikit.com/docs/configuration). */
   config?: ConfigInterface;
-  /** Third-party plugins shared with sections inside. */
+  /** Third-party plugins shared with sections inside. See [Plugins](https://apiuikit.com/docs/plugins). */
   plugins?: ApiuikitPlugin[];
   /** Section components (or your own), rendered with access to the shared document context. */
   children: ReactNode;
@@ -160,6 +166,37 @@ export function AsyncAPIOperations({ layout, ...providerProps }: SectionProps) {
   );
 }
 
+// --- Single operation ------------------------------------------------------
+
+export interface AsyncAPIOperationProps extends SectionProps {
+  /** The operation's key under the document's top-level `operations`. */
+  operationId: string;
+}
+
+function AsyncAPIOperationBody({ operationId, layout }: { operationId: string; layout?: SectionLayout }) {
+  const document = useDocument();
+  const op = document.operations?.[operationId];
+  useNotFoundWarning(!op, `AsyncAPIOperation: no operation "${operationId}" in this document.`);
+  if (!op) return null;
+  return <OperationCard operationKey={operationId} op={op} layout={layout} />;
+}
+
+/**
+ * One operation, rendered inline: its header and full detail (messages,
+ * bindings, security, code samples), without the list or the side panel.
+ *
+ *   <AsyncAPIOperation document={doc} operationId="receiveLightMeasurement" />
+ *
+ * Renders nothing (and warns) when the operation doesn't exist.
+ */
+export function AsyncAPIOperation({ operationId, layout = "stacked", ...providerProps }: AsyncAPIOperationProps) {
+  return (
+    <SectionRoot {...providerProps}>
+      <AsyncAPIOperationBody operationId={operationId} layout={layout} />
+    </SectionRoot>
+  );
+}
+
 // --- Messages --------------------------------------------------------------
 
 function MessagesBody({ layout }: { layout?: SectionLayout }) {
@@ -183,6 +220,37 @@ export function AsyncAPIMessages({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>
       <MessagesBody layout={layout} />
+    </SectionRoot>
+  );
+}
+
+// --- Single message --------------------------------------------------------
+
+export interface AsyncAPIMessageProps extends SectionProps {
+  /** The message's key under `components.messages`. */
+  messageId: string;
+}
+
+function AsyncAPIMessageBody({ messageId, layout }: { messageId: string; layout?: SectionLayout }) {
+  const document = useDocument();
+  const message = document.components?.messages?.[messageId] as MessageObject | undefined;
+  useNotFoundWarning(!message, `AsyncAPIMessage: no message "${messageId}" in components.messages.`);
+  if (!message) return null;
+  return <MessageCard messageKey={messageId} message={message} layout={layout} />;
+}
+
+/**
+ * One `components.messages` entry, rendered on its own with its payload and
+ * headers open.
+ *
+ *   <AsyncAPIMessage document={doc} messageId="lightMeasured" />
+ *
+ * Renders nothing (and warns) when the message doesn't exist.
+ */
+export function AsyncAPIMessage({ messageId, layout = "stacked", ...providerProps }: AsyncAPIMessageProps) {
+  return (
+    <SectionRoot {...providerProps}>
+      <AsyncAPIMessageBody messageId={messageId} layout={layout} />
     </SectionRoot>
   );
 }

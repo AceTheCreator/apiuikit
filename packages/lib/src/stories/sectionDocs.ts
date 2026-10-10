@@ -80,10 +80,13 @@ export function widgetDocs({
   summary,
   stories,
   code,
+  note,
 }: {
   summary: string;
   stories: string;
   code: string;
+  /** An extra paragraph, e.g. about Try it. */
+  note?: string;
 }) {
   return {
     page: NoCanvasDocsPage,
@@ -91,7 +94,7 @@ export function widgetDocs({
       component: `${summary}
 
 Open **${stories}** in the sidebar to see it.
-
+${note ? `\n${note}\n` : ""}
 Import the stylesheet once in your app: \`import "apiuikit/style.css"\`.`,
     },
     source: {
@@ -105,3 +108,73 @@ Import the stylesheet once in your app: \`import "apiuikit/style.css"\`.`,
 export function alignedAlone(sectionName: string) {
   return `\`layout="stacked"\` makes it use the full width, which is what you want when ${sectionName} is the only section on the page. \`layout="columns"\` (the default) leaves an empty column on the right so it lines up with Info and Servers.`;
 }
+
+/**
+ * Docs-page parameters for the single-item sections (`OpenAPIEndpoint`,
+ * `AsyncAPIOperation`, `Schema`, …): like `sectionDocs`, but the snippet
+ * names the item to render.
+ */
+export function itemDocs({
+  summary,
+  spec,
+  provider,
+  componentName,
+  selector,
+  composedChildren,
+  tryIt = false,
+}: {
+  /** What the component shows. */
+  summary: string;
+  spec: "AsyncAPI" | "OpenAPI";
+  provider: "AsyncAPIProvider" | "OpenAPIProvider";
+  componentName: string;
+  /** The JSX props that pick the item, e.g. `operationId="createPet"`. */
+  selector: string;
+  /** Indented JSX rendered inside the provider. */
+  composedChildren: string;
+  /** Whether the component has a Try it button (and a WithTryIt story) to mention. */
+  tryIt?: boolean;
+}) {
+  const documentVar = spec === "AsyncAPI" ? "asyncapiDocument" : "openapiDocument";
+
+  return {
+    page: NoCanvasDocsPage,
+    description: {
+      component: `${summary}
+
+Open **Default** in the sidebar to see it.${tryIt ? `
+
+**Try it** is off by default. Turn it on with \`config={{ show: { tryIt: true } }}\`, then open **WithTryIt** to see the button in the header.${spec === "AsyncAPI" ? " The AsyncAPI button is a WebSocket client, so it only appears for operations with a `ws` or `wss` server." : ""}` : ""}
+
+\`document\` is the parsed ${spec} JSON. If nothing in it matches, the component renders nothing and logs a warning to the console. Import the stylesheet once in your app: \`import "apiuikit/style.css"\`.
+
+**On its own.** Pass \`document\` to the component. It uses the full width by default; \`layout="columns"\` instead leaves an empty column on the right so it lines up with Info and Servers.
+
+**Mixed into your own page.** Put several inside \`${provider}\`, between your own content, and pass \`document\` once to the provider.`,
+    },
+    source: {
+      language: "tsx" as const,
+      code: `import { ${componentName}, ${provider} } from "apiuikit";
+import "apiuikit/style.css";
+
+// ${documentVar} is the parsed ${spec} JSON.
+
+// On its own.
+<${componentName} document={${documentVar}} ${selector} />
+
+// Mixed into your own page. Pass the document once, on the provider.
+<${provider} document={${documentVar}}>
+${composedChildren}
+</${provider}>`,
+    },
+  };
+}
+
+/** `layout` for the single-item sections, which default to the full width. */
+export const itemLayoutArgType = {
+  layout: {
+    control: "radio" as const,
+    options: ["columns", "stacked"],
+    table: { defaultValue: { summary: '"stacked"' } },
+  },
+};
