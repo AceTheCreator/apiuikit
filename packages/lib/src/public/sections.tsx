@@ -33,19 +33,29 @@ import { createSectionRoot } from "./createSectionRoot";
  */
 
 export interface SectionProps {
-  /** The AsyncAPI document. Required standalone; unnecessary (and ignored)
-   * when rendered inside <AsyncAPIProvider> or <AsyncAPI>. */
+  /**
+   * The parsed AsyncAPI JSON, for example a JSON file you imported.
+   * Pass it when this component is on the page by itself.
+   * Inside AsyncAPIProvider or AsyncAPI, the document comes from there, and a value passed here is ignored.
+   */
   document?: AsyncAPIDocumentData;
-  /** Only applied when this section sets up its own context (standalone). When
-   * composed under a provider, config comes from that provider. */
+  /**
+   * Theme and display options, such as schema expansion.
+   * Used when this component loads the document itself.
+   * Inside AsyncAPIProvider, set `config` on the provider.
+   */
   config?: ConfigInterface;
-  /** Only applied when this section sets up its own context (standalone). When
-   * composed under <AsyncAPIProvider>, that provider's own `plugins` apply. */
+  /**
+   * Plugins for this component.
+   * Used when this component loads the document itself.
+   * Inside AsyncAPIProvider, set `plugins` on the provider.
+   */
   plugins?: ApiuikitPlugin[];
   /**
-   * `"columns"` (default) — reserved right gutter at large breakpoints.
-   * `"stacked"` — full-width single column; no prose max-width and no empty
-   * side space. For Info/Servers, side content stacks below the main content.
+   * `columns` (the default) leaves an empty column on the right so this section
+   * lines up with Info and Servers.
+   * `stacked` uses the full width; choose it when the section is on the page by itself.
+   * For Info and Servers, `stacked` also moves the side content below the main content.
    */
   layout?: SectionLayout;
 }
@@ -104,6 +114,13 @@ function ServersBody({ layout }: { layout?: SectionLayout }) {
   return <ServersContainer servers={document.servers} layout={layout} />;
 }
 
+/**
+ * The servers an AsyncAPI document can connect to. Choose a server to see its
+ * host, protocol, variables, and security.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * AsyncAPIProvider and pass `document` to the provider instead.
+ */
 export function AsyncAPIServers({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>
@@ -127,6 +144,14 @@ function OperationsBody({ layout }: { layout?: SectionLayout }) {
   );
 }
 
+/**
+ * A table of every operation in an AsyncAPI document. Each row shows the
+ * channel and whether the operation sends or receives. Click a row to open a
+ * panel with the description, messages, security, bindings, and reply.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * AsyncAPIProvider and pass `document` to the provider instead.
+ */
 export function AsyncAPIOperations({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>
@@ -147,6 +172,13 @@ function MessagesBody({ layout }: { layout?: SectionLayout }) {
   );
 }
 
+/**
+ * A table of the messages in an AsyncAPI document. Each row shows the message
+ * name and summary. Expand a row to see its payload and headers.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * AsyncAPIProvider and pass `document` to the provider instead.
+ */
 export function AsyncAPIMessages({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>
@@ -167,6 +199,13 @@ function InfoBody({ layout }: { layout?: SectionLayout }) {
   return <Information {...document.info} layout={layout} />;
 }
 
+/**
+ * The title, description, and version of an AsyncAPI document, with license,
+ * contact, and external docs beside it.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * AsyncAPIProvider and pass `document` to the provider instead.
+ */
 export function AsyncAPIInfo({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>

@@ -21,17 +21,28 @@ import type { SectionLayout } from "../components/Section";
  */
 
 export interface SchemasSectionProps {
-  /** An AsyncAPI or OpenAPI document. Required standalone; unnecessary (and ignored) inside a provider. */
+  /**
+   * The parsed AsyncAPI or OpenAPI JSON, for example a JSON file you imported.
+   * Pass it when this component is on the page by itself.
+   * Inside AsyncAPIProvider or OpenAPIProvider, the document comes from there, and a value passed here is ignored.
+   */
   document?: AsyncAPIDocumentData | OpenAPIDocumentData;
-  /** Only applied when this section sets up its own context (standalone). */
+  /**
+   * Theme and display options, such as schema expansion.
+   * Used when this component loads the document itself.
+   * Inside a provider, set `config` on the provider.
+   */
   config?: ConfigInterface;
-  /** Only applied when this section sets up its own context (standalone). When
-   * composed under a provider, that provider's own `plugins` apply. */
+  /**
+   * Plugins for this component.
+   * Used when this component loads the document itself.
+   * Inside a provider, set `plugins` on the provider.
+   */
   plugins?: ApiuikitPlugin[];
   /**
-   * `"columns"` (default) — reserved right gutter at large breakpoints.
-   * `"stacked"` — full-width single column; no prose max-width and no empty
-   * side space.
+   * `columns` (the default) leaves an empty column on the right so this section
+   * lines up with Info and Servers.
+   * `stacked` uses the full width; choose it when the section is on the page by itself.
    */
   layout?: SectionLayout;
 }
@@ -49,6 +60,13 @@ function SchemasBody({ layout }: { layout?: SectionLayout }) {
   return <SchemasContainer schemas={schemas} layout={layout} />;
 }
 
+/**
+ * The schemas in an AsyncAPI or OpenAPI document. Each one is an expandable
+ * tree of its properties. The same component works for both specs.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * AsyncAPIProvider or OpenAPIProvider and pass `document` to the provider instead.
+ */
 export function Schemas({ document, config, plugins, layout }: SchemasSectionProps) {
   const ambient = useContext(DocumentContext);
   const resolved = useMemo(

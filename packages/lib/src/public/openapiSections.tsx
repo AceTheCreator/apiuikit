@@ -21,16 +21,29 @@ import { createSectionRoot } from "./createSectionRoot";
  */
 
 export interface OpenAPISectionProps {
-  /** The OpenAPI document. Required standalone; unnecessary (and ignored) when rendered inside <OpenAPIProvider>. */
+  /**
+   * The parsed OpenAPI JSON, for example a JSON file you imported.
+   * Pass it when this component is on the page by itself.
+   * Inside OpenAPIProvider, the document comes from there, and a value passed here is ignored.
+   */
   document?: OpenAPIDocumentData;
+  /**
+   * Theme and display options, such as schema expansion.
+   * Used when this component loads the document itself.
+   * Inside OpenAPIProvider, set `config` on the provider.
+   */
   config?: ConfigInterface;
-  /** Only applied when this section sets up its own context (standalone). When
-   * composed under <OpenAPIProvider>, that provider's own `plugins` apply. */
+  /**
+   * Plugins for this component.
+   * Used when this component loads the document itself.
+   * Inside OpenAPIProvider, set `plugins` on the provider.
+   */
   plugins?: ApiuikitPlugin[];
   /**
-   * `"columns"` (default) — reserved right gutter at large breakpoints.
-   * `"stacked"` — full-width single column; no prose max-width and no empty
-   * side space. For Info/Servers, side content stacks below the main content.
+   * `columns` (the default) leaves an empty column on the right so this section
+   * lines up with Info and Servers.
+   * `stacked` uses the full width; choose it when the section is on the page by itself.
+   * For Info and Servers, `stacked` also moves the side content below the main content.
    */
   layout?: SectionLayout;
 }
@@ -77,6 +90,13 @@ function OpenAPIServersBody({ layout }: { layout?: SectionLayout }) {
   return <OpenAPIServersContainer servers={document.servers} layout={layout} />;
 }
 
+/**
+ * The servers an OpenAPI document can call. Choose a server to see its URL,
+ * description, and variables.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * OpenAPIProvider and pass `document` to the provider instead.
+ */
 export function OpenAPIServers({ layout, ...providerProps }: OpenAPISectionProps) {
   return (
     <SectionRoot {...providerProps}>
@@ -102,6 +122,14 @@ function OpenAPIEndpointsBody({ layout }: { layout?: SectionLayout }) {
   );
 }
 
+/**
+ * A table of every endpoint in an OpenAPI document. Each row shows the path
+ * and HTTP method. Click a row to open a panel with the parameters, request
+ * body, responses, and security.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * OpenAPIProvider and pass `document` to the provider instead.
+ */
 export function OpenAPIEndpoints({ layout, ...providerProps }: OpenAPISectionProps) {
   return (
     <SectionRoot {...providerProps}>
@@ -131,7 +159,14 @@ function OpenAPIWebhooksBody({ layout }: { layout?: SectionLayout }) {
   );
 }
 
-/** OpenAPI 3.1 `webhooks`. Renders nothing for a document that declares none. */
+/**
+ * A table of the webhooks an OpenAPI document receives. Each row is one
+ * webhook. Click a row to open a panel with its parameters, body, and
+ * responses. A document with no webhooks shows nothing here.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * OpenAPIProvider and pass `document` to the provider instead.
+ */
 export function OpenAPIWebhooks({ layout, ...providerProps }: OpenAPISectionProps) {
   return (
     <SectionRoot {...providerProps}>
@@ -159,6 +194,13 @@ function OpenAPIInfoBody({ layout }: { layout?: SectionLayout }) {
   );
 }
 
+/**
+ * The title, description, and version of an OpenAPI document, with license,
+ * contact, tags, and external docs beside it.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * OpenAPIProvider and pass `document` to the provider instead.
+ */
 export function OpenAPIInfo({ layout, ...providerProps }: OpenAPISectionProps) {
   return (
     <SectionRoot {...providerProps}>

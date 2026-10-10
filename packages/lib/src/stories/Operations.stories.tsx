@@ -3,7 +3,7 @@ import { AsyncAPIOperations } from "../public/sections";
 import type { AsyncAPIDocumentData } from "../types/schema";
 import rawExample from "../config/examples/example1.json";
 import { centeredDecorator } from "./documentContextDecorator";
-import { NoCanvasDocsPage } from "./noCanvasDocsPage";
+import { alignedAlone, layoutArgType, sectionDocs } from "./sectionDocs";
 
 // The public `AsyncAPIOperations` section: pass a `document` and it renders that
 // document's operations table standalone. Clicking a row opens the detail
@@ -16,28 +16,34 @@ const meta = {
   component: AsyncAPIOperations,
   decorators: [centeredDecorator],
   tags: ["autodocs"],
-  argTypes: {
-    layout: {
-      control: "radio",
-      options: ["columns", "stacked"],
-      description:
-        '`"columns"` (default) reserves a right gutter for alignment with Info/Servers. `"stacked"` drops it for full-width standalone use.',
-    },
-  },
+  argTypes: layoutArgType,
   // The table + detail side panel don't render correctly embedded inline on
   // the docs page, see noCanvasDocsPage.
-  parameters: { docs: { page: NoCanvasDocsPage } },
+  parameters: {
+    docs: sectionDocs({
+      summary:
+        "Each row is one operation: its channel, and whether it sends or receives. Click a row to open a panel with the description, messages, security, bindings, and reply.",
+      stories: "Default or Stacked",
+      spec: "AsyncAPI",
+      provider: "AsyncAPIProvider",
+      alone: alignedAlone("Operations"),
+      importNames: ["AsyncAPIOperations", "AsyncAPIInfo", "AsyncAPIProvider"],
+      componentName: "AsyncAPIOperations",
+      composedChildren: `  <AsyncAPIInfo />
+  <AsyncAPIOperations />`,
+    }),
+  },
 } satisfies Meta<typeof AsyncAPIOperations>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Default: two-column geometry with an empty reserved right gutter. */
+/** Columns layout: an empty column on the right, so the table lines up with Info and Servers. Click a row to open the detail panel. */
 export const Default: Story = {
   args: { document, layout: "columns" },
 };
 
-/** Single column — preferred when embedding AsyncAPIOperations alone (no empty side space). */
+/** Full width. Use this when Operations is the only section on the page. */
 export const Stacked: Story = {
   args: { document, layout: "stacked" },
 };

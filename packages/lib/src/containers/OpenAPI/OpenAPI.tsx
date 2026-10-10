@@ -8,29 +8,32 @@ import type { ApiuikitPlugin } from "../../plugins/types";
 import Layout, { OpenAPILayoutProps } from "./Layout";
 
 export interface IOpenAPIProps {
-  /** A pre-resolved OpenAPI 3.0/3.1 document object, or one that still contains `$ref`s. */
+  /** The parsed OpenAPI JSON, for example a JSON file you imported. `$ref`s in the object are resolved for you. */
   openapi: OpenAPIDocumentData;
-  /** UI configuration: theme, which sections to show, sidebar options, and more. */
+  /** Theme, which sections to show, and sidebar options. */
   config?: ConfigInterface;
-  /** Third-party plugins (e.g. a "try it out" panel) to render into this document's extension slots. */
+  /** Plugins that add UI to this page, such as a "try it" panel. */
   plugins?: ApiuikitPlugin[];
-  /** Promise that `openapi` is already fully dereferenced upstream. Verified rather than trusted: `$ref`s left in place are still resolved either way, with a console warning that the promise was false. */
+  /**
+   * Pass `"resolved"` when the document is already fully dereferenced.
+   * Leftover `$ref`s are still resolved, and a warning is logged.
+   */
   kind?: "resolved";
-  /** Custom UI shown if rendering this document throws. Defaults to a built-in fallback. */
+  /** UI shown if rendering throws. A built-in fallback is used when this is omitted. */
   errorFallback?: ReactNode | ErrorBoundaryFallbackRenderer;
-  /** Called once when a render error is caught, e.g. to report it to your own logging/telemetry. */
+  /** Called when rendering throws, for example to report it to your own logging. */
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
-  /** Selection (nav tab + endpoint/webhook/schema/server key) to seed on mount, e.g. parsed from a URL. Applied once. */
+  /** Which tab and item to select on first render, for example from a URL. Applied once. */
   initialLocation?: OpenAPILayoutProps["initialLocation"];
-  /** Fired whenever the selected tab/item changes, e.g. to keep a URL in sync. */
+  /** Called when the selected tab or item changes, for example to keep a URL in sync. */
   onLocationChange?: OpenAPILayoutProps["onLocationChange"];
 }
 
 /**
- * Renders a full OpenAPI documentation page: sidebar navigation, search,
- * servers, endpoints, and schemas. Pass a pre-resolved (or `$ref`-carrying)
- * document object; for raw YAML/JSON strings, use `OpenAPIRenderer` instead,
- * which parses first.
+ * A full OpenAPI documentation page: sidebar, search, servers, endpoints, and
+ * schemas. Webhooks appear when the document declares them. Pass `openapi` the
+ * parsed JSON. For a YAML or JSON string, use OpenAPIRenderer, which parses
+ * the text first.
  */
 const OpenAPI = (props: IOpenAPIProps) => (
   // The boundary is deliberately the outermost thing this component renders:

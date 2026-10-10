@@ -2,33 +2,34 @@ import type { Meta, StoryObj } from "@storybook/react";
 import AsyncAPI from "../containers/AsyncAPI/AsyncAPI";
 import type { AsyncAPIDocumentData } from "../types/schema";
 import torture from "../config/examples/streetlight-kafka.json";
-import { NoCanvasDocsPage } from "./noCanvasDocsPage";
+import { widgetDocs } from "./sectionDocs";
 
-// More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
 const meta = {
   title: "AsyncAPI/AsyncAPI",
   component: AsyncAPI,
   tags: ["autodocs"],
   // Full-page widget with a sidebar, search, and portaled content: doesn't
   // render correctly embedded inline on the docs page. See noCanvasDocsPage.
-  parameters: { docs: { page: NoCanvasDocsPage } },
-  //   parameters: {
-  //     // Optional parameter to center the component in the Canvas. More info: https://storybook.js.org/docs/configure/story-layout
-  //     layout: "centered",
-  //   },
-  //   argTypes: {
-  //     backgroundColor: { control: "color" },
-  //   },
-  // Use `fn` to spy on the onClick arg, which will appear in the actions panel once invoked: https://storybook.js.org/docs/essentials/actions#action-args
+  parameters: {
+    docs: widgetDocs({
+      summary:
+        "A full AsyncAPI documentation page: sidebar, search, servers, operations, messages, and schemas. Pass `asyncapi` the parsed JSON. `$ref`s in that object are resolved for you. If the document is a YAML or JSON string, use `AsyncAPIRenderer`, which parses the text first.",
+      stories: "Base",
+      code: `import { AsyncAPI } from "apiuikit";
+import "apiuikit/style.css";
+
+// asyncapiDocument is the parsed AsyncAPI JSON.
+<AsyncAPI asyncapi={asyncapiDocument} />`,
+    }),
+  },
 } satisfies Meta<typeof AsyncAPI>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
+/** The full page for a parsed AsyncAPI document. */
 export const Base: Story = {
   args: {
     asyncapi: torture as unknown as AsyncAPIDocumentData,
   },
 };
-

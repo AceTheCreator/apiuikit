@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { OpenAPIWebhooks } from "../public/openapiSections";
 import type { OpenAPIDocumentData } from "../types/openapi";
 import { centeredDecorator } from "./documentContextDecorator";
-import { NoCanvasDocsPage } from "./noCanvasDocsPage";
+import { alignedAlone, layoutArgType, sectionDocs } from "./sectionDocs";
 
 const document = {
   openapi: "3.1.0",
@@ -40,24 +40,32 @@ const meta = {
   component: OpenAPIWebhooks,
   decorators: [centeredDecorator],
   tags: ["autodocs"],
-  argTypes: {
-    layout: {
-      control: "radio",
-      options: ["columns", "stacked"],
-      description:
-        '`"columns"` (default) reserves a right gutter. `"stacked"` drops it for full-width standalone use.',
-    },
+  argTypes: layoutArgType,
+  parameters: {
+    docs: sectionDocs({
+      summary:
+        "A table of the webhooks an OpenAPI document receives. Each row is one webhook. Click a row to open a panel with its parameters, body, and responses. A document with no webhooks shows nothing here.",
+      stories: "Default or Stacked",
+      spec: "OpenAPI",
+      provider: "OpenAPIProvider",
+      alone: alignedAlone("Webhooks"),
+      importNames: ["OpenAPIWebhooks", "OpenAPIInfo", "OpenAPIProvider"],
+      componentName: "OpenAPIWebhooks",
+      composedChildren: `  <OpenAPIInfo />
+  <OpenAPIWebhooks />`,
+    }),
   },
-  parameters: { docs: { page: NoCanvasDocsPage } },
 } satisfies Meta<typeof OpenAPIWebhooks>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** Columns layout: an empty column on the right, so the table lines up with Info and Servers. Click a row to open the detail panel. */
 export const Default: Story = {
   args: { document, layout: "columns" },
 };
 
+/** Full width. Use this when Webhooks is the only section on the page. */
 export const Stacked: Story = {
   args: { document, layout: "stacked" },
 };

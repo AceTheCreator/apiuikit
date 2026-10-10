@@ -9,29 +9,34 @@ import type { ApiuikitPlugin } from "../../plugins/types";
 import { parseDocument } from "../../helpers/parser";
 
 interface AsyncAPIRendererProps {
-  /** Raw AsyncAPI document as a YAML or JSON string, parsed and validated internally via `@asyncapi/parser`. */
+  /** The AsyncAPI document as a YAML or JSON string. It is parsed before the page renders. */
   raw: string;
-  /** UI configuration: theme, which sections to show, sidebar options, and more. */
+  /** Theme, which sections to show, and sidebar options. */
   config?: ConfigInterface;
-  /** Third-party plugins (e.g. a "try it out" panel) to render into this document's extension slots. */
+  /** Plugins that add UI to this page, such as a "try it" panel. */
   plugins?: ApiuikitPlugin[];
-  /** Called with the parser's diagnostics (errors/warnings) after each parse attempt. */
+  /**
+   * Called with parser errors and warnings after each parse.
+   * A document that fails to parse does not render a page; this is where you hear about it.
+   */
   onDiagnostics?: (diagnostics: unknown[]) => void;
-  /** Custom UI shown if rendering the parsed document throws. Defaults to a built-in fallback. */
+  /** UI shown if rendering the parsed document throws. A built-in fallback is used when this is omitted. */
   errorFallback?: ReactNode | ErrorBoundaryFallbackRenderer;
-  /** Called once when a render error is caught. Parse failures arrive via `onDiagnostics` instead: an error boundary only sees synchronous render errors. */
+  /**
+   * Called when rendering throws, for example to report it to your own logging.
+   * Parse failures are reported through `onDiagnostics` instead.
+   */
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
-  /** Selection (nav tab + operation/message/schema/server key) to seed once the parsed document first mounts, e.g. parsed from a URL. */
+  /** Which tab and item to select once the parsed document first renders, for example from a URL. Applied once. */
   initialLocation?: IAsyncAPIProps["initialLocation"];
-  /** Fired whenever the selected tab/item changes, e.g. to keep a URL in sync. */
+  /** Called when the selected tab or item changes, for example to keep a URL in sync. */
   onLocationChange?: IAsyncAPIProps["onLocationChange"];
 }
 
 /**
- * Parses a raw AsyncAPI YAML/JSON string (via `@asyncapi/parser`) and renders
- * the same full documentation page as `AsyncAPI`. Use this when you have a
- * document as text rather than a pre-parsed object, e.g. user-entered or
- * loaded from a file at runtime.
+ * The same full AsyncAPI page as AsyncAPI, starting from the document as text.
+ * Pass `raw` a YAML or JSON string. Parser errors and warnings are handed to
+ * `onDiagnostics`.
  */
 export function AsyncAPIRenderer({
   raw,
