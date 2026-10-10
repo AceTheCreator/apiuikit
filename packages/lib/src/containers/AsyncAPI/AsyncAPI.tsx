@@ -10,22 +10,23 @@ import Layout, { LayoutProps } from "./Layout";
 export interface IAsyncAPIProps {
   /** The parsed AsyncAPI JSON, for example a JSON file you imported. `$ref`s in the object are resolved for you. */
   asyncapi: AsyncAPIDocumentData;
-  /** Theme, which sections to show, and sidebar options. */
+  /** Theme, which sections to show, and sidebar options. See [Configuration](https://apiuikit.com/docs/configuration). */
   config?: ConfigInterface;
-  /** Plugins that add UI to this page, such as a "try it" panel. */
+  /** Plugins that add UI to this page, such as a "try it" panel. See [Plugins](https://apiuikit.com/docs/plugins). */
   plugins?: ApiuikitPlugin[];
   /**
    * Pass `"resolved"` when the document is already fully dereferenced.
    * Leftover `$ref`s are still resolved, and a warning is logged.
+   * See [Without Parser](https://apiuikit.com/docs/no-parser).
    */
   kind?: "resolved";
   /** UI shown if rendering throws. A built-in fallback is used when this is omitted. */
   errorFallback?: ReactNode | ErrorBoundaryFallbackRenderer;
   /** Called when rendering throws, for example to report it to your own logging. */
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
-  /** Which tab and item to select on first render, for example from a URL. Applied once. */
+  /** Which tab and item to select on first render, for example from a URL. Applied once. See [Deep linking](https://apiuikit.com/docs/deep-linking). */
   initialLocation?: LayoutProps["initialLocation"];
-  /** Called when the selected tab or item changes, for example to keep a URL in sync. */
+  /** Called when the selected tab or item changes, for example to keep a URL in sync. See [Deep linking](https://apiuikit.com/docs/deep-linking). */
   onLocationChange?: LayoutProps["onLocationChange"];
 }
 

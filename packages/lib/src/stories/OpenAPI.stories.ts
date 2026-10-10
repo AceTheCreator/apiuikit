@@ -3,6 +3,7 @@ import OpenAPI from "../containers/OpenAPI/OpenAPI";
 import type { OpenAPIDocumentData } from "../types/openapi";
 import petstore from "../config/examples/openapi-petstore.json";
 import { widgetDocs } from "./sectionDocs";
+import { tryItConfig, tryItNote } from "./tryItConfig";
 
 const meta = {
   title: "OpenAPI/OpenAPI",
@@ -12,6 +13,7 @@ const meta = {
   // render correctly embedded inline on the docs page. See noCanvasDocsPage.
   parameters: {
     docs: widgetDocs({
+      note: tryItNote("OpenAPI"),
       summary:
         "A full OpenAPI documentation page: sidebar, search, servers, endpoints, and schemas. Webhooks appear when the document declares them. Pass `openapi` the parsed JSON. `$ref`s in that object are resolved for you. If the document is a YAML or JSON string, use `OpenAPIRenderer`, which parses the text first.",
       stories: "Base",
@@ -19,7 +21,7 @@ const meta = {
 import "apiuikit/style.css";
 
 // openapiDocument is the parsed OpenAPI JSON.
-<OpenAPI openapi={openapiDocument} />`,
+<OpenAPI openapi={openapiDocument} config={{ show: { tryIt: true } }} />`,
     }),
   },
 } satisfies Meta<typeof OpenAPI>;
@@ -30,6 +32,7 @@ type Story = StoryObj<typeof meta>;
 /** The full page for a parsed OpenAPI document. */
 export const Base: Story = {
   args: {
+    config: tryItConfig,
     openapi: petstore as unknown as OpenAPIDocumentData,
   },
 };

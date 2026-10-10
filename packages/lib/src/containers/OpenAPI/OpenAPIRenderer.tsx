@@ -11,13 +11,14 @@ import { parseDocument } from "../../helpers/openapiParser";
 interface OpenAPIRendererProps {
   /** The OpenAPI document as a YAML or JSON string. It is parsed before the page renders. */
   raw: string;
-  /** Theme, which sections to show, and sidebar options. */
+  /** Theme, which sections to show, and sidebar options. See [Configuration](https://apiuikit.com/docs/configuration). */
   config?: ConfigInterface;
-  /** Plugins that add UI to this page, such as a "try it" panel. */
+  /** Plugins that add UI to this page, such as a "try it" panel. See [Plugins](https://apiuikit.com/docs/plugins). */
   plugins?: ApiuikitPlugin[];
   /**
    * Called with parser errors and warnings after each parse.
    * A document that fails to parse does not render a page; this is where you hear about it.
+   * See [With Parser](https://apiuikit.com/docs/with-parser).
    */
   onDiagnostics?: (diagnostics: unknown[]) => void;
   /** UI shown if rendering the parsed document throws. A built-in fallback is used when this is omitted. */
@@ -27,9 +28,9 @@ interface OpenAPIRendererProps {
    * Parse failures are reported through `onDiagnostics` instead.
    */
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
-  /** Which tab and item to select once the parsed document first renders, for example from a URL. Applied once. */
+  /** Which tab and item to select once the parsed document first renders, for example from a URL. Applied once. See [Deep linking](https://apiuikit.com/docs/deep-linking). */
   initialLocation?: IOpenAPIProps["initialLocation"];
-  /** Called when the selected tab or item changes, for example to keep a URL in sync. */
+  /** Called when the selected tab or item changes, for example to keep a URL in sync. See [Deep linking](https://apiuikit.com/docs/deep-linking). */
   onLocationChange?: IOpenAPIProps["onLocationChange"];
 }
 
