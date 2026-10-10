@@ -11,7 +11,11 @@ Full-document elements:
 | `<apiuikit-openapi-renderer>` | You have a raw OpenAPI YAML or JSON string |
 | `<apiuikit-openapi>` | You already have a parsed OpenAPI document object |
 
-Plus standalone elements for individual sections — `<apiuikit-asyncapi-servers>`, `-operations`, `-messages`, `-info`, their OpenAPI equivalents (`<apiuikit-openapi-servers>`, `-endpoints`, `-webhooks`, `-info`), and a single `<apiuikit-schemas>` shared by both spec types (`components.schemas` is the same shape either way) — for when you want just one part of a document rendered on its own. See [docs/usage/with-webcomponents.md](https://github.com/AceTheCreator/apiuikit/blob/master/docs/usage/with-webcomponents.md#section-elements) for the full prop reference.
+Plus standalone elements for individual sections — `<apiuikit-asyncapi-servers>`, `-operations`, `-messages`, `-info`, their OpenAPI equivalents (`<apiuikit-openapi-servers>`, `-endpoints`, `-webhooks`, `-info`), and a single `<apiuikit-schemas>` shared by both spec types (`components.schemas` is the same shape either way) — for when you want just one part of a document rendered on its own. 
+
+Single-item elements (`<apiuikit-asyncapi-operation>`, `<apiuikit-asyncapi-message>`, `<apiuikit-openapi-endpoint>`, `<apiuikit-openapi-webhook>`, `<apiuikit-schema>`) go one step further and embed one item inline, picked by attribute: `<apiuikit-openapi-endpoint operation-id="addPet">`. 
+
+See [docs/usage/with-webcomponents.md](https://github.com/AceTheCreator/apiuikit/blob/master/docs/usage/with-webcomponents.md#section-elements) for the full prop reference.
 
 If you're building a React app, use [apiuikit](https://www.npmjs.com/package/apiuikit) directly instead of this package.
 
