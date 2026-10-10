@@ -41,6 +41,11 @@
     <a href="#oa-endpoints">OA endpoints</a>
     <a href="#oa-webhooks">OA webhooks</a>
     <a href="#oa-schemas">OA schemas</a>
+    <a href="#aa-operation">AA operation</a>
+    <a href="#aa-message">AA message</a>
+    <a href="#oa-endpoint">OA endpoint</a>
+    <a href="#oa-webhook">OA webhook</a>
+    <a href="#schema">Schema</a>
     <a href="#compose-asyncapi">Compose AsyncAPI</a>
     <a href="#compose-openapi">Compose OpenAPI</a>
   </nav>
@@ -160,6 +165,49 @@
     </div>
   </div>
 
+  <!-- Single-item elements: one operation/message/endpoint/webhook/schema, inline -->
+  <div class="section" id="aa-operation">
+    <h2>Single item — &lt;apiuikit-asyncapi-operation&gt;</h2>
+    <p>One AsyncAPI operation, picked with <code>operation-id</code>. Subpath: <code>@apiuikit/web-component/asyncapi-operation</code>.</p>
+    <div class="frame">
+      <apiuikit-asyncapi-operation id="asyncapi-operation-el" operation-id="turnOn"></apiuikit-asyncapi-operation>
+    </div>
+  </div>
+
+  <div class="section" id="aa-message">
+    <h2>Single item — &lt;apiuikit-asyncapi-message&gt;</h2>
+    <p>One <code>components.messages</code> entry, picked with <code>message-id</code>. Subpath: <code>@apiuikit/web-component/asyncapi-message</code>.</p>
+    <div class="frame">
+      <apiuikit-asyncapi-message id="asyncapi-message-el" message-id="lightMeasured"></apiuikit-asyncapi-message>
+    </div>
+  </div>
+
+  <div class="section" id="oa-endpoint">
+    <h2>Single item — &lt;apiuikit-openapi-endpoint&gt;</h2>
+    <p>One OpenAPI endpoint, picked with <code>operation-id</code> (first) or <code>method</code> + <code>path</code> (second). Subpath: <code>@apiuikit/web-component/openapi-endpoint</code>.</p>
+    <div class="frame">
+      <apiuikit-openapi-endpoint id="openapi-endpoint-el" operation-id="addPet"></apiuikit-openapi-endpoint>
+      <apiuikit-openapi-endpoint id="openapi-endpoint-path-el" method="get" path="/pet/{petId}"></apiuikit-openapi-endpoint>
+    </div>
+  </div>
+
+  <div class="section" id="oa-webhook">
+    <h2>Single item — &lt;apiuikit-openapi-webhook&gt;</h2>
+    <p>One OpenAPI 3.1 webhook, picked with <code>name</code>. Subpath: <code>@apiuikit/web-component/openapi-webhook</code>.</p>
+    <div class="frame">
+      <apiuikit-openapi-webhook id="openapi-webhook-el" name="newPet"></apiuikit-openapi-webhook>
+    </div>
+  </div>
+
+  <div class="section" id="schema">
+    <h2>Single item — &lt;apiuikit-schema&gt;</h2>
+    <p>One schema, picked with <code>name</code>, from either spec type: <code>Pet</code> (OpenAPI), then <code>lightMeasuredPayload</code> (AsyncAPI). Subpath: <code>@apiuikit/web-component/schema</code>.</p>
+    <div class="frame">
+      <apiuikit-schema id="openapi-schema-el" name="Pet"></apiuikit-schema>
+      <apiuikit-schema id="asyncapi-schema-el" name="lightMeasuredPayload"></apiuikit-schema>
+    </div>
+  </div>
+
   <!-- Composed full documents from modular sections -->
   <div class="section" id="compose-asyncapi">
     <h2>Composed document — AsyncAPI sections</h2>
@@ -213,6 +261,9 @@
       "asyncapi-operations-el",
       "asyncapi-messages-el",
       "asyncapi-schemas-el",
+      "asyncapi-operation-el",
+      "asyncapi-message-el",
+      "asyncapi-schema-el",
       "compose-aa-info",
       "compose-aa-servers",
       "compose-aa-operations",
@@ -226,6 +277,10 @@
       "openapi-endpoints-el",
       "openapi-webhooks-el",
       "openapi-schemas-el",
+      "openapi-endpoint-el",
+      "openapi-endpoint-path-el",
+      "openapi-webhook-el",
+      "openapi-schema-el",
       "compose-oa-info",
       "compose-oa-servers",
       "compose-oa-endpoints",
