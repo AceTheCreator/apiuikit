@@ -1,5 +1,11 @@
 # apiuikit
 
+## 2.2.0
+
+### Minor Changes
+
+- cf88cc1: AsyncAPI Operations table: when an operation has a `title`, show it as the row's primary label with the channel address beneath in smaller text. Operations without a title render as before.
+
 ## 2.1.0
 
 ### Minor Changes
