@@ -50,9 +50,17 @@
       "types": "./dist/elements/asyncapi-operations.d.ts",
       "import": "./dist/elements/asyncapi-operations.js"
     },
+    "./asyncapi-operation": {
+      "types": "./dist/elements/asyncapi-operation.d.ts",
+      "import": "./dist/elements/asyncapi-operation.js"
+    },
     "./asyncapi-messages": {
       "types": "./dist/elements/asyncapi-messages.d.ts",
       "import": "./dist/elements/asyncapi-messages.js"
+    },
+    "./asyncapi-message": {
+      "types": "./dist/elements/asyncapi-message.d.ts",
+      "import": "./dist/elements/asyncapi-message.js"
     },
     "./asyncapi-info": {
       "types": "./dist/elements/asyncapi-info.d.ts",
@@ -74,9 +82,17 @@
       "types": "./dist/elements/openapi-endpoints.d.ts",
       "import": "./dist/elements/openapi-endpoints.js"
     },
+    "./openapi-endpoint": {
+      "types": "./dist/elements/openapi-endpoint.d.ts",
+      "import": "./dist/elements/openapi-endpoint.js"
+    },
     "./openapi-webhooks": {
       "types": "./dist/elements/openapi-webhooks.d.ts",
       "import": "./dist/elements/openapi-webhooks.js"
+    },
+    "./openapi-webhook": {
+      "types": "./dist/elements/openapi-webhook.d.ts",
+      "import": "./dist/elements/openapi-webhook.js"
     },
     "./openapi-info": {
       "types": "./dist/elements/openapi-info.d.ts",
@@ -85,6 +101,10 @@
     "./schemas": {
       "types": "./dist/elements/schemas.d.ts",
       "import": "./dist/elements/schemas.js"
+    },
+    "./schema": {
+      "types": "./dist/elements/schema.d.ts",
+      "import": "./dist/elements/schema.js"
     },
     "./style.css": "./dist/web-component.css"
   },
