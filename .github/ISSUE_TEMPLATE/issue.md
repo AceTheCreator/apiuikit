@@ -1,3 +1,8 @@
+---
+name: Issue
+about: Report a bug or suggest an improvement
+---
+
 ## Description
 
 <!-- What would you like to report or improve? -->
