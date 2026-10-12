@@ -35,6 +35,10 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
     const address = channel?.address;
     const parameters = channel?.parameters as unknown as Record<string, Parameter> | undefined;
     const actionLabel = op.action?.toUpperCase() ?? "";
+    // Several operations often share one channel (a single WebSocket
+    // connection, say), so the address alone can't tell rows apart. A title,
+    // when the spec gives one, leads instead with the address beneath it.
+    const title = op.title?.trim() || undefined;
     const isSelected = selectedKey === key;
 
     return (
@@ -46,7 +50,7 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
         // make it reachable and operable by keyboard, matching the click behavior.
         role="button"
         tabIndex={0}
-        aria-label={`${actionLabel || "Operation"} ${address ?? key}`}
+        aria-label={`${actionLabel || "Operation"} ${title ?? address ?? key}`}
         aria-current={isSelected ? "true" : undefined}
         onKeyDown={(event) => {
           if (event.key !== "Enter" && event.key !== " ") return;
@@ -56,7 +60,22 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
         className={`cursor-pointer hover:bg-neutral-50 ${isSelected ? "bg-neutral-50" : ""}`}
       >
         <td className="px-6 py-4 max-w-0 w-full">
-          {address && <ChannelAddress address={address} parameters={parameters} truncate />}
+          {title ? (
+            <div className="min-w-0">
+              <div className="truncate text-sm font-medium text-foreground">{title}</div>
+              {address && (
+                <ChannelAddress
+                  address={address}
+                  parameters={parameters}
+                  truncate
+                  padded={false}
+                  className="text-xs text-foreground-muted mt-0.5"
+                />
+              )}
+            </div>
+          ) : (
+            address && <ChannelAddress address={address} parameters={parameters} truncate />
+          )}
         </td>
         <td className="px-6 py-4 w-32">
           <MethodBadge method={op.action} className="w-24" />
