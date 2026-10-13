@@ -51,14 +51,12 @@ interface NavigationProps {
 
 // Both the spine and the popover anchor to this same offset — the popover
 // appears exactly where the ticks are (not beside them), so hovering the
-// ticks lands the cursor on the popover with no gap to cross.
-const NAV_LEFT_OFFSET = 20;
-/** Preferred space between the rail's right edge and the content column's left
- * edge, used whenever the gutter has room for it. */
-const RAIL_COLUMN_GAP = 96;
-/** The least space the rail may keep from the column before it gives way to
- * the compact trigger. Separate from the preferred gap so pushing the rail
- * further out doesn't also make narrower layouts fall back to compact sooner. */
+// ticks lands the cursor on the popover with no gap to cross. Measured from
+// the widget's left edge: the rail sits out by the frame, Notion-style, rather
+// than hugging the content column.
+const NAV_LEFT_OFFSET = 12;
+/** The least space the rail may keep from the content column before it gives
+ * way to the compact trigger. */
 const RAIL_COLUMN_MIN_GAP = 48;
 /** The rail's width: its widest (active) tick, `w-6`, plus the button's `p-2`
  * on each side. A constant rather than measured, because it's needed to decide
@@ -257,13 +255,13 @@ export default function Navigation({
   const availableViewportHeight = Math.max(0, widgetVisibleBottom - widgetVisibleTop);
   const viewportContentCenter = (widgetVisibleTop + widgetVisibleBottom) / 2;
 
-  // The spine lives in the left gutter beside the content column, and hugs
-  // the column rather than the widget's left edge: the column is centered
-  // with a max width (SECTION_COLUMNS_WIDTH), so on an ultra-wide widget the
-  // edge can sit far from the content. The column is measured off a
-  // zero-height element carrying the same classes (rendered below), since
-  // its width includes a font-relative `70ch` — and measured in both modes,
-  // so the decision below can't flip-flop with the mode it picks.
+  // The spine sits at the widget's left edge, but whether it fits there
+  // depends on how close the content column comes: the column is centered
+  // with a max width (SECTION_COLUMNS_WIDTH), so the gutter grows with the
+  // widget. The column is measured off a zero-height element carrying the
+  // same classes (rendered below), since its width includes a font-relative
+  // `70ch` — and measured in both modes, so the decision below can't
+  // flip-flop with the mode it picks.
   const [columnOffset, setColumnOffset] = useState<number | null>(null);
   useLayoutEffect(() => {
     if (!columnElement || !rootElement) return;
@@ -283,10 +281,7 @@ export default function Navigation({
     };
   }, [columnElement, rootElement]);
   const columnLeft = columnOffset === null ? null : (rootRect?.left ?? 0) + columnOffset;
-  const widgetEdgeLeft = (rootRect?.left ?? 0) + NAV_LEFT_OFFSET;
-  const railLeft = columnLeft !== null
-    ? Math.max(widgetEdgeLeft, columnLeft - SPINE_WIDTH - RAIL_COLUMN_GAP)
-    : widgetEdgeLeft;
+  const railLeft = (rootRect?.left ?? 0) + NAV_LEFT_OFFSET;
 
   // Once the gutter is too narrow for the rail, the ticks would sit on top
   // of the text — swap the trigger for a floating bottom-right button. The
@@ -298,7 +293,7 @@ export default function Navigation({
   // too. The width check covers the first render, before the column's
   // measured.
   const railFits = columnLeft !== null
-    ? columnLeft - widgetEdgeLeft >= SPINE_WIDTH + RAIL_COLUMN_MIN_GAP
+    ? columnLeft - railLeft >= SPINE_WIDTH + RAIL_COLUMN_MIN_GAP
     : !!rootRect && rootRect.width >= 1024;
   const isCompact = !!rootRect && !railFits;
 
@@ -561,7 +556,7 @@ export default function Navigation({
     <>
       {/* Zero-height stand-in for the content column: same width classes as
           every Section, in the same container, so its rect is the column's.
-          Positions the rail (see `railLeft`); renders nothing visible. */}
+          Decides whether the rail fits (see `railFits`); renders nothing visible. */}
       <div ref={setColumnElement} aria-hidden="true" className={`w-full ${SECTION_COLUMNS_WIDTH}`} style={{ height: 0 }} />
 
       {/* A bare table-of-contents "spine" (Medium-style): one tick per section,

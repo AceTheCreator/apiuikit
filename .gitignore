@@ -42,5 +42,8 @@ packages/playground/public/examples/
 .gstack/
 .claude/
 
+# Vite dependency pre-bundling cache
+.vite/
+
 # Local Netlify folder
 .netlify

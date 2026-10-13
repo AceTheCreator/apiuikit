@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import OpenAPI from "./OpenAPI";
 import type { IOpenAPIProps } from "./OpenAPI";
-import type { OpenAPIDocumentData } from "../../types/openapi";
 import type { ConfigInterface } from "../../config/config";
 import type { ErrorBoundaryFallbackRenderer } from "../../components/ErrorBoundary";
 import type { ErrorInfo, ReactNode } from "react";
 import type { ApiuikitPlugin } from "../../plugins/types";
-import { parseDocument } from "../../helpers/openapiParser";
+import { parseDocument, type OpenAPIParseResult } from "../../helpers/openapiParser";
 
 interface OpenAPIRendererProps {
   /** The OpenAPI document as a YAML or JSON string. It is parsed before the page renders. */
@@ -49,27 +48,27 @@ export function OpenAPIRenderer({
   initialLocation,
   onLocationChange,
 }: OpenAPIRendererProps) {
-  const [document, setDocument] = useState<OpenAPIDocumentData | null>(null);
+  const [result, setResult] = useState<OpenAPIParseResult | null>(null);
 
   const onDiagnosticsRef = useRef(onDiagnostics);
   onDiagnosticsRef.current = onDiagnostics;
 
   useEffect(() => {
     let active = true;
-    parseDocument(raw).then(({ document, diagnostics }) => {
+    parseDocument(raw).then((parsed) => {
       if (!active) return;
-      setDocument(document);
-      onDiagnosticsRef.current?.(diagnostics);
+      setResult(parsed);
+      onDiagnosticsRef.current?.(parsed.diagnostics);
     });
     return () => {
       active = false;
     };
   }, [raw]);
 
+  const document = result?.document;
   if (!document) return null;
   return (
     <OpenAPI
-      kind="resolved"
       openapi={document}
       config={config}
       plugins={plugins}

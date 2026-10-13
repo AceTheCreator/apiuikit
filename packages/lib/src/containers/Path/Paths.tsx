@@ -1,3 +1,4 @@
+import { ErrorBoundary } from "../../components/ErrorBoundary";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import Section, { type SectionLayout } from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
@@ -250,6 +251,8 @@ export default function Paths({
         headerActions={selected && <EndpointHeaderActions method={selected.method} path={selected.path} />}
       >
         {selected && selectedOp && (
+          <ErrorBoundary key={selected.key} resetKey={selectedOp}
+            fallback={<p role="alert">This operation could not be rendered. Select another operation to continue.</p>}>
           <PathOperation
             // Remounts on every operation switch so a `*.operation.tab` plugin
             // tab (and its internal state) doesn't carry over to a different
@@ -268,6 +271,7 @@ export default function Paths({
               if (key) setSelectedKey(key);
             }}
           />
+          </ErrorBoundary>
         )}
       </SidePanel>
     </>

@@ -18,7 +18,7 @@ export default function OpenAPIInformation({
   layout,
   showLogo,
 }: OpenAPIInformationProps) {
-  const { title, description, license, contact } = info;
+  const { title, description, license, contact } = info ?? {};
 
   return (
     <InformationSection

@@ -112,4 +112,26 @@ describe("AsyncAPIRenderer", () => {
 
     expect(await screen.findByRole("heading", { name: "Updated API" })).toBeInTheDocument();
   });
+  it("renders with validation errors and reports recovery only through the callback", async () => {
+    const { version: _version, ...info } = exampleDoc.info;
+    const onDiagnostics = vi.fn();
+    const { rerender } = render(<AsyncAPIRenderer raw={JSON.stringify({ ...exampleDoc, info })} onDiagnostics={onDiagnostics} />);
+    expect(await screen.findByRole("heading", { name: "Streetlights Kafka API" })).toBeInTheDocument();
+    expect(onDiagnostics.mock.calls[0][0]).toEqual(expect.arrayContaining([expect.objectContaining({ severity: 0 })]));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    rerender(<AsyncAPIRenderer raw={raw} onDiagnostics={onDiagnostics} />);
+    await vi.waitFor(() => expect(onDiagnostics).toHaveBeenCalledTimes(2));
+    expect(onDiagnostics.mock.calls[1][0].some((d: { severity: number }) => d.severity === 0)).toBe(false);
+  });
+
+  it("keeps unrelated content available with an unresolved channel reference", async () => {
+    const onDiagnostics = vi.fn();
+    const invalid = { ...exampleDoc, operations: { ...exampleDoc.operations,
+      broken: { action: "receive", channel: { $ref: "#/channels/absent" } },
+    } };
+    render(<AsyncAPIRenderer raw={JSON.stringify(invalid)} onDiagnostics={onDiagnostics} />);
+    expect(await screen.findByRole("heading", { name: "Streetlights Kafka API" })).toBeInTheDocument();
+    expect(onDiagnostics.mock.calls[0][0]).toEqual(expect.arrayContaining([expect.objectContaining({ severity: 0 })]));
+  });
+
 });

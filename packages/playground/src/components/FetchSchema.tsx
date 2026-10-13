@@ -27,6 +27,17 @@ function toFetchableUrl(url: string): string {
   }
 }
 
+// Remote JSON is often served minified, which lands in the editor as a single
+// line. Pretty-print it when it parses; YAML and malformed JSON pass through
+// untouched so the editor's diagnostics still point at the original text.
+function formatFetchedText(text: string): string {
+  try {
+    return JSON.stringify(JSON.parse(text), null, 2)
+  } catch {
+    return text
+  }
+}
+
 export function FetchSchema({ palette, onLoad }: FetchSchemaProps) {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
@@ -57,7 +68,7 @@ export function FetchSchema({ palette, onLoad }: FetchSchemaProps) {
       const text = await res.text()
       // No local validation here — the doc editor parses via the real AsyncAPI parser
       // (JSON or YAML) and surfaces any issues as diagnostics.
-      onLoad(text)
+      onLoad(formatFetchedText(text))
     } catch (err) {
       if (err instanceof TypeError) {
         // fetch() rejects with a generic TypeError for CORS failures and network errors alike,

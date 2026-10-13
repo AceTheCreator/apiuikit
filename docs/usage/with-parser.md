@@ -27,7 +27,11 @@ The simplest way to use the parser entry. Pass a raw string and the component ha
 | `errorFallback`  | `ReactNode \| (error, reset) => ReactNode` | No | Forwarded to `AsyncAPI`: custom UI shown if rendering throws |
 | `onError`        | `(error, errorInfo) => void`    | No       | Forwarded to `AsyncAPI`: called once when a render error is caught |
 
-Parse failures and render failures are separate channels: `onDiagnostics` reports what the parser rejected, `onError` reports a throw during render. See [Error handling](./no-parser.md#error-handling).
+Parse failures and render failures are separate channels: `onDiagnostics` reports parser errors and warnings, `onError` reports a throw during render. See [Error handling](./no-parser.md#error-handling).
+
+Validation errors do not automatically block rendering. The parser continues reference resolution, trait application, and Avro/Protobuf conversion while retaining diagnostics. The library sends diagnostics through `onDiagnostics`; your application decides how to display them.
+
+Unreadable input, unsupported versions, and failures during document transformation may still produce no document. Render-time section failures are contained so other sections remain accessible, and changing the document retries rendering.
 
 ### TypeScript
 
@@ -68,7 +72,7 @@ function parseAndRender(
 ```
 
 - **`diagnostics`**: validation issues returned by the parser. An empty array means the document is valid.
-- **`view`**: a ready-to-mount React element, or `null` if the document failed validation.
+- **`view`**: a ready-to-mount React element, or `null` if parsing or document transformation could not produce a usable document.
 
 ### TypeScript
 
@@ -87,7 +91,7 @@ if (diagnostics.length) {
   console.warn("Validation issues:", diagnostics);
 }
 
-// view is null when the document is invalid
+// view is null when the parser cannot produce a usable document
 export default function App() {
   return view ?? <p>Invalid AsyncAPI document.</p>;
 }

@@ -18,16 +18,24 @@ const SECTION_GAP = 12;
 const PADDING = 8;
 /** Share of viewport height the spine may occupy, matching the popover's `max-h-[70vh]`. */
 const MAX_HEIGHT_RATIO = 0.7;
+/**
+ * The spine's tallest it gets, however tall the viewport. Scaling with the
+ * viewport alone let a long document grow the rail to hundreds of ticks; past
+ * a couple of dozen they stop reading as a table of contents and start reading
+ * as a scrollbar.
+ */
+const MAX_HEIGHT = 240;
 
 /**
- * How many item ticks fit in the spine's share of the viewport, once each
+ * How many item ticks fit in the spine's share of the viewport (capped at
+ * `MAX_HEIGHT`), once each
  * section's own parent tick and the gaps between sections are paid for.
  * A zero `viewportHeight` means server-side rendering, where there's no
  * viewport to cap against.
  */
 export function spineTickBudget(viewportHeight: number, sectionCount: number): number {
   if (viewportHeight === 0) return Infinity;
-  const available = viewportHeight * MAX_HEIGHT_RATIO - PADDING * 2;
+  const available = Math.min(viewportHeight * MAX_HEIGHT_RATIO, MAX_HEIGHT) - PADDING * 2;
   const sectionOverhead =
     sectionCount * TICK_PITCH + Math.max(0, sectionCount - 1) * SECTION_GAP;
   return Math.max(1, Math.floor((available - sectionOverhead) / TICK_PITCH));

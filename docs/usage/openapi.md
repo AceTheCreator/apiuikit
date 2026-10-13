@@ -83,6 +83,10 @@ export default function App() {
 }
 ```
 
+Validation errors do not automatically block rendering. Parseable OpenAPI 3.0/3.1 documents continue rendering, with errors reported through `onDiagnostics`. Unreadable JSON/YAML and unsupported documents render nothing and report diagnostics through the same callback. Broken references are retained and reported; malformed operation content may show a local fallback while other operations remain available.
+
+The library does not display parser diagnostics. Your application decides how to present the `onDiagnostics` results—for example, in an editor panel or banner. Correcting the `raw` input updates the documentation and reports the current diagnostics (an empty array when there are no issues).
+
 Diagnostics use the same shape as AsyncAPI's (`{ message, path, severity }`, `severity: 0` for errors), so a shared diagnostics panel works for both.
 
 `errorFallback`, `onError`, and `plugins` are accepted here too and forwarded to the underlying `OpenAPI` component, so the raw-string entry point gets the same error boundary and the same customization.
