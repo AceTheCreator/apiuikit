@@ -26,14 +26,47 @@ interface ScalarErrorLike {
   path?: string[] | string;
 }
 
+// The package's own types promise `path?: string[]`, but validation errors
+// come back with a JSON pointer string instead ("/paths/~1pets/get") —
+// split it into segments so diagnostics share AsyncAPI's path shape.
+const toPath = (path: ScalarErrorLike["path"]): string[] => {
+  if (Array.isArray(path)) return path;
+  if (typeof path !== "string" || path === "") return [];
+  if (!path.startsWith("/")) return [path];
+  return path.slice(1).split("/").map((segment) => segment.replace(/~1/g, "/").replace(/~0/g, "~"));
+};
+
 const toDiagnostic = (error: ScalarErrorLike, severity: 0 | 1): OpenAPIDiagnostic => ({
   message: error.message,
-  // The package's own types promise `path?: string[]`, but at least one code
-  // path (a missing-required-property error) has been observed returning a
-  // plain string instead — normalize defensively rather than trust the type.
-  path: Array.isArray(error.path) ? error.path : typeof error.path === "string" ? [error.path] : [],
+  path: toPath(error.path),
   severity,
 });
+
+// The OpenAPI schema models most objects as `oneOf: [Thing, Reference]`, so
+// AJV reports one real defect plus "must have required property '$ref'" and
+// "must match exactly one schema in oneOf" at every ancestor. Those are only
+// noise once a more specific error sits at or beneath the same node.
+const ALTERNATIVE_MISMATCH = new Set([
+  "must have required property '$ref'",
+  "must match exactly one schema in oneOf",
+]);
+
+const isWithin = (path: string[], ancestor: string[]) =>
+  path.length >= ancestor.length && ancestor.every((segment, index) => path[index] === segment);
+
+function cleanDiagnostics(diagnostics: OpenAPIDiagnostic[]): OpenAPIDiagnostic[] {
+  const seen = new Set<string>();
+  const unique = diagnostics.filter((item) => {
+    const key = JSON.stringify([item.severity, item.message, item.path]);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const specific = unique.filter((item) => !ALTERNATIVE_MISMATCH.has(item.message));
+  return unique.filter((item) =>
+    !ALTERNATIVE_MISMATCH.has(item.message) ||
+    !specific.some((other) => isWithin(other.path, item.path)));
+}
 
 export interface OpenAPIParseResult {
   status: "ready" | "partial" | "unrenderable";
@@ -78,9 +111,7 @@ export async function parseDocument(raw: string): Promise<OpenAPIParseResult> {
       diagnostics.push({ message: err instanceof Error ? err.message : "Validation failed", path: [], severity: 0 });
     }
 
-    const unique = diagnostics.filter((item, index) => diagnostics.findIndex((other) =>
-      other.message === item.message && other.severity === item.severity &&
-      JSON.stringify(other.path) === JSON.stringify(item.path)) === index);
+    const unique = cleanDiagnostics(diagnostics);
     return {
       status: unique.some((item) => item.severity === 0) ? "partial" : "ready",
       diagnostics: unique,

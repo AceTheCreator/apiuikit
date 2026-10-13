@@ -41,3 +41,9 @@ packages/playground/public/examples/
 *.sw?
 .gstack/
 .claude/
+
+# Vite dependency pre-bundling cache
+.vite/
+
+# Netlify CLI local state (site link, local dev DB, function builds)
+.netlify/

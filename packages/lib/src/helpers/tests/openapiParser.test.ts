@@ -29,6 +29,21 @@ describe("tolerant OpenAPI parsing", () => {
     },
   );
 
+  it("reports one defect once, with a segmented path instead of oneOf noise", async () => {
+    const result = await parseDocument(JSON.stringify({ ...base, paths: { "/items/{id}": { get: {
+      parameters: [{ name: "id", in: "path", required: false, schema: { type: "string" } }],
+      responses: { 200: { description: "OK" } },
+    } } } }));
+    expect(result.status).toBe("partial");
+    const messages = result.diagnostics.map((item) => item.message);
+    expect(messages).not.toContain("must have required property '$ref'");
+    expect(messages).not.toContain("must match exactly one schema in oneOf");
+    expect(new Set(result.diagnostics.map((item) => JSON.stringify(item))).size).toBe(result.diagnostics.length);
+    expect(result.diagnostics).toEqual(expect.arrayContaining([expect.objectContaining({
+      path: ["paths", "/items/{id}", "get", "parameters", "0", "required"],
+    })]));
+  });
+
   it("retains recursive schemas without passing validation's cycles back to Scalar", async () => {
     const result = await parseDocument(JSON.stringify({ ...base, components: { schemas: {
       Node: { type: "object", properties: { child: { $ref: "#/components/schemas/Node" } } },

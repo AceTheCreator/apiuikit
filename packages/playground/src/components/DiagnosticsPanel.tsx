@@ -31,6 +31,14 @@ function severityColor(severity: number, palette: UiPalette): string {
   return palette.textMuted
 }
 
+// ["paths", "/pets/{id}", "get", "parameters", "0"] -> "paths › /pets/{id} › get › parameters[0]"
+function formatPath(path: (string | number)[]): string {
+  return path.reduce<string>((out, segment) => {
+    if (/^\d+$/.test(String(segment)) && out) return `${out}[${segment}]`
+    return out ? `${out} › ${segment}` : String(segment)
+  }, '')
+}
+
 export function DiagnosticsPanel({ diagnostics, palette }: DiagnosticsPanelProps) {
   if (diagnostics.length === 0) return null
 
@@ -56,7 +64,7 @@ export function DiagnosticsPanel({ diagnostics, palette }: DiagnosticsPanelProps
           }}
         >
           <strong>{severityLabel(d.severity)}</strong>
-          {d.path && d.path.length > 0 ? ` (${d.path.join('.')})` : ''}: {d.message}
+          {d.path && d.path.length > 0 ? ` (${formatPath(d.path)})` : ''}: {d.message}
         </div>
       ))}
     </div>
