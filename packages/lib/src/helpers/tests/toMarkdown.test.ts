@@ -127,7 +127,7 @@ describe("asyncApiToMarkdown", () => {
     });
   });
 
-  it("does not recurse infinitely on a circular schema $ref", () => {
+  it("references a component schema that refers to itself instead of recursing", () => {
     const circularDoc: AsyncAPIDocumentData = {
       info: { title: "Circular", version: "1.0.0" },
       components: {
@@ -145,10 +145,11 @@ describe("asyncApiToMarkdown", () => {
       ref === "#/components/schemas/node" ? circularDoc.components!.schemas!.node : undefined;
 
     const md = asyncApiToMarkdown(circularDoc, deref);
-    expect(md).toContain("circular reference");
+    const nodeBlock = firstJsonBlock(md.slice(md.indexOf("`node`"))) as { properties: { child: unknown } };
+    expect(nodeBlock.properties.child).toEqual({ $ref: "#/components/schemas/node" });
   });
 
-  it("does not recurse infinitely on a real object-identity cycle (no $ref)", () => {
+  it("references a component schema in a real object-identity cycle (no $ref)", () => {
     // Mirrors what a with-parser document (e.g. @scalar/openapi-parser) can hand
     // back: an actual JS object cycle, not a leftover `$ref` marker.
     const node: Record<string, unknown> = { type: "object", properties: {} };
@@ -160,18 +161,24 @@ describe("asyncApiToMarkdown", () => {
     };
 
     const md = asyncApiToMarkdown(circularDoc, () => undefined);
+    const nodeBlock = firstJsonBlock(md.slice(md.indexOf("`node`"))) as { properties: { self: unknown } };
+    expect(nodeBlock.properties.self).toEqual({ $ref: "#/components/schemas/node" });
+  });
+
+  it("does not recurse infinitely on a cycle outside the component schemas", () => {
+    const node: Record<string, unknown> = { type: "object", properties: {} };
+    (node.properties as Record<string, unknown>).self = node;
+
+    const circularDoc: AsyncAPIDocumentData = {
+      info: { title: "Circular", version: "1.0.0" },
+      components: { messages: { tree: { name: "tree", payload: node as never } } },
+    };
+
+    const md = asyncApiToMarkdown(circularDoc, () => undefined);
     expect(md).toContain("circular reference");
   });
 
-  it("renders schema components as a fenced ```json code block", () => {
-    const md = asyncApiToMarkdown(doc, noopDeref);
-    const parsed = firstJsonBlock(md.slice(md.indexOf("## Schemas"))) as {
-      properties: { lumens: { description: string } };
-    };
-    expect(parsed.properties.lumens.description).toBe("Light intensity");
-  });
-
-  it("inlines a $ref target's fields instead of leaving a $ref marker", () => {
+  it("references another component schema by $ref, rendered once under Schemas", () => {
     const refDoc: AsyncAPIDocumentData = {
       info: { title: "Refs", version: "1.0.0" },
       components: {
@@ -188,8 +195,30 @@ describe("asyncApiToMarkdown", () => {
       ref === "#/components/schemas/address" ? refDoc.components!.schemas!.address : undefined;
 
     const md = asyncApiToMarkdown(refDoc, deref as never);
+    const userBlock = firstJsonBlock(md.slice(md.indexOf("`user`"))) as { properties: { home: unknown } };
+    expect(userBlock.properties.home).toEqual({ $ref: "#/components/schemas/address" });
+    const addressBlock = firstJsonBlock(md.slice(md.indexOf("`address`"))) as {
+      properties: { city: { type: string } };
+    };
+    expect(addressBlock.properties.city.type).toBe("string");
+  });
+
+  it("still inlines a $ref target that isn't a component schema", () => {
+    const refDoc: AsyncAPIDocumentData = {
+      info: { title: "Refs", version: "1.0.0" },
+      components: {
+        messages: { addressMessage: { name: "addressMessage", payload: { type: "object", properties: { city: { type: "string" } } } as never } },
+        schemas: {
+          user: { type: "object", properties: { home: { $ref: "#/components/messages/addressMessage/payload" } } },
+        },
+      },
+    };
+    const deref = (ref: string) =>
+      ref === "#/components/messages/addressMessage/payload" ? refDoc.components!.messages!.addressMessage.payload : undefined;
+
+    const md = asyncApiToMarkdown(refDoc, deref as never);
     const userBlock = firstJsonBlock(md.slice(md.indexOf("`user`"))) as {
-      properties: { home: { type: string; properties: { city: { type: string } } } };
+      properties: { home: { properties: { city: { type: string } } } };
     };
     expect(userBlock.properties.home.properties.city.type).toBe("string");
   });
@@ -214,11 +243,9 @@ describe("asyncApiToMarkdown", () => {
       ref === "#/components/schemas/address" ? sharedDoc.components!.schemas!.address : undefined;
 
     const md = asyncApiToMarkdown(sharedDoc, deref as never);
-    const userBlock = firstJsonBlock(md.slice(md.indexOf("`user`"))) as {
-      properties: { home: { properties: { city: { type: string } } }; work: { properties: { city: { type: string } } } };
-    };
-    expect(userBlock.properties.home.properties.city.type).toBe("string");
-    expect(userBlock.properties.work.properties.city.type).toBe("string");
+    const userBlock = firstJsonBlock(md.slice(md.indexOf("`user`"))) as { properties: { home: unknown; work: unknown } };
+    expect(userBlock.properties.home).toEqual({ $ref: "#/components/schemas/address" });
+    expect(userBlock.properties.work).toEqual({ $ref: "#/components/schemas/address" });
     expect(md).not.toContain("circular reference");
   });
 
@@ -356,6 +383,67 @@ describe("openApiToMarkdown", () => {
 
     it("returns an empty string when the endpoint doesn't exist", () => {
       expect(openApiEndpointToMarkdown(doc, "post", "/nonexistent", noopDeref)).toBe("");
+    });
+
+    it("references component schemas and renders each once under Referenced Schemas", () => {
+      // Shared objects, as resolveDocument leaves inlined $ref targets.
+      const address: Record<string, unknown> = { type: "object", properties: { city: { type: "string" } } };
+      const customer: Record<string, unknown> = {
+        type: "object",
+        properties: { billing: address, shipping: address },
+      };
+      const refDoc = {
+        openapi: "3.1.0",
+        info: { title: "Shop", version: "1" },
+        paths: {
+          "/customers": {
+            get: {
+              responses: {
+                "200": { description: "OK", content: { "application/json": { schema: customer } } },
+                default: { description: "Error", content: { "application/json": { schema: customer } } },
+              },
+            },
+          },
+        },
+        components: { schemas: { customer, address } },
+      } as unknown as OpenAPIDocumentData;
+
+      const md = openApiEndpointToMarkdown(refDoc, "get", "/customers", noopDeref);
+      // A body that is itself a component schema is expanded one level…
+      const endpoint = md.slice(md.indexOf("GET `/customers`"), md.indexOf("## Referenced Schemas"));
+      expect(firstJsonBlock(endpoint)).toEqual({
+        type: "object",
+        properties: {
+          billing: { $ref: "#/components/schemas/address" },
+          shipping: { $ref: "#/components/schemas/address" },
+        },
+      });
+
+      // …and what it references is rendered once, however often it's reached.
+      const referenced = md.slice(md.indexOf("## Referenced Schemas"));
+      expect(referenced.match(/#### `/g)).toHaveLength(1);
+      expect(firstJsonBlock(referenced.slice(referenced.indexOf("`address`")))).toEqual(address);
+    });
+
+    it("recognizes a component schema inlined as a shallow copy, as @scalar/openapi-parser does", () => {
+      const address: Record<string, unknown> = { type: "object", properties: { city: { type: "string" } } };
+      const refDoc = {
+        openapi: "3.1.0",
+        info: { title: "Shop", version: "1" },
+        paths: {
+          "/address": {
+            get: { responses: { "200": { description: "OK", content: { "application/json": { schema: { type: "object", properties: { address: { ...address } } } } } } } },
+          },
+        },
+        components: { schemas: { address } },
+      } as unknown as OpenAPIDocumentData;
+
+      const md = openApiEndpointToMarkdown(refDoc, "get", "/address", noopDeref);
+      expect(firstJsonBlock(md.slice(md.indexOf("GET `/address`")))).toEqual({
+        type: "object",
+        properties: { address: { $ref: "#/components/schemas/address" } },
+      });
+      expect(md).toContain("#### `address`");
     });
   });
 

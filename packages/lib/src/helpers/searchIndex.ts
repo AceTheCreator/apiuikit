@@ -1,5 +1,7 @@
 import { AsyncAPIDocumentData } from "../types/schema";
 import { Server } from "../types/asyncapi/Server";
+import { createDocumentDeref } from "./jsonPointer";
+import { createNamedSchemaLookup, SCHEMA_STRUCTURAL_KEYS } from "./namedSchemas";
 
 // "endpoints"/"endpoint" are OpenAPI's equivalent of AsyncAPI's "operations"/"operation" —
 // added here (rather than a parallel SearchEntry type) so SearchPanel/useSpecSearch's
@@ -55,27 +57,41 @@ export const normalizeString = (value: unknown): string =>
 const buildSchemaFocusId = (schemaKey: string, tokens: string[]): string =>
   tokens.length ? `schema-${schemaKey}-${tokens.join("-")}` : `schema-${schemaKey}`;
 
-const SCHEMA_STRUCTURAL_KEYS = new Set([
-  "properties", "items", "allOf", "oneOf", "anyOf", "additionalProperties",
-  "patternProperties", "propertyNames", "not", "if", "then", "else",
-  "contains", "additionalItems", "prefixItems", "definitions", "$defs",
-]);
+const isPrimitive = (value: unknown) => value === null || typeof value !== "object";
 
+/**
+ * A schema node's own searchable text: its scalar keywords (description,
+ * type, format, …) and arrays of scalars (enum, required). Nested objects are
+ * dropped, not just the structural keywords — vendor extensions can hold whole
+ * resolved schemas (Stripe's `x-expansionResources` inlines its targets), and
+ * flattening those made single entries megabytes long. Child schemas get their
+ * own entries from the walk anyway.
+ */
 const shallowSchemaNode = (node: unknown): unknown => {
   if (!isRecord(node)) return node;
   const shallow: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(node)) {
-    if (!SCHEMA_STRUCTURAL_KEYS.has(key)) shallow[key] = value;
+    if (SCHEMA_STRUCTURAL_KEYS.has(key)) continue;
+    if (isPrimitive(value) || (Array.isArray(value) && value.every(isPrimitive))) shallow[key] = value;
   }
   return shallow;
 };
 
-/** Walks a single JSON Schema node into flat search entries — spec-agnostic (AsyncAPI and OpenAPI schemas share the same shape), reused by openapiSearchIndex.ts. */
+/**
+ * Walks a single JSON Schema node into flat search entries — spec-agnostic (AsyncAPI and OpenAPI schemas share the same shape), reused by openapiSearchIndex.ts.
+ *
+ * `namedSchemaOf` (createNamedSchemaLookup) recognizes the document's
+ * component schemas, each indexed by its own call. A reference to one still gets an entry where it occurs, but the
+ * walk doesn't descend into it — otherwise every schema re-indexes everything
+ * it can reach: on a densely linked spec like Stripe's, 271k entries for ~10k
+ * distinct nodes.
+ */
 export const addSchemaEntries = (
   entries: SearchEntry[],
   schema: unknown,
   schemaKey: string,
   schemaName: string,
+  namedSchemaOf?: (node: unknown) => string | undefined,
 ) => {
   const rootTargetId = `schema-${schemaKey}`;
 
@@ -122,6 +138,8 @@ export const addSchemaEntries = (
     // that and recursing forever if it's violated.
     if (visited.has(node)) return;
     visited.add(node);
+
+    if (pathSegments.length > 0 && namedSchemaOf?.(node) !== undefined) return;
 
     if (isRecord(node.properties)) {
       for (const [propName, propValue] of Object.entries(node.properties)) {
@@ -401,8 +419,9 @@ export function buildSearchIndex(asyncapi: AsyncAPIDocumentData): SearchEntry[] 
   }
 
   if (asyncapi.components?.schemas) {
+    const namedSchemaOf = createNamedSchemaLookup(asyncapi.components.schemas, createDocumentDeref(asyncapi));
     for (const [key, schema] of Object.entries(asyncapi.components.schemas)) {
-      addSchemaEntries(entries, schema, key, key);
+      addSchemaEntries(entries, schema, key, key, namedSchemaOf);
     }
   }
 

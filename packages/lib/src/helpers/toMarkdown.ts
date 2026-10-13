@@ -6,8 +6,11 @@
  * (components/CodeSamples.tsx, via `openApiEndpointToMarkdown`). Mirrors the
  * field names each section component (Information, Servers, Operations,
  * Messages, Schemas / Paths) already renders, just emitting Markdown instead
- * of JSX. Schemas are embedded as fully-dereferenced fenced ```json code
- * blocks rather than flattened into nested headings.
+ * of JSX. Schemas are embedded as fenced ```json code blocks rather than
+ * flattened into nested headings, dereferenced except where they reach
+ * another component schema: that stays a `$ref`, and the schema itself is
+ * rendered once — in the full export's Schemas section, or in a standalone
+ * export's "Referenced Schemas" section.
  */
 import { AsyncAPIDocumentData, SchemaNodeData } from "../types/schema";
 import {
@@ -22,6 +25,7 @@ import { MessageObject } from "../types/asyncapi/MessageObject";
 import { Operation } from "../types/asyncapi/Operation";
 import { resolveSchemaInput } from "./schemaFormat";
 import { createDocumentDeref, type Deref } from "./jsonPointer";
+import { componentSchemaContaining, createNamedSchemaLookup } from "./namedSchemas";
 
 const heading = (level: number, text: string) => `${"#".repeat(level)} ${text}`;
 
@@ -49,12 +53,38 @@ interface SchemaAncestors {
 const EMPTY_ANCESTORS: SchemaAncestors = { objects: new Set(), refs: new Set() };
 
 /**
+ * The document's component schemas, for stopping resolveSchemaTree at them.
+ * Fully inlining every reference re-expands shared schemas at each site —
+ * on a densely linked spec like Stripe's, one endpoint's responses come to
+ * millions of nodes and the export never finishes. `referenced` collects the
+ * names emitted as `$ref`s, in first-seen order, for referencedSchemasToMarkdown.
+ */
+interface NamedSchemas {
+  schemas: Record<string, unknown>;
+  nameOf: (node: unknown) => string | undefined;
+  referenced: Set<string>;
+}
+
+const createNamedSchemas = (schemas: Record<string, unknown> | undefined, deref: Deref): NamedSchemas => ({
+  schemas: schemas ?? {},
+  nameOf: createNamedSchemaLookup(schemas, deref),
+  referenced: new Set(),
+});
+
+const componentSchemaRef = (name: string) =>
+  `#/components/schemas/${name.replace(/~/g, "~0").replace(/\//g, "~1")}`;
+
+/**
  * Deep-walks a schema node into a plain JSON-serializable value, inlining
  * every `$ref` it can resolve via `deref` (rather than flattening the tree
  * into Markdown headings — the resulting object is meant to be
  * JSON.stringify'd into a fenced code block by the caller). Generic over
  * every key (not just JSON-Schema keywords), so combinators, `not`, and
  * vendor extensions all come along for free.
+ *
+ * Below the root, a component schema (from `named`) — reached inline or
+ * through a `$ref` — is emitted as a `$ref` to it and recorded in
+ * `named.referenced` instead of being expanded.
  *
  * Cycle-safe the same way the old flattener was: ancestor tracking is
  * cloned per-branch (not a single mutated set) so a schema legitimately
@@ -65,8 +95,33 @@ const EMPTY_ANCESTORS: SchemaAncestors = { objects: new Set(), refs: new Set() }
  * cycle-forming refs unresolved rather than inlining them into a real
  * cycle) — stops recursion.
  */
-function resolveSchemaTree(schema: unknown, deref: Deref | undefined, ancestors: SchemaAncestors = EMPTY_ANCESTORS): unknown {
+function resolveSchemaTree(
+  schema: unknown,
+  deref: Deref | undefined,
+  named?: NamedSchemas,
+  ancestors: SchemaAncestors = EMPTY_ANCESTORS,
+  isRoot = true,
+): unknown {
   if (schema === null || typeof schema !== "object") return schema;
+
+  if (named && !isRoot) {
+    const ref = isRecord(schema) && typeof schema.$ref === "string" ? schema.$ref : undefined;
+    const target = ref !== undefined ? deref?.(ref) ?? schema : schema;
+    const name = named.nameOf(target);
+    if (name !== undefined) {
+      named.referenced.add(name);
+      return { $ref: componentSchemaRef(name) };
+    }
+    // A leftover `$ref` into part of a component schema (resolveDocument's
+    // cycle cut-point, e.g. `#/components/schemas/account/properties`): that
+    // schema is rendered in full elsewhere, so keep pointing at it — expanding
+    // each such stub re-expands the schema it sits in, again and again.
+    const container = ref !== undefined ? componentSchemaContaining(ref) : undefined;
+    if (container !== undefined && Object.prototype.hasOwnProperty.call(named.schemas, container)) {
+      named.referenced.add(container);
+      return { $ref: ref };
+    }
+  }
 
   if (ancestors.objects.has(schema) || (isRecord(schema) && typeof schema.$ref === "string" && ancestors.refs.has(schema.$ref))) {
     const parserSchemaId = isRecord(schema) ? schema["x-parser-schema-id"] : undefined;
@@ -81,38 +136,55 @@ function resolveSchemaTree(schema: unknown, deref: Deref | undefined, ancestors:
   };
 
   if (Array.isArray(schema)) {
-    return schema.map((item) => resolveSchemaTree(item, deref, childAncestors));
+    return schema.map((item) => resolveSchemaTree(item, deref, named, childAncestors, false));
   }
 
   if (isRecord(schema) && typeof schema.$ref === "string") {
     const target = deref?.(schema.$ref);
     if (isRecord(target) || Array.isArray(target)) {
-      return resolveSchemaTree(target, deref, childAncestors);
+      return resolveSchemaTree(target, deref, named, childAncestors, isRoot);
     }
     return { $ref: schema.$ref };
   }
 
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(schema)) {
-    result[key] = resolveSchemaTree(value, deref, childAncestors);
+    result[key] = resolveSchemaTree(value, deref, named, childAncestors, false);
   }
   return result;
 }
 
 /** Resolves `schema` and renders it as a heading + fenced ```json code block. */
-function schemaTreeToMarkdown(name: string, schema: SchemaNodeData | undefined, deref?: Deref): string {
+function schemaTreeToMarkdown(name: string, schema: SchemaNodeData | undefined, deref?: Deref, named?: NamedSchemas): string {
   if (!schema) return "";
-  const resolved = resolveSchemaTree(schema, deref);
+  const resolved = resolveSchemaTree(schema, deref, named);
   return `${heading(4, `\`${safe(name)}\``)}\n\n\`\`\`json\n${JSON.stringify(resolved, null, 2)}\n\`\`\``;
 }
 
-function resolvedSchemaToMarkdown(name: string, input: unknown, deref: Deref): string {
+function resolvedSchemaToMarkdown(name: string, input: unknown, deref: Deref, named?: NamedSchemas): string {
   if (!input || typeof input === "boolean") return "";
   const { schema, description, conversionError, pendingConversion } = resolveSchemaInput(input, deref);
   if (pendingConversion) return `${heading(4, `\`${safe(name)}\``)}\n\n_(schema conversion still in progress)_`;
   if (conversionError) return `${heading(4, `\`${safe(name)}\``)}\n\n_(could not convert schema: ${safe(conversionError)})_`;
   const withDescription = description && !schema.description ? { ...schema, description } : schema;
-  return schemaTreeToMarkdown(name, withDescription, deref);
+  return schemaTreeToMarkdown(name, withDescription, deref, named);
+}
+
+/**
+ * The "Referenced Schemas" section a standalone (single endpoint/operation)
+ * export ends with: every component schema its blocks `$ref`, each rendered
+ * once, including the ones those reference in turn.
+ */
+function referencedSchemasToMarkdown(named: NamedSchemas, deref: Deref): string {
+  const sections: string[] = [];
+  const rendered = new Set<string>();
+  // `referenced` grows while rendering; a Set iterator visits entries added mid-loop.
+  for (const name of named.referenced) {
+    if (rendered.has(name)) continue;
+    rendered.add(name);
+    sections.push(resolvedSchemaToMarkdown(name, named.schemas[name], deref, named));
+  }
+  return sections.length ? [heading(2, "Referenced Schemas"), ...sections].join("\n\n") : "";
 }
 
 /**
@@ -247,6 +319,8 @@ function asyncApiHeaderToMarkdown(doc: AsyncAPIDocumentData): string[] {
 
 export function asyncApiToMarkdown(doc: AsyncAPIDocumentData, deref: Deref = createDocumentDeref(doc)): string {
   const sections: string[] = asyncApiHeaderToMarkdown(doc);
+  // Every component schema gets its own block under "Schemas" below.
+  const named = createNamedSchemas(doc.components?.schemas, deref);
 
   if (doc.operations && Object.keys(doc.operations).length) {
     const opSections = [heading(2, "Operations")];
@@ -276,8 +350,8 @@ export function asyncApiToMarkdown(doc: AsyncAPIDocumentData, deref: Deref = cre
       if (message.description) lines.push(safe(message.description));
       if (message.contentType) lines.push(`**Content-Type:** \`${safe(message.contentType)}\``);
       msgSections.push(lines.join("\n\n"));
-      if (message.payload) msgSections.push(resolvedSchemaToMarkdown("payload", message.payload, deref));
-      if (message.headers) msgSections.push(resolvedSchemaToMarkdown("headers", message.headers, deref));
+      if (message.payload) msgSections.push(resolvedSchemaToMarkdown("payload", message.payload, deref, named));
+      if (message.headers) msgSections.push(resolvedSchemaToMarkdown("headers", message.headers, deref, named));
     }
     sections.push(msgSections.join("\n\n"));
   }
@@ -286,7 +360,7 @@ export function asyncApiToMarkdown(doc: AsyncAPIDocumentData, deref: Deref = cre
   if (schemas && Object.keys(schemas).length) {
     const schemaSections = [heading(2, "Schemas")];
     for (const [name, schema] of Object.entries(schemas)) {
-      schemaSections.push(resolvedSchemaToMarkdown(name, schema, deref));
+      schemaSections.push(resolvedSchemaToMarkdown(name, schema, deref, named));
     }
     sections.push(schemaSections.join("\n\n"));
   }
@@ -297,15 +371,16 @@ export function asyncApiToMarkdown(doc: AsyncAPIDocumentData, deref: Deref = cre
 /**
  * Builds a self-contained Markdown section for a single AsyncAPI operation:
  * channel/summary/description, followed by each associated message's title
- * and fully-dereferenced payload/headers as JSON code blocks. Unlike the
- * full-document export's terser Operations loop (which just lists message
- * names, leaving payload detail to the separate Messages section), this
- * inlines everything so the snippet stands alone. Exposed publicly via
+ * and payload/headers as JSON code blocks. Unlike the full-document
+ * export's terser Operations loop (which just lists message names, leaving
+ * payload detail to the separate Messages section), this inlines the
+ * payloads so the snippet stands alone — together with the "Referenced
+ * Schemas" section asyncApiOperationToMarkdown appends. Exposed publicly via
  * `asyncApiOperationToMarkdown` (see `helpers/specAdapters.ts`); AsyncAPI's
  * own code-sample dropdown doesn't use it — its Agent Prompt comes from
  * `asyncsnippet` instead (see `helpers/asyncCodeSample.ts`).
  */
-function operationSectionToMarkdown(key: string, op: Operation, deref: Deref): string {
+function operationSectionToMarkdown(key: string, op: Operation, deref: Deref, named: NamedSchemas): string {
   const channel = op.channel as unknown as Channel | undefined;
   const sections = [heading(3, `${safe(op.action?.toUpperCase())} \`${safe(key)}\``)];
   const lines: string[] = [];
@@ -323,8 +398,8 @@ function operationSectionToMarkdown(key: string, op: Operation, deref: Deref): s
     if (message.contentType) meta.push(`**Content-Type:** \`${safe(message.contentType)}\``);
     if (meta.length) msgLines.push(meta.join("\n\n"));
     sections.push(msgLines.join("\n\n"));
-    if (message.payload) sections.push(resolvedSchemaToMarkdown("payload", message.payload, deref));
-    if (message.headers) sections.push(resolvedSchemaToMarkdown("headers", message.headers, deref));
+    if (message.payload) sections.push(resolvedSchemaToMarkdown("payload", message.payload, deref, named));
+    if (message.headers) sections.push(resolvedSchemaToMarkdown("headers", message.headers, deref, named));
   }
 
   return sections.filter(Boolean).join("\n\n");
@@ -338,7 +413,9 @@ export function asyncApiOperationToMarkdown(doc: AsyncAPIDocumentData, key: stri
   const op = doc.operations?.[key];
   if (!op) return "";
   const sections = asyncApiHeaderToMarkdown(doc);
-  sections.push(operationSectionToMarkdown(key, op, deref));
+  const named = createNamedSchemas(doc.components?.schemas, deref);
+  sections.push(operationSectionToMarkdown(key, op, deref, named));
+  sections.push(referencedSchemasToMarkdown(named, deref));
   return sections.filter(Boolean).join("\n\n");
 }
 
@@ -408,6 +485,7 @@ function endpointSectionToMarkdown(
   path: string,
   op: OpenAPIOperationData,
   deref: Deref,
+  named: NamedSchemas,
   securitySchemes?: Record<string, OpenAPISecuritySchemeData>,
   globalSecurity?: Array<Record<string, string[]>>,
 ): string {
@@ -439,7 +517,7 @@ function endpointSectionToMarkdown(
   const requestBodyContent = op.requestBody?.content ?? {};
   for (const [mediaType, media] of Object.entries(requestBodyContent)) {
     endpointSections.push(
-      [`**Request Body** (\`${safe(mediaType)}\`)`, schemaTreeToMarkdown("body", media.schema as SchemaNodeData, deref)].join(
+      [`**Request Body** (\`${safe(mediaType)}\`)`, schemaTreeToMarkdown("body", media.schema as SchemaNodeData, deref, named)].join(
         "\n\n",
       ),
     );
@@ -450,7 +528,7 @@ function endpointSectionToMarkdown(
     const responseLines = [heading(4, `${status}${response.description ? `: ${safe(response.description)}` : ""}`)];
     for (const [mediaType, media] of Object.entries(response.content ?? {})) {
       responseLines.push(
-        [`**Body** (\`${safe(mediaType)}\`)`, schemaTreeToMarkdown("body", media.schema as SchemaNodeData, deref)].join(
+        [`**Body** (\`${safe(mediaType)}\`)`, schemaTreeToMarkdown("body", media.schema as SchemaNodeData, deref, named)].join(
           "\n\n",
         ),
       );
@@ -477,6 +555,8 @@ export function openApiToMarkdown(doc: OpenAPIDocumentData, deref: Deref = creat
     sections.push(serverSections.join("\n"));
   }
 
+  // Every component schema gets its own block under "Schemas" below.
+  const named = createNamedSchemas(doc.components?.schemas, deref);
   const endpoints = doc.paths ? flattenEndpoints(doc.paths) : [];
   if (endpoints.length) {
     const endpointSections = [heading(2, "Endpoints")];
@@ -484,7 +564,7 @@ export function openApiToMarkdown(doc: OpenAPIDocumentData, deref: Deref = creat
       const op = doc.paths?.[path]?.[method];
       if (!op) continue;
       endpointSections.push(
-        endpointSectionToMarkdown(method, path, op, deref, doc.components?.securitySchemes, doc.security),
+        endpointSectionToMarkdown(method, path, op, deref, named, doc.components?.securitySchemes, doc.security),
       );
     }
     sections.push(endpointSections.join("\n\n"));
@@ -494,7 +574,7 @@ export function openApiToMarkdown(doc: OpenAPIDocumentData, deref: Deref = creat
   if (schemas && Object.keys(schemas).length) {
     const schemaSections = [heading(2, "Schemas")];
     for (const [name, schema] of Object.entries(schemas)) {
-      schemaSections.push(schemaTreeToMarkdown(name, schema, deref));
+      schemaSections.push(schemaTreeToMarkdown(name, schema, deref, named));
     }
     sections.push(schemaSections.join("\n\n"));
   }
@@ -505,8 +585,8 @@ export function openApiToMarkdown(doc: OpenAPIDocumentData, deref: Deref = creat
 /**
  * Builds a self-contained Markdown snippet for a single OpenAPI endpoint:
  * doc info + servers (so the snippet stands alone without the rest of the
- * document) followed by that one endpoint's fully-dereferenced parameters,
- * request body, and responses, as opposed to `openApiToMarkdown`'s
+ * document) followed by that one endpoint's parameters, request body, and
+ * responses, then every component schema those reference, as opposed to `openApiToMarkdown`'s
  * whole-document export. Backs the "Agent Prompt" entry in the endpoint's
  * code-sample dropdown (components/CodeSamples.tsx).
  */
@@ -529,7 +609,9 @@ export function openApiEndpointToMarkdown(doc: OpenAPIDocumentData, method: Http
     sections.push(serverSections.join("\n"));
   }
 
-  sections.push(endpointSectionToMarkdown(method, path, op, deref, doc.components?.securitySchemes, doc.security));
+  const named = createNamedSchemas(doc.components?.schemas, deref);
+  sections.push(endpointSectionToMarkdown(method, path, op, deref, named, doc.components?.securitySchemes, doc.security));
+  sections.push(referencedSchemasToMarkdown(named, deref));
 
   return sections.filter(Boolean).join("\n\n");
 }
