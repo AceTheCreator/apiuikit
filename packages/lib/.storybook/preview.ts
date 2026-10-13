@@ -17,7 +17,9 @@ const preview: Preview = {
           "AsyncAPIRenderer",
           "Info",
           "Messages",
+          "Message",
           "Operations",
+          "Operation",
           "Schemas",
           "Servers",
         ];
@@ -25,10 +27,12 @@ const preview: Preview = {
           "OpenAPI",
           "OpenAPIRenderer",
           "Endpoints",
+          "Endpoint",
           "Info",
           "Schemas",
           "Servers",
           "Webhooks",
+          "Webhook",
         ];
 
         const aRoot = a.title.split("/")[0] ?? "";

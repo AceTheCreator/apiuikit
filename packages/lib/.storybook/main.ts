@@ -37,6 +37,14 @@ const config: StorybookConfig = {
           { find: /^apiuikit$/, replacement: fileURLToPath(new URL("../src/index.ts", import.meta.url)) },
         ],
       },
+      // The aliases above don't reach dependency pre-bundling: esbuild would
+      // inline the *built* `apiuikit/plugin` into the try-it chunks, and the
+      // Try it button would throw "must be used within a document provider"
+      // under a correct provider. Served unbundled, their imports go through
+      // the aliases like any source file.
+      optimizeDeps: {
+        exclude: ["@apiuikit/openapi-try-it-plugin", "@apiuikit/ws-try-it-plugin"],
+      },
     });
   },
 };

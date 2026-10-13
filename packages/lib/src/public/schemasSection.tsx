@@ -1,4 +1,5 @@
 import { useContext, useMemo } from "react";
+import type { ReactNode } from "react";
 import { DocumentContext } from "../contexts";
 import { AsyncAPIDocumentProvider } from "../containers/AsyncAPI/AsyncAPIDocumentProvider";
 import { OpenAPIDocumentProvider } from "../containers/OpenAPI/OpenAPIDocumentProvider";
@@ -8,7 +9,11 @@ import type { ApiuikitPlugin } from "../plugins/types";
 import { AsyncAPIDocumentData, SchemaNodeData } from "../types/schema";
 import { OpenAPIDocumentData } from "../types/openapi";
 import SchemasContainer from "../containers/Schema/Schemas";
-import type { SectionLayout } from "../components/Section";
+import SchemaCard from "../containers/Schema/SchemaCard";
+import Section, { type SectionLayout } from "../components/Section";
+import { resolveSchemaInput } from "../helpers/schemaFormat";
+import { useProtobufConverterReady } from "../helpers/protobuf/lazyProtoToJsonSchema";
+import { useNotFoundWarning } from "./useNotFoundWarning";
 
 /**
  * The one schemas section, for either spec. `components.schemas` is the exact
@@ -21,17 +26,31 @@ import type { SectionLayout } from "../components/Section";
  */
 
 export interface SchemasSectionProps {
-  /** An AsyncAPI or OpenAPI document. Required standalone; unnecessary (and ignored) inside a provider. */
+  /**
+   * The parsed AsyncAPI or OpenAPI JSON, for example a JSON file you imported.
+   * Pass it when this component is on the page by itself.
+   * Inside AsyncAPIProvider or OpenAPIProvider, the document comes from there, and a value passed here is ignored.
+   */
   document?: AsyncAPIDocumentData | OpenAPIDocumentData;
-  /** Only applied when this section sets up its own context (standalone). */
+  /**
+   * Theme and display options, such as schema expansion.
+   * Used when this component loads the document itself.
+   * Inside a provider, set `config` on the provider.
+   * See [Configuration](https://apiuikit.com/docs/configuration).
+   */
   config?: ConfigInterface;
-  /** Only applied when this section sets up its own context (standalone). When
-   * composed under a provider, that provider's own `plugins` apply. */
+  /**
+   * Plugins for this component.
+   * Used when this component loads the document itself.
+   * Inside a provider, set `plugins` on the provider.
+   * See [Plugins](https://apiuikit.com/docs/plugins).
+   */
   plugins?: ApiuikitPlugin[];
   /**
-   * `"columns"` (default) — reserved right gutter at large breakpoints.
-   * `"stacked"` — full-width single column; no prose max-width and no empty
-   * side space.
+   * `columns` (the default) leaves an empty column on the right so this section
+   * lines up with Info and Servers.
+   * `stacked` uses the full width; choose it when the section is on the page by itself.
+   * See [Composables](https://apiuikit.com/docs/sections).
    */
   layout?: SectionLayout;
 }
@@ -49,18 +68,30 @@ function SchemasBody({ layout }: { layout?: SectionLayout }) {
   return <SchemasContainer schemas={schemas} layout={layout} />;
 }
 
-export function Schemas({ document, config, plugins, layout }: SchemasSectionProps) {
+/**
+ * Renders `children` inside the ambient document context if there is one,
+ * otherwise resolves `document` and sets up a provider itself. Shared by
+ * `Schemas` and `Schema`. Either spec's provider can supply what they read
+ * (`components.schemas` and `deref`), so there is no spec-mismatch case.
+ */
+function SchemaRoot({
+  document,
+  config,
+  plugins,
+  sectionName,
+  children,
+}: Omit<SchemasSectionProps, "layout"> & { sectionName: string; children: ReactNode }) {
   const ambient = useContext(DocumentContext);
   const resolved = useMemo(
     () => (document ? resolveDocument(document) : null),
     [document],
   );
 
-  if (ambient) return <SchemasBody layout={layout} />;
+  if (ambient) return <>{children}</>;
 
   if (!resolved) {
     throw new Error(
-      "The Schemas section needs a `document` prop unless it is rendered inside " +
+      `The ${sectionName} section needs a \`document\` prop unless it is rendered inside ` +
         "<AsyncAPIProvider> or <OpenAPIProvider>.",
     );
   }
@@ -71,15 +102,76 @@ export function Schemas({ document, config, plugins, layout }: SchemasSectionPro
   if (isOpenAPI(resolved)) {
     return (
       <OpenAPIDocumentProvider document={resolved} config={config} plugins={plugins}>
-        <SchemasBody layout={layout} />
+        {children}
       </OpenAPIDocumentProvider>
     );
   }
 
   return (
     <AsyncAPIDocumentProvider document={resolved} config={config} plugins={plugins}>
-      <SchemasBody layout={layout} />
+      {children}
     </AsyncAPIDocumentProvider>
+  );
+}
+
+/**
+ * The schemas in an AsyncAPI or OpenAPI document. Each one is an expandable
+ * tree of its properties. The same component works for both specs.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * AsyncAPIProvider or OpenAPIProvider and pass `document` to the provider instead.
+ */
+export function Schemas({ layout, ...rootProps }: SchemasSectionProps) {
+  return (
+    <SchemaRoot {...rootProps} sectionName="Schemas">
+      <SchemasBody layout={layout} />
+    </SchemaRoot>
+  );
+}
+
+export interface SchemaSectionProps extends SchemasSectionProps {
+  /** The schema's key under `components.schemas`. */
+  name: string;
+}
+
+function SchemaBody({ name, layout }: { name: string; layout?: SectionLayout }) {
+  const context = useContext(DocumentContext);
+  const deref = context?.deref;
+  const schema = (context?.document?.components?.schemas as Record<string, SchemaNodeData> | undefined)?.[name];
+  // Re-resolves once the (lazy-loaded) Protobuf converter becomes available —
+  // see lazyProtoToJsonSchema.ts and the identical memo in Schemas.tsx.
+  const protobufReady = useProtobufConverterReady();
+  const resolved = useMemo(
+    () => (schema && deref ? resolveSchemaInput(schema, deref) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schema, deref, protobufReady],
+  );
+  useNotFoundWarning(!schema, `Schema: no schema "${name}" in components.schemas.`);
+  if (!resolved) return null;
+  return (
+    <div className="flex justify-center w-full">
+      <Section
+        content={<SchemaCard schemaName={name} resolved={resolved} />}
+        stickySideContent={false}
+        layout={layout}
+      />
+    </div>
+  );
+}
+
+/**
+ * One schema from an AsyncAPI or OpenAPI document, as the same card the
+ * Schemas section shows for it.
+ *
+ *   <Schema document={doc} name="Pet" />
+ *
+ * Renders nothing (and warns) when there is no schema by that name.
+ */
+export function Schema({ name, layout = "stacked", ...rootProps }: SchemaSectionProps) {
+  return (
+    <SchemaRoot {...rootProps} sectionName="Schema">
+      <SchemaBody name={name} layout={layout} />
+    </SchemaRoot>
   );
 }
 

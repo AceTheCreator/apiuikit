@@ -3,7 +3,7 @@ import { OpenAPIEndpoints } from "../public/openapiSections";
 import type { OpenAPIDocumentData } from "../types/openapi";
 import rawExample from "../config/examples/openapi-petstore.json";
 import { centeredDecorator } from "./documentContextDecorator";
-import { NoCanvasDocsPage } from "./noCanvasDocsPage";
+import { alignedAlone, layoutArgType, sectionDocs } from "./sectionDocs";
 
 const document = rawExample as unknown as OpenAPIDocumentData;
 
@@ -12,24 +12,32 @@ const meta = {
   component: OpenAPIEndpoints,
   decorators: [centeredDecorator],
   tags: ["autodocs"],
-  argTypes: {
-    layout: {
-      control: "radio",
-      options: ["columns", "stacked"],
-      description:
-        '`"columns"` (default) reserves a right gutter. `"stacked"` drops it for full-width standalone use.',
-    },
+  argTypes: layoutArgType,
+  parameters: {
+    docs: sectionDocs({
+      summary:
+        "A table of every endpoint in an OpenAPI document. Each row shows the path and HTTP method. Click a row to open a panel with the parameters, request body, responses, and security.",
+      stories: "Default or Stacked",
+      spec: "OpenAPI",
+      provider: "OpenAPIProvider",
+      alone: alignedAlone("Endpoints"),
+      importNames: ["OpenAPIEndpoints", "OpenAPIInfo", "OpenAPIProvider"],
+      componentName: "OpenAPIEndpoints",
+      composedChildren: `  <OpenAPIInfo />
+  <OpenAPIEndpoints />`,
+    }),
   },
-  parameters: { docs: { page: NoCanvasDocsPage } },
 } satisfies Meta<typeof OpenAPIEndpoints>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** Columns layout: an empty column on the right, so the table lines up with Info and Servers. Click a row to open the detail panel. */
 export const Default: Story = {
   args: { document, layout: "columns" },
 };
 
+/** Full width. Use this when Endpoints is the only section on the page. */
 export const Stacked: Story = {
   args: { document, layout: "stacked" },
 };

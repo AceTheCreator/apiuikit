@@ -66,6 +66,47 @@ Because composition doesn't rely on a slot API, dropping in a custom implementat
 
 Any component rendered inside `AsyncAPIProvider` can call `useAsyncAPIDocument()` to read the resolved document, the same way the built-in sections do.
 
+## Rendering a single item
+
+The sections above each render a whole collection. To show **one** endpoint, webhook, operation, message, or schema (say, next to the prose on a guide page), use the singular component instead. It renders that item inline as a card: the same header and detail the list's side panel shows, but with no table and no panel.
+
+```tsx
+import { OpenAPIEndpoint, OpenAPIWebhook, AsyncAPIOperation, AsyncAPIMessage, Schema } from "apiuikit";
+
+<OpenAPIEndpoint document={petstore} operationId="createPet" />
+<OpenAPIEndpoint document={petstore} method="get" path="/pets/{petId}" />
+<OpenAPIWebhook document={petstore} name="newPet" />
+<AsyncAPIOperation document={streetlights} operationId="receiveLightMeasurement" />
+<AsyncAPIMessage document={streetlights} messageId="lightMeasured" />
+<Schema document={petstore} name="Pet" />   // AsyncAPI or OpenAPI, like `Schemas`
+```
+
+They follow the same rules as the other sections: pass `document` when one stands alone, or put several inside a provider and pass `document` once to the provider. The provider form is the natural way to mix items into your own page:
+
+```tsx
+<OpenAPIProvider document={petstore}>
+  <h2>Adding a pet</h2>
+  <p>Send the new pet in the request body.</p>
+  <OpenAPIEndpoint operationId="createPet" />
+  <p>The body looks like this:</p>
+  <Schema name="Pet" />
+</OpenAPIProvider>
+```
+
+| Component           | Picks the item with                                      | Looks in                    |
+|---------------------|----------------------------------------------------------|-----------------------------|
+| `OpenAPIEndpoint`   | `operationId`, **or** `method` + `path`                  | `paths`                     |
+| `OpenAPIWebhook`    | `name`, plus `method` if the webhook declares more than one | `webhooks`               |
+| `AsyncAPIOperation` | `operationId` (the key under `operations`)               | `operations`                |
+| `AsyncAPIMessage`   | `messageId`                                              | `components.messages`       |
+| `Schema`            | `name`                                                   | `components.schemas`        |
+
+They also take `config`, `plugins`, and `layout` like the other sections, with one difference: `layout` defaults to `"stacked"` (full width), since a single item is usually embedded on its own.
+
+`OpenAPIEndpoint` and `OpenAPIWebhook` take an optional `onNavigate(operationId)`. A response `link` that points at another operation calls it, so you can scroll or route to wherever your page shows that operation. Without it, those links render as plain text.
+
+If nothing in the document matches, the component renders nothing and logs a `[apiuikit]` warning to the console.
+
 ## Error handling
 
 Unlike `AsyncAPI` and `OpenAPI`, which wrap themselves in an error boundary, sections and providers render unwrapped. That's deliberate: you're building the layout, so where a failure should be contained (and what should show in its place) is your call, not the library's. A boundary the library forced around every section would also mean a malformed schema quietly renders a fallback card in the middle of your page, which may not be what you want.
@@ -114,5 +155,6 @@ This covers synchronous render errors, which is all a React error boundary can s
 |-------------------------------------------------------------------|---------------------------------------|
 | Want the full documentation page, sidebar and search included   | `AsyncAPI` (see [no-parser](./no-parser.md) / [with-parser](./with-parser.md)) |
 | Want one section in a page you're already building              | A standalone section, e.g. `<AsyncAPIOperations document={doc} />` |
+| Want one endpoint, operation, message, or schema on its own      | A single-item component, e.g. `<OpenAPIEndpoint document={doc} operationId="createPet" />` |
 | Want several sections in a custom layout                        | `AsyncAPIProvider` wrapping multiple sections |
 | Want to replace one section with your own implementation         | `AsyncAPIProvider` + your component in place of the built-in one |

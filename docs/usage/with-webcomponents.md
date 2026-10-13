@@ -11,7 +11,7 @@ Use apiuikit from Vue, Angular, Svelte, plain HTML, or any other environment tha
 | `<apiuikit-openapi-renderer>` | You have a raw OpenAPI YAML or JSON string |
 | `<apiuikit-openapi>` | You already have a parsed OpenAPI document object |
 
-There are also standalone elements for individual document sections (servers, operations, messages, schemas, info) — see [Section elements](#section-elements) below.
+There are also standalone elements for individual document sections (servers, operations, messages, schemas, info), and for single items within them (one operation, message, endpoint, webhook, or schema). See [Section elements](#section-elements) below.
 
 If you're building a React app, prefer the [React entry without parser](./no-parser.md) or [React entry with parser](./with-parser.md) according to your usecase instead. The `plugins` prop is React-only today — these custom elements don't accept it. See [Plugins](./plugins.md).
 
@@ -41,15 +41,20 @@ import "@apiuikit/web-component/asyncapi-renderer";  // <apiuikit-asyncapi-rende
 import "@apiuikit/web-component/asyncapi";            // <apiuikit-asyncapi> only
 import "@apiuikit/web-component/asyncapi-servers";    // <apiuikit-asyncapi-servers> only
 import "@apiuikit/web-component/asyncapi-operations"; // <apiuikit-asyncapi-operations> only
+import "@apiuikit/web-component/asyncapi-operation";  // <apiuikit-asyncapi-operation> only
 import "@apiuikit/web-component/asyncapi-messages";   // <apiuikit-asyncapi-messages> only
+import "@apiuikit/web-component/asyncapi-message";    // <apiuikit-asyncapi-message> only
 import "@apiuikit/web-component/asyncapi-info";       // <apiuikit-asyncapi-info> only
 import "@apiuikit/web-component/openapi-renderer";    // <apiuikit-openapi-renderer> only
 import "@apiuikit/web-component/openapi";             // <apiuikit-openapi> only
 import "@apiuikit/web-component/openapi-servers";     // <apiuikit-openapi-servers> only
 import "@apiuikit/web-component/openapi-endpoints";   // <apiuikit-openapi-endpoints> only
+import "@apiuikit/web-component/openapi-endpoint";    // <apiuikit-openapi-endpoint> only
 import "@apiuikit/web-component/openapi-webhooks";    // <apiuikit-openapi-webhooks> only
+import "@apiuikit/web-component/openapi-webhook";     // <apiuikit-openapi-webhook> only
 import "@apiuikit/web-component/openapi-info";        // <apiuikit-openapi-info> only
 import "@apiuikit/web-component/schemas";             // <apiuikit-schemas> only — shared by both spec types
+import "@apiuikit/web-component/schema";              // <apiuikit-schema> only
 import "@apiuikit/web-component/style.css";
 ```
 
@@ -169,6 +174,51 @@ el.spec = parsedAsyncApiDocument; // or a parsed OpenAPI document — both work
 ```
 
 Each element is standalone — it resolves its own copy of `spec` independently, so there's no shared-context "provider" mode across separate custom elements the way there is in the [React API](./with-parser.md). If you need several sections sharing one resolved document without each re-resolving it, or you're building a React app, use apiuikit's React `AsyncAPIProvider`/`OpenAPIProvider` and section components directly instead of the web components.
+
+### Single-item elements
+
+To embed one operation, message, endpoint, webhook, or schema inline (in a guide, a changelog entry, or next to your own prose), use a single-item element. Each one renders that item's full detail without the list or the side panel, and mirrors the React component of the same name (`AsyncAPIOperation`, `AsyncAPIMessage`, `OpenAPIEndpoint`, `OpenAPIWebhook`, `Schema`).
+
+| Element | Picks the item with | Renders |
+|---|---|---|
+| `<apiuikit-asyncapi-operation>` | `operation-id` | One key under the document's `operations` |
+| `<apiuikit-asyncapi-message>` | `message-id` | One key under `components.messages` |
+| `<apiuikit-openapi-endpoint>` | `operation-id`, or `method` + `path` | One endpoint under `paths` |
+| `<apiuikit-openapi-webhook>` | `name` (+ optional `method`) | One OpenAPI 3.1 webhook |
+| `<apiuikit-schema>` | `name` | One key under `components.schemas`, for **either** spec type |
+
+They take the same `spec`, `config`, and `layout` props as the section elements, plus the selector attributes above. `layout` defaults to `"stacked"` here, since a single item is usually placed on its own. The selector attributes can also be set as camelCase properties (`el.operationId`, `el.messageId`, `el.name`, `el.method`, `el.path`).
+
+```html
+<apiuikit-asyncapi-operation id="op" operation-id="turnOn"></apiuikit-asyncapi-operation>
+<apiuikit-openapi-endpoint id="add" operation-id="addPet"></apiuikit-openapi-endpoint>
+<apiuikit-openapi-endpoint id="get" method="get" path="/pet/{petId}"></apiuikit-openapi-endpoint>
+<apiuikit-openapi-webhook id="hook" name="newPet"></apiuikit-openapi-webhook>
+<apiuikit-schema id="pet" name="Pet"></apiuikit-schema>
+
+<script type="module">
+  import "@apiuikit/web-component";
+  import "@apiuikit/web-component/style.css";
+
+  for (const id of ["add", "get", "hook", "pet"]) {
+    document.getElementById(id).spec = parsedOpenApiDocument;
+  }
+  document.getElementById("op").spec = parsedAsyncApiDocument;
+</script>
+```
+
+On `<apiuikit-openapi-endpoint>`, `operation-id` wins when both selectors are set. `method` is case-insensitive. On `<apiuikit-openapi-webhook>`, `method` defaults to the first one the webhook declares, which is usually its only one.
+
+If nothing matches, the element renders nothing and logs a console warning. The element also renders nothing until `spec` and its selector are both set.
+
+`<apiuikit-openapi-endpoint>` and `<apiuikit-openapi-webhook>` also take an `onNavigate` property (JavaScript only). It is called with an `operationId` when a reader follows a response link to another operation, so your page can scroll or route to wherever it shows that operation. Without it, those links render as plain text.
+
+```js
+const el = document.querySelector("apiuikit-openapi-endpoint");
+el.onNavigate = (operationId) => {
+  document.querySelector(`apiuikit-openapi-endpoint[operation-id="${operationId}"]`)?.scrollIntoView();
+};
+```
 
 ## Setting props from HTML vs JavaScript
 

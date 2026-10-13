@@ -1,5 +1,30 @@
 # @apiuikit/web-component
 
+## 2.2.0
+
+### Minor Changes
+
+- cf88cc1: AsyncAPI Operations table: when an operation has a `title`, show it as the row's primary label with the channel address beneath in smaller text. Operations without a title render as before.
+
+### Patch Changes
+
+- Updated dependencies [cf88cc1]
+  - apiuikit@2.2.0
+
+## 2.1.0
+
+### Minor Changes
+
+- 662cff0: Add single-item elements that embed one item inline, mirroring the React single-item sections: `<apiuikit-openapi-endpoint>` (by `operation-id`, or `method` + `path`), `<apiuikit-openapi-webhook>` (by `name`, optional `method`), `<apiuikit-asyncapi-operation>` (by `operation-id`), `<apiuikit-asyncapi-message>` (by `message-id`), and the spec-agnostic `<apiuikit-schema>` (by `name`). Each is also available as its own subpath import (e.g. `@apiuikit/web-component/openapi-endpoint`). The endpoint and webhook elements accept an `onNavigate` property for following response links to other operations.
+
+## 2.0.1
+
+### Patch Changes
+
+- 29a34bf: Add npm keywords so the packages are discoverable in npm search.
+- Updated dependencies [29a34bf]
+  - apiuikit@2.0.1
+
 ## 2.0.0
 
 ### Major Changes

@@ -8,8 +8,9 @@ import type { ApiuikitPlugin } from "../plugins/types";
 export interface GenericSectionProps<T> {
   /** The document. Required standalone; unnecessary (and ignored) when rendered inside the matching provider. */
   document?: T;
+  /** Theme, which sections to show, and other display options. See [Configuration](https://apiuikit.com/docs/configuration). */
   config?: ConfigInterface;
-  /** Third-party plugins. Only applied standalone (this section sets up its own provider); composed under an ambient provider, that provider's own `plugins` apply instead. */
+  /** Third-party plugins. Only applied standalone (this section sets up its own provider); composed under an ambient provider, that provider's own `plugins` apply instead. See [Plugins](https://apiuikit.com/docs/plugins). */
   plugins?: ApiuikitPlugin[];
 }
 

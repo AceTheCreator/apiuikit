@@ -1,4 +1,3 @@
-import { lazy } from "react";
 import { ChannelAddress } from "../../components/ChannelAddress";
 import Section, { type SectionLayout } from "../../components/Section";
 import { SidePanel } from "../../components/SidePanel";
@@ -8,18 +7,7 @@ import { Channel } from "../../types/asyncapi/Channel";
 import { Parameter } from "../../types/asyncapi/Parameter";
 import { Operation as OperationType } from "../../types/asyncapi/Operation";
 import Operation from "./Operation";
-import { useDocumentContext } from "../../contexts";
-import { PluginBoundary } from "../../plugins/PluginSlot";
-
-// The built-in WebSocket "Try it" panel — the AsyncAPI counterpart to the
-// OpenAPI one in Paths.tsx, loaded the same way and for the same reasons: a
-// dependency kept external in the build, and a lazy chunk gated on
-// `show.tryIt` at the call site so it's never fetched while the flag is off.
-const WsHeaderButton = lazy(() =>
-  import("@apiuikit/ws-try-it-plugin").then(({ WsHeaderButton: component }) => ({
-    default: component,
-  })),
-);
+import { OperationHeaderActions, OperationTitle } from "./OperationHeader";
 
 interface OperationsProps {
   operations: Record<string, OperationType>;
@@ -32,11 +20,6 @@ interface OperationsProps {
 
 export default function Operations({ operations, selectedKey = null, onSelectKey, focusSection = null, layout }: OperationsProps) {
   const setSelectedKey = (key: string | null) => onSelectKey?.(key);
-  // Read spec-agnostically and narrowed, as Paths.tsx does for its header:
-  // a mis-nested section must not crash on this.
-  const context = useDocumentContext();
-  const document = context.specType === "asyncapi" ? context.document : null;
-  const showTryIt = context.showTryIt === true;
 
   if (!Object.keys(operations).length) {
     return null;
@@ -52,6 +35,10 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
     const address = channel?.address;
     const parameters = channel?.parameters as unknown as Record<string, Parameter> | undefined;
     const actionLabel = op.action?.toUpperCase() ?? "";
+    // Several operations often share one channel (a single WebSocket
+    // connection, say), so the address alone can't tell rows apart. A title,
+    // when the spec gives one, leads instead with the address beneath it.
+    const title = op.title?.trim() || undefined;
     const isSelected = selectedKey === key;
 
     return (
@@ -63,7 +50,7 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
         // make it reachable and operable by keyboard, matching the click behavior.
         role="button"
         tabIndex={0}
-        aria-label={`${actionLabel || "Operation"} ${address ?? key}`}
+        aria-label={`${actionLabel || "Operation"} ${title ?? address ?? key}`}
         aria-current={isSelected ? "true" : undefined}
         onKeyDown={(event) => {
           if (event.key !== "Enter" && event.key !== " ") return;
@@ -73,7 +60,22 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
         className={`cursor-pointer hover:bg-neutral-50 ${isSelected ? "bg-neutral-50" : ""}`}
       >
         <td className="px-6 py-4 max-w-0 w-full">
-          {address && <ChannelAddress address={address} parameters={parameters} truncate />}
+          {title ? (
+            <div className="min-w-0">
+              <div className="truncate text-sm font-medium text-foreground">{title}</div>
+              {address && (
+                <ChannelAddress
+                  address={address}
+                  parameters={parameters}
+                  truncate
+                  padded={false}
+                  className="text-xs text-foreground-muted mt-0.5"
+                />
+              )}
+            </div>
+          ) : (
+            address && <ChannelAddress address={address} parameters={parameters} truncate />
+          )}
         </td>
         <td className="px-6 py-4 w-32">
           <MethodBadge method={op.action} className="w-24" />
@@ -82,28 +84,11 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
     );
   });
 
-  const selectedChannel = selectedOp ? (selectedOp.channel as unknown as Channel) : null;
-  const panelTitle =
-    selectedOp && selectedChannel?.address ? (
-      <div className="flex items-center gap-2 min-w-0">
-        <MethodBadge method={selectedOp.action} />
-        <div className="min-w-0 flex-1 overflow-hidden">
-          {/* Clipped to one line, same as the endpoint panel's header: a long
-              channel address otherwise wraps and pushes the close button
-              around. Its ellipsis peeks the full address on hover/focus. */}
-          <ChannelAddress
-            address={selectedChannel.address}
-            parameters={
-              selectedChannel.parameters as unknown as Record<string, Parameter>
-            }
-            truncate
-            peek
-          />
-        </div>
-      </div>
-    ) : (
-      selectedKey ?? "Operation"
-    );
+  const panelTitle = selectedOp && selectedKey ? (
+    <OperationTitle op={selectedOp} operationKey={selectedKey} />
+  ) : (
+    selectedKey ?? "Operation"
+  );
 
   const content = (
     <div className="bg-surface rounded-lg border border-border overflow-hidden">
@@ -141,17 +126,7 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
         side="right"
         onClose={() => setSelectedKey(null)}
         title={panelTitle}
-        headerActions={
-          // The button renders nothing for an operation with no WebSocket
-          // server, so non-WS documents get an unchanged header.
-          showTryIt && selectedOp && selectedKey && document && (
-            <div className="flex shrink-0 items-center gap-2">
-              <PluginBoundary label="built-in:asyncapi.operation.tryIt">
-                <WsHeaderButton document={document} operationId={selectedKey} />
-              </PluginBoundary>
-            </div>
-          )
-        }
+        headerActions={selectedOp && selectedKey && <OperationHeaderActions operationKey={selectedKey} />}
       >
         {selectedOp && (
           // Remounts on every operation switch — see Paths.tsx's identical `key`.

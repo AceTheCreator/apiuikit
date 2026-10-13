@@ -9,10 +9,13 @@ import { AsyncAPIDocumentData } from "../types/schema";
 import { MessageObject } from "../types/asyncapi/MessageObject";
 import ServersContainer from "../containers/Server/Servers";
 import OperationsContainer from "../containers/Operation/Operations";
+import OperationCard from "../containers/Operation/OperationCard";
 import MessagesContainer from "../containers/Messages/Messages";
+import MessageCard from "../containers/Messages/MessageCard";
 import Information from "../containers/Information/Information";
 import type { SectionLayout } from "../components/Section";
 import { createSectionRoot } from "./createSectionRoot";
+import { useNotFoundWarning } from "./useNotFoundWarning";
 
 /**
  * Standalone, composable section components. Each renders one part of an
@@ -33,19 +36,32 @@ import { createSectionRoot } from "./createSectionRoot";
  */
 
 export interface SectionProps {
-  /** The AsyncAPI document. Required standalone; unnecessary (and ignored)
-   * when rendered inside <AsyncAPIProvider> or <AsyncAPI>. */
+  /**
+   * The parsed AsyncAPI JSON, for example a JSON file you imported.
+   * Pass it when this component is on the page by itself.
+   * Inside AsyncAPIProvider or AsyncAPI, the document comes from there, and a value passed here is ignored.
+   */
   document?: AsyncAPIDocumentData;
-  /** Only applied when this section sets up its own context (standalone). When
-   * composed under a provider, config comes from that provider. */
+  /**
+   * Theme and display options, such as schema expansion.
+   * Used when this component loads the document itself.
+   * Inside AsyncAPIProvider, set `config` on the provider.
+   * See [Configuration](https://apiuikit.com/docs/configuration).
+   */
   config?: ConfigInterface;
-  /** Only applied when this section sets up its own context (standalone). When
-   * composed under <AsyncAPIProvider>, that provider's own `plugins` apply. */
+  /**
+   * Plugins for this component.
+   * Used when this component loads the document itself.
+   * Inside AsyncAPIProvider, set `plugins` on the provider.
+   * See [Plugins](https://apiuikit.com/docs/plugins).
+   */
   plugins?: ApiuikitPlugin[];
   /**
-   * `"columns"` (default) — reserved right gutter at large breakpoints.
-   * `"stacked"` — full-width single column; no prose max-width and no empty
-   * side space. For Info/Servers, side content stacks below the main content.
+   * `columns` (the default) leaves an empty column on the right so this section
+   * lines up with Info and Servers.
+   * `stacked` uses the full width; choose it when the section is on the page by itself.
+   * For Info and Servers, `stacked` also moves the side content below the main content.
+   * See [Composables](https://apiuikit.com/docs/sections).
    */
   layout?: SectionLayout;
 }
@@ -62,9 +78,9 @@ export function AsyncAPIProvider({
 }: {
   /** The AsyncAPI document to resolve and share with sections inside. */
   document: AsyncAPIDocumentData;
-  /** UI configuration (theme, schema expansion defaults) shared with sections inside. */
+  /** UI configuration (theme, schema expansion defaults) shared with sections inside. See [Configuration](https://apiuikit.com/docs/configuration). */
   config?: ConfigInterface;
-  /** Third-party plugins shared with sections inside. */
+  /** Third-party plugins shared with sections inside. See [Plugins](https://apiuikit.com/docs/plugins). */
   plugins?: ApiuikitPlugin[];
   /** Section components (or your own), rendered with access to the shared document context. */
   children: ReactNode;
@@ -104,6 +120,13 @@ function ServersBody({ layout }: { layout?: SectionLayout }) {
   return <ServersContainer servers={document.servers} layout={layout} />;
 }
 
+/**
+ * The servers an AsyncAPI document can connect to. Choose a server to see its
+ * host, protocol, variables, and security.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * AsyncAPIProvider and pass `document` to the provider instead.
+ */
 export function AsyncAPIServers({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>
@@ -127,10 +150,49 @@ function OperationsBody({ layout }: { layout?: SectionLayout }) {
   );
 }
 
+/**
+ * A table of every operation in an AsyncAPI document. Each row shows the
+ * channel and whether the operation sends or receives. Click a row to open a
+ * panel with the description, messages, security, bindings, and reply.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * AsyncAPIProvider and pass `document` to the provider instead.
+ */
 export function AsyncAPIOperations({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>
       <OperationsBody layout={layout} />
+    </SectionRoot>
+  );
+}
+
+// --- Single operation ------------------------------------------------------
+
+export interface AsyncAPIOperationProps extends SectionProps {
+  /** The operation's key under the document's top-level `operations`. */
+  operationId: string;
+}
+
+function AsyncAPIOperationBody({ operationId, layout }: { operationId: string; layout?: SectionLayout }) {
+  const document = useDocument();
+  const op = document.operations?.[operationId];
+  useNotFoundWarning(!op, `AsyncAPIOperation: no operation "${operationId}" in this document.`);
+  if (!op) return null;
+  return <OperationCard operationKey={operationId} op={op} layout={layout} />;
+}
+
+/**
+ * One operation, rendered inline: its header and full detail (messages,
+ * bindings, security, code samples), without the list or the side panel.
+ *
+ *   <AsyncAPIOperation document={doc} operationId="receiveLightMeasurement" />
+ *
+ * Renders nothing (and warns) when the operation doesn't exist.
+ */
+export function AsyncAPIOperation({ operationId, layout = "stacked", ...providerProps }: AsyncAPIOperationProps) {
+  return (
+    <SectionRoot {...providerProps}>
+      <AsyncAPIOperationBody operationId={operationId} layout={layout} />
     </SectionRoot>
   );
 }
@@ -147,10 +209,48 @@ function MessagesBody({ layout }: { layout?: SectionLayout }) {
   );
 }
 
+/**
+ * A table of the messages in an AsyncAPI document. Each row shows the message
+ * name and summary. Expand a row to see its payload and headers.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * AsyncAPIProvider and pass `document` to the provider instead.
+ */
 export function AsyncAPIMessages({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>
       <MessagesBody layout={layout} />
+    </SectionRoot>
+  );
+}
+
+// --- Single message --------------------------------------------------------
+
+export interface AsyncAPIMessageProps extends SectionProps {
+  /** The message's key under `components.messages`. */
+  messageId: string;
+}
+
+function AsyncAPIMessageBody({ messageId, layout }: { messageId: string; layout?: SectionLayout }) {
+  const document = useDocument();
+  const message = document.components?.messages?.[messageId] as MessageObject | undefined;
+  useNotFoundWarning(!message, `AsyncAPIMessage: no message "${messageId}" in components.messages.`);
+  if (!message) return null;
+  return <MessageCard messageKey={messageId} message={message} layout={layout} />;
+}
+
+/**
+ * One `components.messages` entry, rendered on its own with its payload and
+ * headers open.
+ *
+ *   <AsyncAPIMessage document={doc} messageId="lightMeasured" />
+ *
+ * Renders nothing (and warns) when the message doesn't exist.
+ */
+export function AsyncAPIMessage({ messageId, layout = "stacked", ...providerProps }: AsyncAPIMessageProps) {
+  return (
+    <SectionRoot {...providerProps}>
+      <AsyncAPIMessageBody messageId={messageId} layout={layout} />
     </SectionRoot>
   );
 }
@@ -167,6 +267,13 @@ function InfoBody({ layout }: { layout?: SectionLayout }) {
   return <Information {...document.info} layout={layout} />;
 }
 
+/**
+ * The title, description, and version of an AsyncAPI document, with license,
+ * contact, and external docs beside it.
+ *
+ * On its own, pass `document`. With other sections, render it inside
+ * AsyncAPIProvider and pass `document` to the provider instead.
+ */
 export function AsyncAPIInfo({ layout, ...providerProps }: SectionProps) {
   return (
     <SectionRoot {...providerProps}>

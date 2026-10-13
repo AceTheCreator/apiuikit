@@ -91,18 +91,20 @@ export {
   AsyncAPIProvider,
   AsyncAPIServers,
   AsyncAPIOperations,
+  AsyncAPIOperation,
   AsyncAPIMessages,
+  AsyncAPIMessage,
   AsyncAPIInfo,
 } from './public/sections';
-export type { SectionProps } from './public/sections';
+export type { SectionProps, AsyncAPIOperationProps, AsyncAPIMessageProps } from './public/sections';
 export type { SectionLayout } from './components/Section';
 
 // One schemas section for both specs: `components.schemas` has the identical
 // shape in AsyncAPI and OpenAPI documents and nothing else about the document
 // is read, so there is nothing for a spec-specific variant to do. The two old
 // names stay as deprecated aliases.
-export { Schemas, AsyncAPISchemas, OpenAPISchemas } from './public/schemasSection';
-export type { SchemasSectionProps } from './public/schemasSection';
+export { Schemas, Schema, AsyncAPISchemas, OpenAPISchemas } from './public/schemasSection';
+export type { SchemasSectionProps, SchemaSectionProps } from './public/schemasSection';
 
 // Composable standalone OpenAPI sections — mirrors the AsyncAPI ones above,
 // see ./public/openapiSections.
@@ -110,7 +112,9 @@ export {
   OpenAPIProvider,
   OpenAPIServers,
   OpenAPIEndpoints,
+  OpenAPIEndpoint,
   OpenAPIWebhooks,
+  OpenAPIWebhook,
   OpenAPIInfo,
 } from './public/openapiSections';
-export type { OpenAPISectionProps } from './public/openapiSections';
+export type { OpenAPISectionProps, OpenAPIEndpointProps, OpenAPIWebhookProps } from './public/openapiSections';

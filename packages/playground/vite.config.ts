@@ -77,6 +77,7 @@ export default defineConfig(({ mode }) => {
             /^@codemirror\//,
             /^@uiw\//,
             /^@asyncapi\//,
+            /^lz-string/,
           ],
         },
       },
