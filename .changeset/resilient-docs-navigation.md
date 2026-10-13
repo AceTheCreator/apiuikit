@@ -1,5 +1,6 @@
 ---
 "apiuikit": minor
+"@apiuikit/web-component": minor
 ---
 
 Render usable OpenAPI and AsyncAPI content despite validation errors, with a shorter quick-nav rail and consistent section spacing on narrow layouts.
