@@ -1,5 +1,7 @@
 import { OpenAPIDocumentData, OpenAPIPathItemData, HTTP_METHODS } from "../types/openapi";
 import { addSchemaEntries, normalizeString, SearchEntry } from "./searchIndex";
+import { createDocumentDeref } from "./jsonPointer";
+import { createNamedSchemaLookup } from "./namedSchemas";
 
 export function buildOpenAPISearchIndex(openapi: OpenAPIDocumentData): SearchEntry[] {
   const entries: SearchEntry[] = [];
@@ -111,8 +113,9 @@ export function buildOpenAPISearchIndex(openapi: OpenAPIDocumentData): SearchEnt
   }
 
   if (openapi.components?.schemas) {
+    const namedSchemaOf = createNamedSchemaLookup(openapi.components.schemas, createDocumentDeref(openapi));
     for (const [key, schema] of Object.entries(openapi.components.schemas)) {
-      addSchemaEntries(entries, schema, key, key);
+      addSchemaEntries(entries, schema, key, key, namedSchemaOf);
     }
   }
 
