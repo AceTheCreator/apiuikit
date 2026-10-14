@@ -12,6 +12,7 @@ import { FetchSchema } from './components/FetchSchema'
 import { GitHubLink } from './components/GitHubLink'
 import { ResizeHandle } from './components/ResizeHandle'
 import { ShareButton } from './components/ShareButton'
+import { ThemePresetsMenu } from './components/ThemePresetsMenu'
 import { ThemeToggle } from './components/ThemeToggle'
 import { ViewToggle } from './components/ViewToggle'
 import { DEFAULT_SUGGESTED_SCHEMA, SUGGESTED_SCHEMAS } from './data/suggestedSchemas'
@@ -21,6 +22,8 @@ import { useResizableSplit } from './hooks/useResizableSplit'
 import { scrollbarStyle, UI_PALETTES } from './theme'
 import type { UiMode } from './theme'
 import { netlifyTheme } from './themes/netlify'
+import { applyPreset } from './themes/presets'
+import type { ThemePreset } from './themes/presets'
 import {
   clearShareId,
   createShare,
@@ -260,6 +263,18 @@ export function Playground({
     )
   }
 
+  // Same write-back as the mode toggle: the preset lands in the config text, so
+  // it persists, shares, and stays hand-editable like any other edit.
+  const handlePresetSelect = (preset: ThemePreset) => {
+    config.onChange(
+      JSON.stringify(
+        { ...config.value, theme: applyPreset(config.value.theme ?? {}, preset) },
+        null,
+        2,
+      ),
+    )
+  }
+
   const { containerRef, splitPercent, handlePointerDown, nudge } = useResizableSplit()
 
   return (
@@ -341,14 +356,34 @@ export function Playground({
                   <DiagnosticsPanel diagnostics={diagnostics} palette={palette} />
                 </>
               ) : (
-                <EditorPane
-                  ariaLabel="Config JSON"
-                  value={config.text}
-                  onChange={config.onChange}
-                  error={config.error}
-                  mode={uiMode}
-                  palette={palette}
-                />
+                <>
+                  <div
+                    style={{
+                      display: 'flex',
+                      padding: '8px',
+                      borderBottom: `1px solid ${palette.chromeBorder}`,
+                      background: palette.chromeBg,
+                      transition: 'background 150ms ease, border-color 150ms ease',
+                    }}
+                  >
+                    <ThemePresetsMenu
+                      palette={palette}
+                      theme={config.value.theme}
+                      onSelect={handlePresetSelect}
+                      // config.value is the last *valid* parse — applying over
+                      // invalid text would silently throw the user's edit away.
+                      disabled={config.error != null}
+                    />
+                  </div>
+                  <EditorPane
+                    ariaLabel="Config JSON"
+                    value={config.text}
+                    onChange={config.onChange}
+                    error={config.error}
+                    mode={uiMode}
+                    palette={palette}
+                  />
+                </>
               )}
             </div>
           </div>
