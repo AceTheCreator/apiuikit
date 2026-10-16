@@ -61,7 +61,7 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
       >
         <td className="px-6 py-4 max-w-0 w-full">
           {title ? (
-            <div className="truncate text-sm font-medium text-foreground" title={address}>
+            <div className="truncate text-sm font-medium text-foreground" title={address ?? undefined}>
               {title}
             </div>
           ) : (

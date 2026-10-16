@@ -33,7 +33,7 @@ export function OperationTitle({ op, operationKey }: { op: OperationType; operat
       <div className="flex items-center gap-2 min-w-0">
         <MethodBadge method={op.action} />
         {/* The address is dropped in favour of the title; hover still shows it. */}
-        <span className="min-w-0 flex-1 truncate" title={channel?.address}>
+        <span className="min-w-0 flex-1 truncate" title={channel?.address ?? undefined}>
           {title}
         </span>
       </div>
