@@ -37,7 +37,7 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
     const actionLabel = op.action?.toUpperCase() ?? "";
     // Several operations often share one channel (a single WebSocket
     // connection, say), so the address alone can't tell rows apart. A title,
-    // when the spec gives one, leads instead with the address beneath it.
+    // when the spec gives one, replaces it.
     const title = op.title?.trim() || undefined;
     const isSelected = selectedKey === key;
 
@@ -61,17 +61,8 @@ export default function Operations({ operations, selectedKey = null, onSelectKey
       >
         <td className="px-6 py-4 max-w-0 w-full">
           {title ? (
-            <div className="min-w-0">
-              <div className="truncate text-sm font-medium text-foreground">{title}</div>
-              {address && (
-                <ChannelAddress
-                  address={address}
-                  parameters={parameters}
-                  truncate
-                  padded={false}
-                  className="text-xs text-foreground-muted mt-0.5"
-                />
-              )}
+            <div className="truncate text-sm font-medium text-foreground" title={address}>
+              {title}
             </div>
           ) : (
             address && <ChannelAddress address={address} parameters={parameters} truncate />

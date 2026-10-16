@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import Operations from "../Operations";
+import { OperationTitle } from "../OperationHeader";
 import { DocumentContext } from "../../../contexts";
 import { DEFAULT_DEPTH_COLORS } from "../../../components/schema/depthColors";
 import type { AsyncAPIDocumentData } from "../../../types/schema";
@@ -14,7 +15,7 @@ const operations = {
   sendTicker: { action: OperationAction.SEND, channel },
 } as unknown as Record<string, OperationInterface>;
 
-function renderOperations() {
+function renderInDocument(ui: React.ReactElement) {
   return render(
     <DocumentContext.Provider
       value={{
@@ -30,18 +31,20 @@ function renderOperations() {
         showCodeSamples: true,
       }}
     >
-      <Operations operations={operations} />
+      {ui}
     </DocumentContext.Provider>,
   );
 }
 
+const renderOperations = () => renderInDocument(<Operations operations={operations} />);
+
 describe("Operations table", () => {
-  it("leads with the operation's title and keeps its address beneath", () => {
+  it("shows the operation's title in place of its address", () => {
     renderOperations();
 
     const row = screen.getByRole("button", { name: "RECEIVE Subscribe to a feed" });
     expect(within(row).getByText("Subscribe to a feed")).toBeInTheDocument();
-    expect(within(row).getByText("/v2")).toBeInTheDocument();
+    expect(within(row).queryByText("/v2")).not.toBeInTheDocument();
   });
 
   it("falls back to the address alone for an operation without a title", () => {
@@ -50,5 +53,20 @@ describe("Operations table", () => {
     const row = screen.getByRole("button", { name: "SEND /v2" });
     expect(within(row).getByText("/v2")).toBeInTheDocument();
     expect(within(row).queryByText("Subscribe to a feed")).not.toBeInTheDocument();
+  });
+});
+
+describe("OperationTitle (side panel header)", () => {
+  it("shows the operation's title in place of its address", () => {
+    renderInDocument(<OperationTitle op={operations.subscribe} operationKey="subscribe" />);
+
+    expect(screen.getByText("Subscribe to a feed")).toBeInTheDocument();
+    expect(screen.queryByText("/v2")).not.toBeInTheDocument();
+  });
+
+  it("shows the address for an operation without a title", () => {
+    renderInDocument(<OperationTitle op={operations.sendTicker} operationKey="sendTicker" />);
+
+    expect(screen.getByText("/v2")).toBeInTheDocument();
   });
 });

@@ -18,14 +18,27 @@ const WsHeaderButton = lazy(() =>
 );
 
 /**
- * An operation's identity: action badge and channel address. Shared by the
- * list's side-panel title (Operations.tsx) and the inline single-operation
- * card. Falls back to the operation key for a channel without an address.
+ * An operation's identity: action badge and its title, or the channel address
+ * when it has none. Shared by the list's side-panel title (Operations.tsx) and
+ * the inline single-operation card. Falls back to the operation key for an
+ * untitled operation on a channel without an address.
  */
 export function OperationTitle({ op, operationKey }: { op: OperationType; operationKey: string }) {
   // $refs (e.g. op.channel) are already inlined by resolveDocument /
   // @asyncapi/parser before the document reaches any component.
   const channel = op.channel as unknown as Channel | undefined;
+  const title = op.title?.trim() || undefined;
+  if (title) {
+    return (
+      <div className="flex items-center gap-2 min-w-0">
+        <MethodBadge method={op.action} />
+        {/* The address is dropped in favour of the title; hover still shows it. */}
+        <span className="min-w-0 flex-1 truncate" title={channel?.address}>
+          {title}
+        </span>
+      </div>
+    );
+  }
   if (!channel?.address) return <>{operationKey}</>;
   return (
     <div className="flex items-center gap-2 min-w-0">
