@@ -189,7 +189,7 @@ export function ExamplesMenu({ palette, onSelect }: ExamplesMenuProps) {
               >
                 {/* Bundled examples have a `local://` URL that means nothing to
                     a reader — show what it actually is instead. */}
-                {schema.content === undefined ? schema.url : 'Bundled example'}
+                {schema.content === undefined ? schema.url : 'Local example'}
               </div>
             </button>
           ))}

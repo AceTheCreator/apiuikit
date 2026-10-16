@@ -1,0 +1,2023 @@
+{
+  "asyncapi": "3.1.0",
+  "info": {
+    "title": "Kraken Spot WebSocket API",
+    "version": "2.0.0",
+    "description": "Stream live cryptocurrency market data over a single WebSocket connection: order books, tickers, trades and candles for every listed pair, pushed the moment they change.\n\n### Highlights\n\n- ⚡ **Real time.** Updates are pushed as trades happen, so there is nothing to poll.\n- 🔓 **No API key.** Every market data channel is public. Open a socket and start subscribing.\n- 📚 **Level 2 order book.** Up to 1,000 price levels per side, with a CRC32 checksum to verify your local copy.\n- 🕯️ **Candles.** OHLC in nine intervals, from one minute to fifteen days.\n- 🔁 **Request correlation.** Every request can carry a `req_id`, which the server echoes on its response.\n\n### Quick start\n\n1. Open a connection to `wss://ws.kraken.com/v2`.\n2. Send a `subscribe` request naming a channel and the pairs you want.\n3. Read the acknowledgement, then a `snapshot` of the current state, then a stream of `update` messages.\n\n```json\n{ \"method\": \"subscribe\", \"params\": { \"channel\": \"ticker\", \"symbol\": [\"BTC/USD\"] }, \"req_id\": 1 }\n```\n\n### Channels\n\n| Channel | Streams | Extra parameters |\n| --- | --- | --- |\n| `ticker` | Best bid and ask, last price, 24-hour statistics | `event_trigger` |\n| `book` | Level 2 order book | `depth` |\n| `ohlc` | Open, high, low, close candles | `interval` |\n| `trade` | Every executed trade | |\n| `instrument` | Reference data for assets and pairs | |\n\n> While you hold at least one subscription, the server sends a `heartbeat` about once a second whenever there is nothing else to send. If the stream goes quiet, the connection is gone.",
+    "externalDocs": {
+      "description": "Kraken WebSocket v2 reference",
+      "url": "https://docs.kraken.com/api/docs/websocket-v2/ticker"
+    },
+    "contact": {
+      "name": "Kraken Support",
+      "url": "https://support.kraken.com"
+    },
+    "x-x": "krakenfx",
+    "x-linkedin": "https://www.linkedin.com/company/krakenfx",
+    "tags": [
+      {
+        "name": "market-data",
+        "description": "Public price, order book and trade feeds.",
+        "externalDocs": {
+          "description": "Market data channels",
+          "url": "https://docs.kraken.com/api/docs/websocket-v2/book"
+        }
+      },
+      {
+        "name": "reference-data",
+        "description": "Listed assets and currency pairs, with their trading rules.",
+        "externalDocs": {
+          "description": "Instrument channel",
+          "url": "https://docs.kraken.com/api/docs/websocket-v2/instrument"
+        }
+      },
+      {
+        "name": "subscriptions",
+        "description": "Starting and stopping feeds."
+      },
+      {
+        "name": "connection",
+        "description": "Keeping the connection healthy.",
+        "externalDocs": {
+          "description": "Status and heartbeat",
+          "url": "https://docs.kraken.com/api/docs/websocket-v2/status"
+        }
+      }
+    ]
+  },
+  "defaultContentType": "application/json",
+  "servers": {
+    "production": {
+      "host": "ws.kraken.com",
+      "protocol": "wss",
+      "title": "Production",
+      "summary": "Public market data",
+      "description": "Public market data endpoint. No authentication required: connect and start subscribing.",
+      "tags": [
+        {
+          "name": "public",
+          "description": "Reachable without credentials."
+        }
+      ],
+      "externalDocs": {
+        "description": "Connecting to the WebSocket API",
+        "url": "https://docs.kraken.com/api/docs/guides/spot-ws-intro"
+      }
+    }
+  },
+  "channels": {
+    "marketData": {
+      "address": "/v2",
+      "title": "Market data",
+      "summary": "The single socket every request and update travels over.",
+      "description": "Kraken multiplexes every feed over one connection. Requests carry a `method`; pushed updates carry a `channel` naming the feed they belong to, and a `type` of `snapshot` or `update`.\n\nWhich updates arrive depends entirely on what you have subscribed to, so a fresh connection receives nothing but its initial `status` message.",
+      "servers": [
+        {
+          "$ref": "#/servers/production"
+        }
+      ],
+      "messages": {
+        "subscribeRequest": {
+          "$ref": "#/components/messages/subscribeRequest"
+        },
+        "subscribeResponse": {
+          "$ref": "#/components/messages/subscribeResponse"
+        },
+        "unsubscribeRequest": {
+          "$ref": "#/components/messages/unsubscribeRequest"
+        },
+        "unsubscribeResponse": {
+          "$ref": "#/components/messages/unsubscribeResponse"
+        },
+        "ping": {
+          "$ref": "#/components/messages/ping"
+        },
+        "pong": {
+          "$ref": "#/components/messages/pong"
+        },
+        "ticker": {
+          "$ref": "#/components/messages/ticker"
+        },
+        "book": {
+          "$ref": "#/components/messages/book"
+        },
+        "ohlc": {
+          "$ref": "#/components/messages/ohlc"
+        },
+        "trade": {
+          "$ref": "#/components/messages/trade"
+        },
+        "instrument": {
+          "$ref": "#/components/messages/instrument"
+        },
+        "status": {
+          "$ref": "#/components/messages/status"
+        },
+        "heartbeat": {
+          "$ref": "#/components/messages/heartbeat"
+        }
+      }
+    }
+  },
+  "operations": {
+    "subscribe": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/marketData"
+      },
+      "title": "Subscribe to a feed",
+      "summary": "Start streaming a channel for one or more currency pairs.",
+      "description": "The server answers with one acknowledgement **per currency pair**, each carrying your `req_id`. On success the first update is a snapshot of the current state, unless you set `snapshot` to `false`.\n\nSubscribing to a pair you already follow on the same channel is rejected with `Already subscribed`, so it is safe to retry.",
+      "tags": [
+        {
+          "name": "subscriptions"
+        },
+        {
+          "name": "market-data"
+        }
+      ],
+      "externalDocs": {
+        "description": "Ticker channel reference",
+        "url": "https://docs.kraken.com/api/docs/websocket-v2/ticker"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/marketData/messages/subscribeRequest"
+        }
+      ],
+      "reply": {
+        "channel": {
+          "$ref": "#/channels/marketData"
+        },
+        "messages": [
+          {
+            "$ref": "#/channels/marketData/messages/subscribeResponse"
+          }
+        ]
+      }
+    },
+    "unsubscribe": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/marketData"
+      },
+      "title": "Unsubscribe from a feed",
+      "summary": "Stop streaming a channel for one or more currency pairs.",
+      "description": "Pass the same `channel` and `symbol` you subscribed with. Pairs you are not subscribed to come back with `success: false` and leave the rest of the request unaffected.",
+      "tags": [
+        {
+          "name": "subscriptions"
+        }
+      ],
+      "messages": [
+        {
+          "$ref": "#/channels/marketData/messages/unsubscribeRequest"
+        }
+      ],
+      "reply": {
+        "channel": {
+          "$ref": "#/channels/marketData"
+        },
+        "messages": [
+          {
+            "$ref": "#/channels/marketData/messages/unsubscribeResponse"
+          }
+        ]
+      }
+    },
+    "ping": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/marketData"
+      },
+      "title": "Ping",
+      "summary": "Check the connection is alive. The server replies with a pong.",
+      "description": "Useful on a connection with no subscriptions, which receives no heartbeats. The `pong` echoes your `req_id` along with server-side receive and send times, so you can measure round-trip latency.",
+      "tags": [
+        {
+          "name": "connection"
+        }
+      ],
+      "externalDocs": {
+        "description": "Ping reference",
+        "url": "https://docs.kraken.com/api/docs/websocket-v2/ping"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/marketData/messages/ping"
+        }
+      ],
+      "reply": {
+        "channel": {
+          "$ref": "#/channels/marketData"
+        },
+        "messages": [
+          {
+            "$ref": "#/channels/marketData/messages/pong"
+          }
+        ]
+      }
+    },
+    "sendTicker": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/marketData"
+      },
+      "title": "Ticker updates",
+      "summary": "Best bid and ask, last price, and 24-hour statistics for each subscribed pair.",
+      "description": "Published on every trade by default. Subscribe with `event_trigger: \"bbo\"` to be told about every change to the best bid or offer instead.",
+      "tags": [
+        {
+          "name": "market-data"
+        }
+      ],
+      "externalDocs": {
+        "description": "Ticker channel reference",
+        "url": "https://docs.kraken.com/api/docs/websocket-v2/ticker"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/marketData/messages/ticker"
+        }
+      ]
+    },
+    "sendBook": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/marketData"
+      },
+      "title": "Order book",
+      "summary": "Level 2 bids and asks, as a snapshot followed by incremental updates.",
+      "description": "Apply each update to your local book: a level with `qty` of `0` is removed, any other value replaces the level at that price. Then trim the book back to your subscribed `depth`.\n\nEvery message carries a CRC32 `checksum` of the top ten levels. Recompute it after each update; a mismatch means your copy has drifted and you should resubscribe.",
+      "tags": [
+        {
+          "name": "market-data"
+        }
+      ],
+      "externalDocs": {
+        "description": "Book channel reference",
+        "url": "https://docs.kraken.com/api/docs/websocket-v2/book"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/marketData/messages/book"
+        }
+      ]
+    },
+    "sendOhlc": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/marketData"
+      },
+      "title": "Candles",
+      "summary": "Open, high, low and close prices for each interval, updated as trades land.",
+      "description": "The current candle is republished on every trade until its interval closes, so the last message for a given `interval_begin` is the final one.",
+      "tags": [
+        {
+          "name": "market-data"
+        }
+      ],
+      "externalDocs": {
+        "description": "OHLC channel reference",
+        "url": "https://docs.kraken.com/api/docs/websocket-v2/ohlc"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/marketData/messages/ohlc"
+        }
+      ]
+    },
+    "sendTrade": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/marketData"
+      },
+      "title": "Trade updates",
+      "summary": "Every trade executed on each subscribed pair.",
+      "description": "The snapshot holds the 50 most recent trades. After that, each update can batch several trades that executed together.",
+      "tags": [
+        {
+          "name": "market-data"
+        }
+      ],
+      "externalDocs": {
+        "description": "Trade channel reference",
+        "url": "https://docs.kraken.com/api/docs/websocket-v2/trade"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/marketData/messages/trade"
+        }
+      ]
+    },
+    "sendInstrument": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/marketData"
+      },
+      "title": "Instruments",
+      "summary": "Every listed asset and currency pair, with precision and order size rules.",
+      "description": "Subscribe without a `symbol`: this channel always covers the whole exchange. Use it to validate order sizes and to format prices to the right number of decimals.",
+      "tags": [
+        {
+          "name": "reference-data"
+        }
+      ],
+      "externalDocs": {
+        "description": "Instrument channel reference",
+        "url": "https://docs.kraken.com/api/docs/websocket-v2/instrument"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/marketData/messages/instrument"
+        }
+      ]
+    },
+    "sendStatus": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/marketData"
+      },
+      "title": "Connection status",
+      "summary": "The exchange's status on connect, then a heartbeat about once a second while subscribed.",
+      "description": "A `status` message arrives as soon as the connection opens, and again whenever the exchange's trading state changes, for example when it enters `maintenance`.",
+      "tags": [
+        {
+          "name": "connection"
+        }
+      ],
+      "externalDocs": {
+        "description": "Status channel reference",
+        "url": "https://docs.kraken.com/api/docs/websocket-v2/status"
+      },
+      "messages": [
+        {
+          "$ref": "#/channels/marketData/messages/status"
+        },
+        {
+          "$ref": "#/channels/marketData/messages/heartbeat"
+        }
+      ]
+    }
+  },
+  "components": {
+    "correlationIds": {
+      "requestId": {
+        "description": "The client-chosen `req_id`, echoed on the server's response.",
+        "location": "$message.payload#/req_id"
+      }
+    },
+    "messages": {
+      "subscribeRequest": {
+        "name": "subscribeRequest",
+        "title": "Subscribe request",
+        "summary": "Ask the server to start streaming a channel.",
+        "tags": [
+          {
+            "name": "request"
+          }
+        ],
+        "correlationId": {
+          "$ref": "#/components/correlationIds/requestId"
+        },
+        "payload": {
+          "$ref": "#/components/schemas/subscribeRequest"
+        },
+        "examples": [
+          {
+            "name": "ticker",
+            "summary": "Ticker for Bitcoin and Ether",
+            "payload": {
+              "method": "subscribe",
+              "params": {
+                "channel": "ticker",
+                "symbol": [
+                  "BTC/USD",
+                  "ETH/USD"
+                ]
+              },
+              "req_id": 1
+            }
+          },
+          {
+            "name": "book",
+            "summary": "Top 25 levels of the Bitcoin order book",
+            "payload": {
+              "method": "subscribe",
+              "params": {
+                "channel": "book",
+                "symbol": [
+                  "BTC/USD"
+                ],
+                "depth": 25
+              },
+              "req_id": 2
+            }
+          },
+          {
+            "name": "ohlc",
+            "summary": "Five-minute candles for Solana",
+            "payload": {
+              "method": "subscribe",
+              "params": {
+                "channel": "ohlc",
+                "symbol": [
+                  "SOL/USD"
+                ],
+                "interval": 5
+              },
+              "req_id": 3
+            }
+          },
+          {
+            "name": "trade",
+            "summary": "Trades for Ether, without the snapshot",
+            "payload": {
+              "method": "subscribe",
+              "params": {
+                "channel": "trade",
+                "symbol": [
+                  "ETH/USD"
+                ],
+                "snapshot": false
+              },
+              "req_id": 4
+            }
+          },
+          {
+            "name": "instrument",
+            "summary": "Every listed asset and pair",
+            "payload": {
+              "method": "subscribe",
+              "params": {
+                "channel": "instrument"
+              },
+              "req_id": 5
+            }
+          }
+        ]
+      },
+      "subscribeResponse": {
+        "name": "subscribeResponse",
+        "title": "Subscribe response",
+        "summary": "One acknowledgement per requested pair.",
+        "tags": [
+          {
+            "name": "response"
+          }
+        ],
+        "correlationId": {
+          "$ref": "#/components/correlationIds/requestId"
+        },
+        "payload": {
+          "$ref": "#/components/schemas/subscriptionResponse"
+        },
+        "examples": [
+          {
+            "name": "success",
+            "summary": "Ticker subscription confirmed",
+            "payload": {
+              "method": "subscribe",
+              "req_id": 1,
+              "result": {
+                "channel": "ticker",
+                "event_trigger": "trades",
+                "snapshot": true,
+                "symbol": "BTC/USD"
+              },
+              "success": true,
+              "time_in": "2026-10-12T09:45:39.066708Z",
+              "time_out": "2026-10-12T09:45:39.066751Z"
+            }
+          },
+          {
+            "name": "book",
+            "summary": "Order book subscription confirmed",
+            "payload": {
+              "method": "subscribe",
+              "req_id": 2,
+              "result": {
+                "channel": "book",
+                "depth": 25,
+                "snapshot": true,
+                "symbol": "BTC/USD"
+              },
+              "success": true,
+              "time_in": "2026-10-12T09:45:39.071144Z",
+              "time_out": "2026-10-12T09:45:39.071190Z"
+            }
+          },
+          {
+            "name": "unknownPair",
+            "summary": "A currency pair Kraken doesn't list",
+            "payload": {
+              "error": "Currency pair not supported NOPE/USD",
+              "method": "subscribe",
+              "req_id": 6,
+              "success": false,
+              "symbol": "NOPE/USD",
+              "time_in": "2026-10-12T09:45:39.066818Z",
+              "time_out": "2026-10-12T09:45:39.066831Z"
+            }
+          },
+          {
+            "name": "alreadySubscribed",
+            "summary": "The pair is already streaming on this channel",
+            "payload": {
+              "error": "Already subscribed",
+              "method": "subscribe",
+              "req_id": 7,
+              "success": false,
+              "symbol": "BTC/USD",
+              "time_in": "2026-10-12T09:45:40.102233Z",
+              "time_out": "2026-10-12T09:45:40.102251Z"
+            }
+          }
+        ]
+      },
+      "unsubscribeRequest": {
+        "name": "unsubscribeRequest",
+        "title": "Unsubscribe request",
+        "summary": "Ask the server to stop streaming a channel.",
+        "tags": [
+          {
+            "name": "request"
+          }
+        ],
+        "correlationId": {
+          "$ref": "#/components/correlationIds/requestId"
+        },
+        "payload": {
+          "$ref": "#/components/schemas/unsubscribeRequest"
+        },
+        "examples": [
+          {
+            "name": "ticker",
+            "summary": "Stop the Bitcoin and Ether ticker",
+            "payload": {
+              "method": "unsubscribe",
+              "params": {
+                "channel": "ticker",
+                "symbol": [
+                  "BTC/USD",
+                  "ETH/USD"
+                ]
+              },
+              "req_id": 8
+            }
+          }
+        ]
+      },
+      "unsubscribeResponse": {
+        "name": "unsubscribeResponse",
+        "title": "Unsubscribe response",
+        "summary": "One acknowledgement per requested pair.",
+        "tags": [
+          {
+            "name": "response"
+          }
+        ],
+        "correlationId": {
+          "$ref": "#/components/correlationIds/requestId"
+        },
+        "payload": {
+          "$ref": "#/components/schemas/unsubscriptionResponse"
+        },
+        "examples": [
+          {
+            "name": "success",
+            "summary": "Ticker stopped",
+            "payload": {
+              "method": "unsubscribe",
+              "req_id": 8,
+              "result": {
+                "channel": "ticker",
+                "event_trigger": "trades",
+                "symbol": "BTC/USD"
+              },
+              "success": true,
+              "time_in": "2026-10-12T09:45:43.063043Z",
+              "time_out": "2026-10-12T09:45:43.063098Z"
+            }
+          },
+          {
+            "name": "notSubscribed",
+            "summary": "Nothing to stop",
+            "payload": {
+              "error": "Subscription Not Found",
+              "method": "unsubscribe",
+              "req_id": 9,
+              "success": false,
+              "symbol": "XRP/USD",
+              "time_in": "2026-10-12T09:45:43.071120Z",
+              "time_out": "2026-10-12T09:45:43.071131Z"
+            }
+          }
+        ]
+      },
+      "ping": {
+        "name": "ping",
+        "title": "Ping",
+        "summary": "Application-level keepalive.",
+        "tags": [
+          {
+            "name": "request"
+          }
+        ],
+        "correlationId": {
+          "$ref": "#/components/correlationIds/requestId"
+        },
+        "payload": {
+          "$ref": "#/components/schemas/ping"
+        },
+        "examples": [
+          {
+            "name": "ping",
+            "payload": {
+              "method": "ping",
+              "req_id": 10
+            }
+          }
+        ]
+      },
+      "pong": {
+        "name": "pong",
+        "title": "Pong",
+        "summary": "Reply to a ping, with server timings.",
+        "tags": [
+          {
+            "name": "response"
+          }
+        ],
+        "correlationId": {
+          "$ref": "#/components/correlationIds/requestId"
+        },
+        "payload": {
+          "$ref": "#/components/schemas/pong"
+        },
+        "examples": [
+          {
+            "name": "pong",
+            "payload": {
+              "method": "pong",
+              "req_id": 10,
+              "time_in": "2026-10-12T09:45:43.063122Z",
+              "time_out": "2026-10-12T09:45:43.063128Z"
+            }
+          }
+        ]
+      },
+      "ticker": {
+        "name": "ticker",
+        "title": "Ticker",
+        "summary": "Top of book and 24-hour statistics for one pair.",
+        "tags": [
+          {
+            "name": "stream"
+          }
+        ],
+        "payload": {
+          "$ref": "#/components/schemas/ticker"
+        },
+        "examples": [
+          {
+            "name": "update",
+            "summary": "Bitcoin after a trade",
+            "payload": {
+              "channel": "ticker",
+              "type": "update",
+              "data": [
+                {
+                  "symbol": "BTC/USD",
+                  "bid": 83276.5,
+                  "bid_qty": 0.15188157,
+                  "ask": 83276.6,
+                  "ask_qty": 4.16832293,
+                  "last": 83276.6,
+                  "volume": 1627.02473246,
+                  "vwap": 83667.5,
+                  "low": 82884.1,
+                  "high": 84250,
+                  "change": 314.8,
+                  "change_pct": 0.38,
+                  "timestamp": "2026-10-12T09:45:39.139828Z"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "book": {
+        "name": "book",
+        "title": "Order book",
+        "summary": "Level 2 bids and asks for one pair.",
+        "tags": [
+          {
+            "name": "stream"
+          }
+        ],
+        "payload": {
+          "$ref": "#/components/schemas/book"
+        },
+        "examples": [
+          {
+            "name": "snapshot",
+            "summary": "The first message: the top of the book",
+            "payload": {
+              "channel": "book",
+              "type": "snapshot",
+              "data": [
+                {
+                  "symbol": "BTC/USD",
+                  "bids": [
+                    {
+                      "price": 83276.5,
+                      "qty": 0.15188157
+                    },
+                    {
+                      "price": 83275.9,
+                      "qty": 0.6
+                    },
+                    {
+                      "price": 83274.2,
+                      "qty": 1.20311
+                    }
+                  ],
+                  "asks": [
+                    {
+                      "price": 83276.6,
+                      "qty": 4.16832293
+                    },
+                    {
+                      "price": 83277,
+                      "qty": 0.05
+                    },
+                    {
+                      "price": 83279.8,
+                      "qty": 2.4
+                    }
+                  ],
+                  "checksum": 2439117997
+                }
+              ]
+            }
+          },
+          {
+            "name": "update",
+            "summary": "A level filled and a new one placed",
+            "payload": {
+              "channel": "book",
+              "type": "update",
+              "data": [
+                {
+                  "symbol": "BTC/USD",
+                  "bids": [
+                    {
+                      "price": 83276.5,
+                      "qty": 0
+                    }
+                  ],
+                  "asks": [
+                    {
+                      "price": 83278.1,
+                      "qty": 0.75
+                    }
+                  ],
+                  "checksum": 3310070434,
+                  "timestamp": "2026-10-12T09:45:39.204417Z"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "ohlc": {
+        "name": "ohlc",
+        "title": "Candle",
+        "summary": "One OHLC candle for one pair and interval.",
+        "tags": [
+          {
+            "name": "stream"
+          }
+        ],
+        "payload": {
+          "$ref": "#/components/schemas/ohlc"
+        },
+        "examples": [
+          {
+            "name": "update",
+            "summary": "A five-minute Solana candle, still open",
+            "payload": {
+              "channel": "ohlc",
+              "type": "update",
+              "timestamp": "2026-10-12T09:47:12.508612Z",
+              "data": [
+                {
+                  "symbol": "SOL/USD",
+                  "open": 142.18,
+                  "high": 142.55,
+                  "low": 141.97,
+                  "close": 142.41,
+                  "trades": 318,
+                  "volume": 2214.73019,
+                  "vwap": 142.29,
+                  "interval_begin": "2026-10-12T09:45:00.000000000Z",
+                  "interval": 5,
+                  "timestamp": "2026-10-12T09:50:00.000000Z"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "trade": {
+        "name": "trade",
+        "title": "Trade",
+        "summary": "One or more executed trades for one pair.",
+        "tags": [
+          {
+            "name": "stream"
+          }
+        ],
+        "payload": {
+          "$ref": "#/components/schemas/trade"
+        },
+        "examples": [
+          {
+            "name": "update",
+            "summary": "Two Ether fills from one market order",
+            "payload": {
+              "channel": "trade",
+              "type": "update",
+              "data": [
+                {
+                  "symbol": "ETH/USD",
+                  "side": "buy",
+                  "price": 2547.95,
+                  "qty": 0.01058392,
+                  "ord_type": "market",
+                  "trade_id": 67602404,
+                  "timestamp": "2026-10-12T09:45:46.352936Z"
+                },
+                {
+                  "symbol": "ETH/USD",
+                  "side": "buy",
+                  "price": 2548.02,
+                  "qty": 0.4,
+                  "ord_type": "market",
+                  "trade_id": 67602405,
+                  "timestamp": "2026-10-12T09:45:46.352936Z"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "instrument": {
+        "name": "instrument",
+        "title": "Instruments",
+        "summary": "Every listed asset and pair, with trading rules.",
+        "tags": [
+          {
+            "name": "stream"
+          }
+        ],
+        "payload": {
+          "$ref": "#/components/schemas/instrument"
+        },
+        "examples": [
+          {
+            "name": "snapshot",
+            "summary": "Trimmed to one asset and one pair",
+            "payload": {
+              "channel": "instrument",
+              "type": "snapshot",
+              "data": {
+                "assets": [
+                  {
+                    "id": "BTC",
+                    "status": "enabled",
+                    "precision": 10,
+                    "precision_display": 5,
+                    "borrowable": true,
+                    "collateral_value": 1,
+                    "margin_rate": 0.01
+                  }
+                ],
+                "pairs": [
+                  {
+                    "symbol": "BTC/USD",
+                    "base": "BTC",
+                    "quote": "USD",
+                    "status": "online",
+                    "qty_precision": 8,
+                    "qty_increment": 1e-8,
+                    "qty_min": 0.00005,
+                    "price_precision": 1,
+                    "price_increment": 0.1,
+                    "cost_precision": 5,
+                    "cost_min": 0.5,
+                    "marginable": true,
+                    "has_index": true
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "status": {
+        "name": "status",
+        "title": "Status",
+        "summary": "The exchange's trading state.",
+        "tags": [
+          {
+            "name": "stream"
+          }
+        ],
+        "payload": {
+          "$ref": "#/components/schemas/status"
+        },
+        "examples": [
+          {
+            "name": "online",
+            "summary": "Sent as soon as the connection opens",
+            "payload": {
+              "channel": "status",
+              "type": "update",
+              "data": [
+                {
+                  "version": "2.0.10",
+                  "system": "online",
+                  "api_version": "v2",
+                  "connection_id": 14003088474926020000
+                }
+              ]
+            }
+          },
+          {
+            "name": "maintenance",
+            "summary": "The exchange is down for maintenance",
+            "payload": {
+              "channel": "status",
+              "type": "update",
+              "data": [
+                {
+                  "version": "2.0.10",
+                  "system": "maintenance",
+                  "api_version": "v2",
+                  "connection_id": 14003088474926020000
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "heartbeat": {
+        "name": "heartbeat",
+        "title": "Heartbeat",
+        "summary": "Sent about once a second when there is nothing else to send.",
+        "tags": [
+          {
+            "name": "stream"
+          }
+        ],
+        "payload": {
+          "$ref": "#/components/schemas/heartbeat"
+        },
+        "examples": [
+          {
+            "name": "heartbeat",
+            "payload": {
+              "channel": "heartbeat"
+            }
+          }
+        ]
+      }
+    },
+    "schemas": {
+      "feedChannel": {
+        "type": "string",
+        "title": "Channel",
+        "description": "The feed to subscribe to.",
+        "enum": [
+          "ticker",
+          "book",
+          "ohlc",
+          "trade",
+          "instrument"
+        ],
+        "default": "ticker"
+      },
+      "symbol": {
+        "type": "string",
+        "title": "Symbol",
+        "description": "A currency pair, written `BASE/QUOTE`.",
+        "pattern": "^[A-Z0-9]+/[A-Z0-9]+$",
+        "examples": [
+          "BTC/USD",
+          "ETH/USD",
+          "SOL/EUR"
+        ]
+      },
+      "symbols": {
+        "type": "array",
+        "description": "Currency pairs to subscribe to. Required for every channel except `instrument`.",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": {
+          "$ref": "#/components/schemas/symbol"
+        }
+      },
+      "reqId": {
+        "type": "integer",
+        "title": "Request id",
+        "description": "Optional client-chosen id, echoed on the response.",
+        "minimum": 0,
+        "examples": [
+          42
+        ]
+      },
+      "price": {
+        "type": "number",
+        "description": "A price in the quote currency.",
+        "minimum": 0,
+        "examples": [
+          83276.5
+        ]
+      },
+      "quantity": {
+        "type": "number",
+        "description": "A quantity in the base currency.",
+        "minimum": 0,
+        "examples": [
+          0.15188157
+        ]
+      },
+      "timestamp": {
+        "type": "string",
+        "format": "date-time",
+        "description": "RFC 3339 time, to the microsecond.",
+        "examples": [
+          "2026-10-12T09:45:39.139828Z"
+        ]
+      },
+      "updateType": {
+        "type": "string",
+        "enum": [
+          "snapshot",
+          "update"
+        ],
+        "description": "`snapshot` is the first message after subscribing and holds the full current state; `update` follows on each change."
+      },
+      "processingTimes": {
+        "type": "object",
+        "properties": {
+          "time_in": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the server received the request."
+          },
+          "time_out": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the server sent the response."
+          }
+        }
+      },
+      "subscribeRequest": {
+        "type": "object",
+        "title": "Subscribe request",
+        "required": [
+          "method",
+          "params"
+        ],
+        "properties": {
+          "method": {
+            "const": "subscribe"
+          },
+          "params": {
+            "type": "object",
+            "required": [
+              "channel"
+            ],
+            "properties": {
+              "channel": {
+                "$ref": "#/components/schemas/feedChannel"
+              },
+              "symbol": {
+                "$ref": "#/components/schemas/symbols"
+              },
+              "snapshot": {
+                "type": "boolean",
+                "default": true,
+                "description": "Send the current state as the first update."
+              },
+              "event_trigger": {
+                "type": "string",
+                "enum": [
+                  "trades",
+                  "bbo"
+                ],
+                "default": "trades",
+                "description": "`ticker` only. Publish on every trade, or on every change to the best bid or offer."
+              },
+              "depth": {
+                "type": "integer",
+                "enum": [
+                  10,
+                  25,
+                  100,
+                  500,
+                  1000
+                ],
+                "default": 10,
+                "description": "`book` only. Number of price levels to receive on each side."
+              },
+              "interval": {
+                "type": "integer",
+                "enum": [
+                  1,
+                  5,
+                  15,
+                  30,
+                  60,
+                  240,
+                  1440,
+                  10080,
+                  21600
+                ],
+                "default": 1,
+                "description": "`ohlc` only. Candle length in minutes, from one minute to fifteen days."
+              }
+            }
+          },
+          "req_id": {
+            "$ref": "#/components/schemas/reqId"
+          }
+        }
+      },
+      "unsubscribeRequest": {
+        "type": "object",
+        "title": "Unsubscribe request",
+        "required": [
+          "method",
+          "params"
+        ],
+        "properties": {
+          "method": {
+            "const": "unsubscribe"
+          },
+          "params": {
+            "type": "object",
+            "required": [
+              "channel"
+            ],
+            "properties": {
+              "channel": {
+                "$ref": "#/components/schemas/feedChannel"
+              },
+              "symbol": {
+                "$ref": "#/components/schemas/symbols"
+              },
+              "depth": {
+                "type": "integer",
+                "enum": [
+                  10,
+                  25,
+                  100,
+                  500,
+                  1000
+                ],
+                "description": "`book` only. The depth you subscribed with."
+              },
+              "interval": {
+                "type": "integer",
+                "enum": [
+                  1,
+                  5,
+                  15,
+                  30,
+                  60,
+                  240,
+                  1440,
+                  10080,
+                  21600
+                ],
+                "description": "`ohlc` only. The interval you subscribed with."
+              }
+            }
+          },
+          "req_id": {
+            "$ref": "#/components/schemas/reqId"
+          }
+        }
+      },
+      "subscriptionResult": {
+        "type": "object",
+        "description": "The subscription that was created or removed. Present when `success` is true.",
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/feedChannel"
+          },
+          "symbol": {
+            "$ref": "#/components/schemas/symbol"
+          },
+          "snapshot": {
+            "type": "boolean"
+          },
+          "event_trigger": {
+            "type": "string",
+            "enum": [
+              "trades",
+              "bbo"
+            ]
+          },
+          "depth": {
+            "type": "integer",
+            "enum": [
+              10,
+              25,
+              100,
+              500,
+              1000
+            ]
+          },
+          "interval": {
+            "type": "integer",
+            "enum": [
+              1,
+              5,
+              15,
+              30,
+              60,
+              240,
+              1440,
+              10080,
+              21600
+            ]
+          }
+        }
+      },
+      "subscriptionResponse": {
+        "title": "Subscribe response",
+        "description": "One acknowledgement per currency pair in the request.",
+        "allOf": [
+          {
+            "type": "object",
+            "required": [
+              "method",
+              "success"
+            ],
+            "properties": {
+              "method": {
+                "const": "subscribe"
+              },
+              "req_id": {
+                "$ref": "#/components/schemas/reqId"
+              },
+              "success": {
+                "type": "boolean",
+                "description": "Whether the subscription was created."
+              },
+              "result": {
+                "$ref": "#/components/schemas/subscriptionResult"
+              },
+              "error": {
+                "type": "string",
+                "description": "Why the request failed. Present when `success` is false.",
+                "examples": [
+                  "Currency pair not supported NOPE/USD",
+                  "Already subscribed"
+                ]
+              },
+              "symbol": {
+                "type": "string",
+                "description": "The pair that failed, when the failure is specific to one."
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/processingTimes"
+          }
+        ]
+      },
+      "unsubscriptionResponse": {
+        "title": "Unsubscribe response",
+        "description": "One acknowledgement per currency pair in the request.",
+        "allOf": [
+          {
+            "type": "object",
+            "required": [
+              "method",
+              "success"
+            ],
+            "properties": {
+              "method": {
+                "const": "unsubscribe"
+              },
+              "req_id": {
+                "$ref": "#/components/schemas/reqId"
+              },
+              "success": {
+                "type": "boolean",
+                "description": "Whether the subscription was removed."
+              },
+              "result": {
+                "$ref": "#/components/schemas/subscriptionResult"
+              },
+              "error": {
+                "type": "string",
+                "description": "Why the request failed. Present when `success` is false.",
+                "examples": [
+                  "Subscription Not Found"
+                ]
+              },
+              "symbol": {
+                "type": "string",
+                "description": "The pair that failed, when the failure is specific to one."
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/processingTimes"
+          }
+        ]
+      },
+      "ping": {
+        "type": "object",
+        "title": "Ping",
+        "required": [
+          "method"
+        ],
+        "properties": {
+          "method": {
+            "const": "ping"
+          },
+          "req_id": {
+            "$ref": "#/components/schemas/reqId"
+          }
+        }
+      },
+      "pong": {
+        "title": "Pong",
+        "allOf": [
+          {
+            "type": "object",
+            "required": [
+              "method"
+            ],
+            "properties": {
+              "method": {
+                "const": "pong"
+              },
+              "req_id": {
+                "$ref": "#/components/schemas/reqId"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/processingTimes"
+          }
+        ]
+      },
+      "ticker": {
+        "type": "object",
+        "title": "Ticker",
+        "required": [
+          "channel",
+          "type",
+          "data"
+        ],
+        "properties": {
+          "channel": {
+            "const": "ticker"
+          },
+          "type": {
+            "$ref": "#/components/schemas/updateType"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "symbol",
+                "bid",
+                "ask",
+                "last"
+              ],
+              "properties": {
+                "symbol": {
+                  "$ref": "#/components/schemas/symbol"
+                },
+                "bid": {
+                  "type": "number",
+                  "description": "Best bid price.",
+                  "minimum": 0,
+                  "examples": [
+                    83276.5
+                  ]
+                },
+                "bid_qty": {
+                  "type": "number",
+                  "description": "Quantity at the best bid.",
+                  "minimum": 0,
+                  "examples": [
+                    0.15188157
+                  ]
+                },
+                "ask": {
+                  "type": "number",
+                  "description": "Best ask price.",
+                  "minimum": 0,
+                  "examples": [
+                    83276.5
+                  ]
+                },
+                "ask_qty": {
+                  "type": "number",
+                  "description": "Quantity at the best ask.",
+                  "minimum": 0,
+                  "examples": [
+                    0.15188157
+                  ]
+                },
+                "last": {
+                  "type": "number",
+                  "description": "Price of the last trade.",
+                  "minimum": 0,
+                  "examples": [
+                    83276.5
+                  ]
+                },
+                "volume": {
+                  "type": "number",
+                  "description": "24-hour traded volume, in the base currency.",
+                  "minimum": 0,
+                  "examples": [
+                    0.15188157
+                  ]
+                },
+                "vwap": {
+                  "type": "number",
+                  "description": "24-hour volume-weighted average price.",
+                  "minimum": 0,
+                  "examples": [
+                    83276.5
+                  ]
+                },
+                "low": {
+                  "type": "number",
+                  "description": "24-hour low.",
+                  "minimum": 0,
+                  "examples": [
+                    83276.5
+                  ]
+                },
+                "high": {
+                  "type": "number",
+                  "description": "24-hour high.",
+                  "minimum": 0,
+                  "examples": [
+                    83276.5
+                  ]
+                },
+                "change": {
+                  "type": "number",
+                  "description": "24-hour price change, in the quote currency.",
+                  "examples": [
+                    314.8
+                  ]
+                },
+                "change_pct": {
+                  "type": "number",
+                  "description": "24-hour price change, as a percentage.",
+                  "examples": [
+                    0.38
+                  ]
+                },
+                "timestamp": {
+                  "$ref": "#/components/schemas/timestamp"
+                }
+              }
+            }
+          }
+        }
+      },
+      "bookLevel": {
+        "type": "object",
+        "title": "Price level",
+        "required": [
+          "price",
+          "qty"
+        ],
+        "properties": {
+          "price": {
+            "$ref": "#/components/schemas/price"
+          },
+          "qty": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Total quantity at this price. `0` in an update means the level was removed."
+          }
+        }
+      },
+      "book": {
+        "type": "object",
+        "title": "Order book",
+        "required": [
+          "channel",
+          "type",
+          "data"
+        ],
+        "properties": {
+          "channel": {
+            "const": "book"
+          },
+          "type": {
+            "$ref": "#/components/schemas/updateType"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "symbol",
+                "bids",
+                "asks",
+                "checksum"
+              ],
+              "properties": {
+                "symbol": {
+                  "$ref": "#/components/schemas/symbol"
+                },
+                "bids": {
+                  "type": "array",
+                  "description": "Buy orders, highest price first.",
+                  "items": {
+                    "$ref": "#/components/schemas/bookLevel"
+                  }
+                },
+                "asks": {
+                  "type": "array",
+                  "description": "Sell orders, lowest price first.",
+                  "items": {
+                    "$ref": "#/components/schemas/bookLevel"
+                  }
+                },
+                "checksum": {
+                  "type": "integer",
+                  "format": "uint32",
+                  "description": "CRC32 of the top ten bids and asks after this message is applied.",
+                  "examples": [
+                    3310070434
+                  ]
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the book changed. Updates only.",
+                  "examples": [
+                    "2026-10-12T09:45:39.139828Z"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "ohlc": {
+        "type": "object",
+        "title": "Candle",
+        "required": [
+          "channel",
+          "type",
+          "data"
+        ],
+        "properties": {
+          "channel": {
+            "const": "ohlc"
+          },
+          "type": {
+            "$ref": "#/components/schemas/updateType"
+          },
+          "timestamp": {
+            "$ref": "#/components/schemas/timestamp"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "symbol",
+                "open",
+                "high",
+                "low",
+                "close",
+                "interval_begin",
+                "interval"
+              ],
+              "properties": {
+                "symbol": {
+                  "$ref": "#/components/schemas/symbol"
+                },
+                "open": {
+                  "type": "number",
+                  "description": "First trade price in the interval.",
+                  "minimum": 0,
+                  "examples": [
+                    83276.5
+                  ]
+                },
+                "high": {
+                  "type": "number",
+                  "description": "Highest trade price in the interval.",
+                  "minimum": 0,
+                  "examples": [
+                    83276.5
+                  ]
+                },
+                "low": {
+                  "type": "number",
+                  "description": "Lowest trade price in the interval.",
+                  "minimum": 0,
+                  "examples": [
+                    83276.5
+                  ]
+                },
+                "close": {
+                  "type": "number",
+                  "description": "Last trade price in the interval so far.",
+                  "minimum": 0,
+                  "examples": [
+                    83276.5
+                  ]
+                },
+                "trades": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Number of trades in the interval."
+                },
+                "volume": {
+                  "type": "number",
+                  "description": "Traded volume in the interval, in the base currency.",
+                  "minimum": 0,
+                  "examples": [
+                    0.15188157
+                  ]
+                },
+                "vwap": {
+                  "type": "number",
+                  "description": "Volume-weighted average price over the interval.",
+                  "minimum": 0,
+                  "examples": [
+                    83276.5
+                  ]
+                },
+                "interval_begin": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the interval started."
+                },
+                "interval": {
+                  "type": "integer",
+                  "enum": [
+                    1,
+                    5,
+                    15,
+                    30,
+                    60,
+                    240,
+                    1440,
+                    10080,
+                    21600
+                  ],
+                  "description": "Candle length in minutes."
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the interval ends.",
+                  "examples": [
+                    "2026-10-12T09:45:39.139828Z"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "trade": {
+        "type": "object",
+        "title": "Trade",
+        "required": [
+          "channel",
+          "type",
+          "data"
+        ],
+        "properties": {
+          "channel": {
+            "const": "trade"
+          },
+          "type": {
+            "$ref": "#/components/schemas/updateType"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "symbol",
+                "side",
+                "price",
+                "qty",
+                "trade_id",
+                "timestamp"
+              ],
+              "properties": {
+                "symbol": {
+                  "$ref": "#/components/schemas/symbol"
+                },
+                "side": {
+                  "type": "string",
+                  "enum": [
+                    "buy",
+                    "sell"
+                  ],
+                  "description": "Side of the taker order."
+                },
+                "price": {
+                  "$ref": "#/components/schemas/price"
+                },
+                "qty": {
+                  "$ref": "#/components/schemas/quantity"
+                },
+                "ord_type": {
+                  "type": "string",
+                  "enum": [
+                    "limit",
+                    "market"
+                  ],
+                  "description": "Type of the taker order."
+                },
+                "trade_id": {
+                  "type": "integer",
+                  "description": "Sequential per pair.",
+                  "examples": [
+                    67602404
+                  ]
+                },
+                "timestamp": {
+                  "$ref": "#/components/schemas/timestamp"
+                }
+              }
+            }
+          }
+        }
+      },
+      "asset": {
+        "type": "object",
+        "title": "Asset",
+        "required": [
+          "id",
+          "status",
+          "precision"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Asset code.",
+            "examples": [
+              "BTC"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "enabled",
+              "depositonly",
+              "withdrawalonly",
+              "fundingtemporarilydisabled",
+              "disabled",
+              "workinprogress"
+            ],
+            "description": "Whether the asset can currently be deposited, withdrawn or traded."
+          },
+          "precision": {
+            "type": "integer",
+            "description": "Decimal places used internally."
+          },
+          "precision_display": {
+            "type": "integer",
+            "description": "Decimal places to show to users."
+          },
+          "borrowable": {
+            "type": "boolean",
+            "description": "Can be borrowed on margin."
+          },
+          "collateral_value": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Fraction of value counted as margin collateral."
+          },
+          "margin_rate": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Interest rate when borrowed."
+          }
+        }
+      },
+      "pair": {
+        "type": "object",
+        "title": "Currency pair",
+        "required": [
+          "symbol",
+          "base",
+          "quote",
+          "status"
+        ],
+        "properties": {
+          "symbol": {
+            "$ref": "#/components/schemas/symbol"
+          },
+          "base": {
+            "type": "string",
+            "description": "Asset being bought or sold.",
+            "examples": [
+              "BTC"
+            ]
+          },
+          "quote": {
+            "type": "string",
+            "description": "Asset prices are quoted in.",
+            "examples": [
+              "USD"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "online",
+              "cancel_only",
+              "post_only",
+              "limit_only",
+              "reduce_only",
+              "maintenance",
+              "delisted",
+              "work_in_progress"
+            ],
+            "description": "Which orders the pair currently accepts."
+          },
+          "qty_precision": {
+            "type": "integer",
+            "description": "Decimal places allowed in an order quantity."
+          },
+          "qty_increment": {
+            "type": "number",
+            "description": "Smallest step between order quantities."
+          },
+          "qty_min": {
+            "type": "number",
+            "description": "Smallest order quantity, in the base currency."
+          },
+          "price_precision": {
+            "type": "integer",
+            "description": "Decimal places allowed in a price."
+          },
+          "price_increment": {
+            "type": "number",
+            "description": "Smallest step between prices (tick size)."
+          },
+          "cost_precision": {
+            "type": "integer",
+            "description": "Decimal places in an order's cost."
+          },
+          "cost_min": {
+            "type": "number",
+            "description": "Smallest order value, in the quote currency."
+          },
+          "marginable": {
+            "type": "boolean",
+            "description": "Can be traded on margin."
+          },
+          "has_index": {
+            "type": "boolean",
+            "description": "Has an index price, used for triggering stop orders."
+          }
+        }
+      },
+      "instrument": {
+        "type": "object",
+        "title": "Instruments",
+        "required": [
+          "channel",
+          "type",
+          "data"
+        ],
+        "properties": {
+          "channel": {
+            "const": "instrument"
+          },
+          "type": {
+            "$ref": "#/components/schemas/updateType"
+          },
+          "data": {
+            "type": "object",
+            "required": [
+              "assets",
+              "pairs"
+            ],
+            "properties": {
+              "assets": {
+                "type": "array",
+                "description": "Every listed asset.",
+                "items": {
+                  "$ref": "#/components/schemas/asset"
+                }
+              },
+              "pairs": {
+                "type": "array",
+                "description": "Every listed currency pair.",
+                "items": {
+                  "$ref": "#/components/schemas/pair"
+                }
+              }
+            }
+          }
+        }
+      },
+      "status": {
+        "type": "object",
+        "title": "Status",
+        "required": [
+          "channel",
+          "type",
+          "data"
+        ],
+        "properties": {
+          "channel": {
+            "const": "status"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "update"
+            ]
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "system",
+                "api_version"
+              ],
+              "properties": {
+                "system": {
+                  "type": "string",
+                  "enum": [
+                    "online",
+                    "cancel_only",
+                    "maintenance",
+                    "post_only"
+                  ],
+                  "description": "Trading state of the exchange."
+                },
+                "api_version": {
+                  "type": "string",
+                  "examples": [
+                    "v2"
+                  ]
+                },
+                "version": {
+                  "type": "string",
+                  "description": "Version of the WebSocket service.",
+                  "examples": [
+                    "2.0.10"
+                  ]
+                },
+                "connection_id": {
+                  "type": "integer",
+                  "description": "Identifies this connection. Quote it when contacting support."
+                }
+              }
+            }
+          }
+        }
+      },
+      "heartbeat": {
+        "type": "object",
+        "title": "Heartbeat",
+        "required": [
+          "channel"
+        ],
+        "properties": {
+          "channel": {
+            "const": "heartbeat"
+          }
+        }
+      }
+    }
+  }
+}
