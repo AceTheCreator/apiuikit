@@ -1,5 +1,18 @@
 # @apiuikit/web-component
 
+## 2.4.0
+
+### Minor Changes
+
+- 80de5e6: AsyncAPI operations: when an operation has a `title`, it now replaces the channel address instead of sitting above it. This applies to the Operations table rows and to the operation's side panel (and inline operation card) header. The address is still shown on hover. Operations without a title render as before.
+
+### Patch Changes
+
+- 80de5e6: Bump the built-in `@apiuikit/ws-try-it-plugin` to `^0.2.0`. WebSocket Try it tabs now show an operation's `title` instead of its channel address when it has one.
+- Updated dependencies [80de5e6]
+- Updated dependencies [80de5e6]
+  - apiuikit@2.4.0
+
 ## 2.3.1
 
 ### Patch Changes
