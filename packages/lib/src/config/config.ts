@@ -103,7 +103,10 @@ export interface ShowConfig {
   webhooks?: boolean;
   /** Whether to render known x-* spec extensions (see the `x-tensions` catalog). Defaults to true. */
   extensions?: boolean;
-  // Whether to render per-operation / per-endpoint code samples
+  /**
+   * The per-operation example panel ("Example Request" for OpenAPI, "Example"
+   * for AsyncAPI): Agent Prompt plus language snippets. Defaults to true.
+   */
   codeSamples?: boolean;
   /** The "Copy for LLM" / "View as Markdown" floating button. Defaults to true. */
   copyMarkdown?: boolean;
