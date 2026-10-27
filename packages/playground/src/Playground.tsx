@@ -1,17 +1,20 @@
-import { AsyncAPIRenderer, OpenAPIRenderer, defaultConfig } from 'apiuikit'
-import type { ConfigInterface } from 'apiuikit'
+import { ArazzoRenderer, AsyncAPIRenderer, OpenAPIRenderer, defaultConfig } from 'apiuikit'
+import type { ArazzoDiagnostic, ConfigInterface } from 'apiuikit'
 import type { ApiuikitPlugin } from 'apiuikit/plugin'
 import 'apiuikit/style.css'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DiagnosticsPanel } from './components/DiagnosticsPanel'
 import type { ParserDiagnostic } from './components/DiagnosticsPanel'
 import { EditorPane } from './components/EditorPane'
-import { EditorTabs } from './components/EditorTabs'
-import type { EditorTab } from './components/EditorTabs'
+import { EditorTabs, fileTab, tabFile } from './components/EditorTabs'
+import type { EditorTab, TabDescriptor } from './components/EditorTabs'
 import { FetchSchema } from './components/FetchSchema'
+import { FileMenu, FileNameBar, NewFileButton } from './components/FileActions'
 import { GitHubLink } from './components/GitHubLink'
 import { ResizeHandle } from './components/ResizeHandle'
 import { ShareButton } from './components/ShareButton'
+import { SourcesPanel } from './components/SourcesPanel'
+import type { RemoteSource, SourceRow } from './components/SourcesPanel'
 import { ThemePresetsMenu } from './components/ThemePresetsMenu'
 import { ThemeToggle } from './components/ThemeToggle'
 import { ViewToggle } from './components/ViewToggle'
@@ -21,6 +24,9 @@ import { useJsonEditor } from './hooks/useJsonEditor'
 import { useResizableSplit } from './hooks/useResizableSplit'
 import { scrollbarStyle, UI_PALETTES } from './theme'
 import type { UiMode } from './theme'
+import { fileForUrl, filesReferencing, isAbsoluteUrl, matchSources, matchedFile, readSourceDescriptions } from './utils/arazzoSources'
+import type { SourceMatch } from './utils/arazzoSources'
+import { fetchDocumentText } from './utils/fetchDocument'
 import { netlifyTheme } from './themes/netlify'
 import { applyPreset } from './themes/presets'
 import type { ThemePreset } from './themes/presets'
@@ -32,8 +38,38 @@ import {
   readStoredSnapshot,
   writeStoredSnapshot,
 } from './utils/playgroundState'
+import type { PlaygroundSnapshot } from './utils/playgroundState'
+import {
+  addFile,
+  deleteFile,
+  detectSpecType,
+  fileLanguage,
+  fileNameFromUrl,
+  getEntryFile,
+  getFile,
+  isWorkspace,
+  renameFile,
+  restoreFile,
+  setEntryFile,
+  singleFileWorkspace,
+  uniqueFileName,
+  updateFileContent,
+} from './utils/workspace'
+import type { Workspace, WorkspaceFile } from './utils/workspace'
 
-const DEFAULT_DOC_TEXT = DEFAULT_SUGGESTED_SCHEMA.content
+const DEFAULT_WORKSPACE = singleFileWorkspace(
+  DEFAULT_SUGGESTED_SCHEMA.content,
+  fileNameFromUrl(DEFAULT_SUGGESTED_SCHEMA.url, DEFAULT_SUGGESTED_SCHEMA.content),
+)
+const NEW_FILE_NAME = 'untitled.yaml'
+const SPEC_LABELS = { openapi: 'OpenAPI', asyncapi: 'AsyncAPI', arazzo: 'Arazzo' } as const
+/**
+ * A `sources` key the library ignores (source names match `[A-Za-z0-9_-]+`).
+ * Changing its value makes the renderer resolve the document again, for what
+ * the named sources don't cover: files that nested Arazzo sources read through
+ * `loadSource`, and retried fetches.
+ */
+const RESOLVE_REVISION_KEY = 'playground revision'
 const UI_MODE_STORAGE_KEY = 'apiuikit-playground-ui-mode'
 const PLAYGROUND_FONT_FAMILY =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif'
@@ -75,8 +111,18 @@ const DEFAULT_CONFIG: ConfigInterface = {
 }
 
 export interface PlaygroundProps {
-  /** Initial AsyncAPI document text (JSON or YAML). Uncontrolled — only read on mount. */
+  /**
+   * Initial document text (JSON or YAML), as a one-file workspace.
+   * Uncontrolled — only read on mount. Ignored when `initialFiles` is given.
+   */
   initialDocument?: string
+  /**
+   * Initial workspace files, for multi-file documents. Names must be unique
+   * and path-like (`specs/petstore.yaml`). Uncontrolled — only read on mount.
+   */
+  initialFiles?: WorkspaceFile[]
+  /** Which of `initialFiles` is rendered. Defaults to the first. */
+  initialEntry?: string
   /** Initial renderer config. Uncontrolled — only read on mount. */
   initialConfig?: ConfigInterface
   /** Initial UI color mode. The user can still toggle it afterwards. */
@@ -90,13 +136,13 @@ export interface PlaygroundProps {
    */
   plugins?: ApiuikitPlugin[]
   /**
-   * Save the document and config text to localStorage and restore them on
-   * mount (taking precedence over `initialDocument` / `initialConfig`).
+   * Save the workspace and config text to localStorage and restore them on
+   * mount (taking precedence over the `initial*` props).
    */
   persist?: boolean
   /**
    * Share-link API base (e.g. `/api/share`). When set, a Share button uploads
-   * the current document + config and copies a `?s=<id>` link, and a `?s=`
+   * every workspace file + the config and copies a `?s=<id>` link, and a `?s=`
    * param in the page URL is loaded on mount.
    */
   shareEndpoint?: string
@@ -104,8 +150,27 @@ export interface PlaygroundProps {
 
 type ShareLoad = { status: 'idle' } | { status: 'loading' } | { status: 'error'; message: string }
 
+/** A short-lived message at the bottom of the playground, e.g. "Deleted x. Undo". */
+type Notice = { message: string; undo?: () => void }
+const NOTICE_DURATION_MS = 8000
+
+/** A file being named in the bar under the tabs. */
+type Naming = { file: string; label: string } | null
+
+function seedWorkspace(initialFiles?: WorkspaceFile[], initialEntry?: string, initialDocument?: string): Workspace {
+  if (initialFiles) {
+    const workspace = { files: initialFiles, entry: initialEntry ?? initialFiles[0]?.name }
+    if (isWorkspace(workspace)) return workspace
+    console.warn('[playground] Ignoring `initialFiles`: it needs at least one file, unique valid names, and an `initialEntry` naming one of them.')
+  }
+  if (initialDocument !== undefined) return singleFileWorkspace(initialDocument)
+  return DEFAULT_WORKSPACE
+}
+
 export function Playground({
   initialDocument,
+  initialFiles,
+  initialEntry,
   initialConfig,
   defaultUiMode = 'light',
   height = '100%',
@@ -113,7 +178,6 @@ export function Playground({
   persist = false,
   shareEndpoint,
 }: PlaygroundProps) {
-  const [activeTab, setActiveTab] = useState<EditorTab>('doc')
   const [uiMode, setUiMode] = useState<UiMode>(() => readStoredUiMode() ?? defaultUiMode)
   const [editorExpanded, setEditorExpanded] = useState(true)
   const palette = UI_PALETTES[uiMode]
@@ -126,57 +190,80 @@ export function Playground({
     }
   }, [uiMode])
 
-  // AsyncAPIRenderer parses `raw` itself via the real @asyncapi/parser and reports
-  // real spec diagnostics — no need for our own JSON.parse validation on this side.
+  // The renderers parse `raw` themselves via the real spec parsers and report
+  // real spec diagnostics — no need for our own validation on this side.
   // Uncontrolled props: capture the mount-time values so a re-rendering parent
   // passing fresh literals doesn't reset the editors. A persisted session wins
   // over the props.
   const [seed] = useState(() => {
     const stored = persist ? readStoredSnapshot() : null
     const configSeed = initialConfig ?? DEFAULT_CONFIG
+    const workspace = stored ?? seedWorkspace(initialFiles, initialEntry, initialDocument)
     return {
-      doc: stored?.doc ?? initialDocument ?? DEFAULT_DOC_TEXT,
+      workspace: { files: workspace.files, entry: workspace.entry },
+      active: stored?.active ?? workspace.entry,
       configText: stored?.config ?? JSON.stringify(configSeed, null, 2),
       configSeed,
     }
   })
-  const [docText, setDocText] = useState(seed.doc)
+  const [workspace, setWorkspace] = useState<Workspace>(seed.workspace)
+  // The file open in the editor. Always names a file in the workspace — every
+  // update below that removes or renames files keeps it pointing at one.
+  const [activeFile, setActiveFile] = useState(seed.active)
+  const [configOpen, setConfigOpen] = useState(false)
+  const [naming, setNaming] = useState<Naming>(null)
+  const [notice, setNotice] = useState<Notice | null>(null)
+  const noticeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const showNotice = (next: Notice) => {
+    clearTimeout(noticeTimer.current)
+    setNotice(next)
+    noticeTimer.current = setTimeout(() => setNotice(null), NOTICE_DURATION_MS)
+  }
+  useEffect(() => () => clearTimeout(noticeTimer.current), [])
+  const activeTab: EditorTab = configOpen ? 'config' : fileTab(activeFile)
+  const openFile = (name: string) => {
+    setActiveFile(name)
+    setConfigOpen(false)
+  }
+  const handleTabChange = (tab: EditorTab) => {
+    const file = tabFile(tab)
+    if (file === null) setConfigOpen(true)
+    else openFile(file)
+  }
+
+  const replaceWorkspace = (next: Workspace, active = next.entry) => {
+    setWorkspace(next)
+    setNaming(null)
+    // An Undo from the old workspace would restore into the new one.
+    setNotice(null)
+    openFile(active)
+  }
+
+  const entryFile = getEntryFile(workspace)
+  const currentFile = getFile(workspace, activeFile) ?? entryFile
   // Parsing hits the real spec-validating parser (~500ms) — debounce so typing doesn't
-  // fire a fresh parse on every keystroke.
-  const debouncedDocText = useDebouncedValue(docText, 400)
-  const [diagnostics, setDiagnostics] = useState<ParserDiagnostic[]>([])
-  const hasDocErrors = diagnostics.some((d) => d.severity === 0)
+  // fire a fresh parse on every keystroke. The whole workspace is debounced at
+  // once, so the entry's name and text, and the Arazzo sources read alongside
+  // it, always come from the same moment, and diagnostics are attributed to the
+  // files the renderer actually parsed. Editing another file keeps the entry
+  // file's object, so the OpenAPI and AsyncAPI renderers don't re-parse.
+  const debouncedWorkspace = useDebouncedValue(workspace, 400)
+  const debouncedEntry = getEntryFile(debouncedWorkspace)
+  const [rendererDiagnostics, setRendererDiagnostics] = useState<ParserDiagnostic[]>([])
+  const diagnostics = useMemo(
+    () => rendererDiagnostics.map((d) => ({ ...d, file: d.file ?? debouncedEntry.name })),
+    [rendererDiagnostics, debouncedEntry.name],
+  )
+  const filesWithErrors = useMemo(
+    () => new Set(diagnostics.filter((d) => d.severity === 0).map((d) => d.file)),
+    [diagnostics],
+  )
 
-  // The doc editor accepts both JSON and YAML (e.g. fetched .yml examples), so pick
-  // the highlighter from the content itself.
-  const docLanguage = useMemo(() => {
-    const head = docText.trimStart()
-    return head.startsWith('{') ? 'json' : 'yaml'
-  }, [docText])
-
-  // Sniffs the document's own top-level key to pick which renderer/parser to
+  // Sniffs the entry file's own top-level key to pick which renderer/parser to
   // hand it to, rather than asking the user to choose. Defaults to AsyncAPI
   // when neither key is found (e.g. mid-edit/empty doc).
-  const specType = useMemo<'asyncapi' | 'openapi'>(() => {
-    // JSON docs are parsed directly rather than line-sniffed: minified/pasted
-    // JSON puts the top-level key right after `{` on the same line, which a
-    // line-anchored regex would never match.
-    if (docText.trimStart().startsWith('{')) {
-      try {
-        const parsed = JSON.parse(docText)
-        if (parsed && typeof parsed === 'object') {
-          if ('asyncapi' in parsed) return 'asyncapi'
-          if ('openapi' in parsed || 'swagger' in parsed) return 'openapi'
-        }
-      } catch {
-        // Invalid/mid-edit JSON — fall through to the line sniff below.
-      }
-    }
-    // YAML has no such ambiguity: a top-level key always starts its own line.
-    const match = docText.match(/^\s*["']?(asyncapi|openapi|swagger)["']?\s*:/m)
-    if (!match) return 'asyncapi'
-    return match[1] === 'asyncapi' ? 'asyncapi' : 'openapi'
-  }, [docText])
+  const specType = useMemo(() => detectSpecType(entryFile.content) ?? 'asyncapi', [entryFile.content])
+  const specLabel = SPEC_LABELS[specType]
 
   const config = useJsonEditor<ConfigInterface>(seed.configText, seed.configSeed, {
     emptyValue: seed.configSeed,
@@ -195,7 +282,9 @@ export function Playground({
     shareFetchStarted.current = true
     fetchShare(shareEndpoint, id)
       .then((snapshot) => {
-        setDocText(snapshot.doc)
+        setWorkspace({ files: snapshot.files, entry: snapshot.entry })
+        setActiveFile(snapshot.active ?? snapshot.entry)
+        setConfigOpen(false)
         setConfigText(snapshot.config)
         // From here on the session is the user's own — a reload should restore
         // their edits from localStorage, not re-fetch the original share.
@@ -205,25 +294,34 @@ export function Playground({
       .catch((err: Error) => setShareLoad({ status: 'error', message: err.message }))
   }, [shareEndpoint, setConfigText])
 
+  const snapshot = useMemo<PlaygroundSnapshot>(
+    () => ({
+      v: 2,
+      files: workspace.files,
+      entry: workspace.entry,
+      ...(activeFile !== workspace.entry ? { active: activeFile } : {}),
+      config: config.text,
+    }),
+    [workspace, activeFile, config.text],
+  )
+
   // Debounced so typing in a large spec doesn't re-serialize it on every keystroke.
-  const persistedDoc = useDebouncedValue(docText, 500)
-  const persistedConfig = useDebouncedValue(config.text, 500)
+  const persistedSnapshot = useDebouncedValue(snapshot, 500)
   useEffect(() => {
     // Hold off while a share link loads so the pre-share state isn't written over it.
     if (!persist || shareLoad.status === 'loading') return
-    writeStoredSnapshot({ v: 1, doc: persistedDoc, config: persistedConfig })
-  }, [persist, shareLoad.status, persistedDoc, persistedConfig])
+    writeStoredSnapshot(persistedSnapshot)
+  }, [persist, shareLoad.status, persistedSnapshot])
 
   // Reopening the share dialog without editing reuses the last link instead of
   // re-uploading (ids are content hashes, so it would be the same link anyway).
-  const lastShare = useRef<{ doc: string; config: string; url: string } | null>(null)
+  const lastShare = useRef<{ body: string; url: string } | null>(null)
   const handleShare = async () => {
-    const doc = docText
-    const configText = config.text
+    const body = JSON.stringify(snapshot)
     const last = lastShare.current
-    if (last && last.doc === doc && last.config === configText) return last.url
-    const url = await createShare(shareEndpoint!, { v: 1, doc, config: configText })
-    lastShare.current = { doc, config: configText, url }
+    if (last && last.body === body) return last.url
+    const url = await createShare(shareEndpoint!, snapshot)
+    lastShare.current = { body, url }
     return url
   }
 
@@ -275,6 +373,263 @@ export function Playground({
     )
   }
 
+  // Handlers below can run after an await (fetches) or from a stale render's
+  // closure, so they read the latest workspace rather than the rendered one.
+  const workspaceRef = useRef(workspace)
+  workspaceRef.current = workspace
+  const isMultiFile = workspace.files.length > 1
+  const tabDomId = (name: string) => `playground-tab-file-${workspace.files.findIndex((f) => f.name === name)}`
+
+  // --- Arazzo: each source description is read from the workspace file its
+  // `url` names (see utils/arazzoSources), or fetched when its `url` is
+  // absolute and no file matches.
+  const debouncedWorkspaceRef = useRef(debouncedWorkspace)
+  debouncedWorkspaceRef.current = debouncedWorkspace
+  // Mid-edit, the entry may not parse; keep the last list rather than
+  // flashing the panel away.
+  const lastMatches = useRef<SourceMatch[]>([])
+  const sourceMatches = useMemo(() => {
+    if (detectSpecType(debouncedEntry.content) !== 'arazzo') return (lastMatches.current = [])
+    const descriptions = readSourceDescriptions(debouncedEntry.content)
+    if (descriptions) lastMatches.current = matchSources(debouncedWorkspace, descriptions, debouncedEntry.name)
+    return lastMatches.current
+  }, [debouncedWorkspace, debouncedEntry])
+  const sourceMatchesRef = useRef(sourceMatches)
+  sourceMatchesRef.current = sourceMatches
+
+  // Absolute urls with no matching file, fetched once per session (and again on Retry).
+  const [remoteSources, setRemoteSources] = useState<Record<string, RemoteSource>>({})
+  const remoteLoads = useRef(new Map<string, Promise<string>>())
+  const [retries, setRetries] = useState(0)
+  // Workspace files nested Arazzo sources were read from, so editing one re-resolves.
+  const nestedReads = useRef(new Set<string>())
+
+  const fetchRemoteSource = useCallback((url: string) => {
+    let load = remoteLoads.current.get(url)
+    if (!load) {
+      setRemoteSources((current) => ({ ...current, [url]: { status: 'loading' } }))
+      load = fetchDocumentText(url).then(
+        (content) => {
+          setRemoteSources((current) => ({ ...current, [url]: { status: 'loaded', content } }))
+          return content
+        },
+        (err: Error) => {
+          setRemoteSources((current) => ({ ...current, [url]: { status: 'failed', message: err.message } }))
+          throw err
+        },
+      )
+      remoteLoads.current.set(url, load)
+    }
+    return load
+  }, [])
+
+  // Called by the library for every source not in `arazzoSources`: missing
+  // files, absolute urls, and the sources of nested Arazzo documents.
+  const loadArazzoSource = useCallback(
+    (url: string) => {
+      const ws = debouncedWorkspaceRef.current
+      // A top-level source keeps the match the panel shows; only nested ones are matched here.
+      const topLevel = sourceMatchesRef.current.find((match) => match.url === url)
+      const name = topLevel ? matchedFile(topLevel) : fileForUrl(url, ws.entry)
+      const file = name ? getFile(ws, name) : undefined
+      if (file) {
+        if (!topLevel) nestedReads.current.add(file.name)
+        return file.content
+      }
+      return isAbsoluteUrl(url) ? fetchRemoteSource(url) : undefined
+    },
+    [fetchRemoteSource],
+  )
+
+  const arazzoSources = useMemo(() => {
+    const sources: Record<string, string> = {}
+    for (const match of sourceMatches) {
+      const name = matchedFile(match)
+      const file = name ? getFile(debouncedWorkspace, name) : undefined
+      if (file) sources[match.name] = file.content
+    }
+    const nested = [...nestedReads.current].map((name) => getFile(debouncedWorkspace, name)?.content ?? null)
+    sources[RESOLVE_REVISION_KEY] = JSON.stringify([retries, nested])
+    return sources
+  }, [sourceMatches, debouncedWorkspace, retries])
+
+  const retryRemoteSource = (url: string) => {
+    remoteLoads.current.delete(url)
+    setRetries((n) => n + 1)
+  }
+
+  // Diagnostics about a source the workspace holds go to that file; the rest
+  // (fetched or nested sources) stay with the entry, naming the source. A
+  // source with no matching file is reported in the playground's own terms:
+  // the library only knows that `loadSource` came back empty.
+  const attributeArazzoDiagnostics = (items: ArazzoDiagnostic[]): ParserDiagnostic[] =>
+    items.map(({ source, ...item }) => {
+      if (!source) {
+        const [field, index] = item.path
+        const missing = field === 'sourceDescriptions' && item.path.length === 2
+          ? sourceMatchesRef.current.find((m) => String(m.index) === index && m.kind === 'relative' && !matchedFile(m))
+          : undefined
+        if (!missing || missing.kind !== 'relative') return item
+        return {
+          ...item,
+          message: missing.fileName
+            ? `Source “${missing.name}”: no file “${missing.fileName}” in the workspace.`
+            : `Source “${missing.name}”: “${missing.url}” points above the workspace’s top folder.`,
+        }
+      }
+      const match = sourceMatchesRef.current.find((m) => m.name === source)
+      const file = match ? matchedFile(match) : null
+      return file ? { ...item, file } : { ...item, message: `Source “${source}”: ${item.message}` }
+    })
+
+  // Problems the library found with a source's document, reported at its
+  // `sourceDescriptions` entry: the panel shows them on the source's row.
+  const sourceRows: SourceRow[] = sourceMatches.map((match) => {
+    const problem = rendererDiagnostics.find(
+      (d) => !d.file && d.severity === 0 && d.path?.length === 2 && d.path[0] === 'sourceDescriptions' && d.path[1] === String(match.index),
+    )?.message
+    const remote = match.kind === 'absolute' && !matchedFile(match) && match.url ? remoteSources[match.url] : undefined
+    return { match, remote, problem }
+  })
+
+  const handleAddFile = (name: string, content: string): string | null => {
+    const result = addFile(workspaceRef.current, { name, content })
+    if ('error' in result) return result.error
+    workspaceRef.current = result.workspace
+    setWorkspace(result.workspace)
+    return null
+  }
+
+  const handleFileEdit = (name: string, content: string) => {
+    setWorkspace((ws) => updateFileContent(ws, name, content))
+  }
+
+  const handleNewFile = () => {
+    const ws = workspaceRef.current
+    const name = uniqueFileName(ws, NEW_FILE_NAME)
+    const result = addFile(ws, { name, content: '' })
+    if ('error' in result) return
+    setWorkspace(result.workspace)
+    openFile(name)
+    setNaming({ file: name, label: 'Name the new file' })
+  }
+
+  const startRename = (name: string) => {
+    openFile(name)
+    setNaming({ file: name, label: `Rename ${name}` })
+  }
+
+  const submitName = (to: string): string | null => {
+    if (!naming) return null
+    const ws = workspaceRef.current
+    const result = renameFile(ws, naming.file, to)
+    if ('error' in result) return result.error
+    setWorkspace(result.workspace)
+    if (activeFile === naming.file) setActiveFile(to)
+    setNaming(null)
+    // Renaming keeps the file's position, so its tab keeps its DOM id.
+    const index = ws.files.findIndex((f) => f.name === naming.file)
+    requestAnimationFrame(() => document.getElementById(`playground-tab-file-${index}`)?.focus())
+    return null
+  }
+
+  const handleSetEntry = (name: string) => {
+    const result = setEntryFile(workspaceRef.current, name)
+    if ('workspace' in result) setWorkspace(result.workspace)
+  }
+
+  // Deleting takes effect at once; the notice it shows can put the file back.
+  const handleDelete = (name: string) => {
+    const ws = workspaceRef.current
+    const index = ws.files.findIndex((f) => f.name === name)
+    const result = deleteFile(ws, name)
+    if ('error' in result) return
+    const file = ws.files[index]
+    const wasEntry = ws.entry === name
+    workspaceRef.current = result.workspace
+    setWorkspace(result.workspace)
+    if (activeFile === name) openFile(result.workspace.entry)
+    if (naming?.file === name) setNaming(null)
+
+    const referencedBy = filesReferencing(ws, name)
+    const details = [
+      wasEntry && `${result.workspace.entry} is now the entry.`,
+      referencedBy.length > 0 && `Still referenced by ${referencedBy.join(', ')}.`,
+    ].filter(Boolean)
+    showNotice({
+      message: [`Deleted ${name}.`, ...details].join(' '),
+      undo: () => {
+        const restored = restoreFile(workspaceRef.current, file, index, wasEntry)
+        if ('error' in restored) {
+          showNotice({ message: `Couldn’t restore ${name}: ${restored.error}.` })
+          return
+        }
+        workspaceRef.current = restored.workspace
+        setWorkspace(restored.workspace)
+        openFile(name)
+        setNotice(null)
+      },
+    })
+  }
+
+  // A fetched URL replaces a one-file workspace (exactly what Fetch did before
+  // workspaces), but joins a multi-file one as a new file — there, replacing
+  // would silently throw away every other file.
+  const handleFetchedDocument = (file: WorkspaceFile): string => {
+    const ws = workspaceRef.current
+    if (ws.files.length <= 1) {
+      const next = singleFileWorkspace(file.content, file.name)
+      workspaceRef.current = next
+      replaceWorkspace(next)
+      return file.name
+    }
+    const name = uniqueFileName(ws, file.name)
+    const result = addFile(ws, { name, content: file.content })
+    if ('error' in result) return name
+    workspaceRef.current = result.workspace
+    setWorkspace(result.workspace)
+    openFile(name)
+    return name
+  }
+
+  // Sources fetched next to an Arazzo document. A file with that name and
+  // different content is only replaced when asked — the user may have edited it.
+  const handleAddSources = (files: WorkspaceFile[], replace: boolean): string[] => {
+    let ws = workspaceRef.current
+    const kept: string[] = []
+    for (const file of files) {
+      const existing = getFile(ws, file.name)
+      if (!existing) {
+        const result = addFile(ws, file)
+        if ('workspace' in result) ws = result.workspace
+      } else if (existing.content !== file.content) {
+        if (replace) ws = updateFileContent(ws, file.name, file.content)
+        else kept.push(file.name)
+      }
+    }
+    workspaceRef.current = ws
+    setWorkspace(ws)
+    return kept
+  }
+
+  const fileTabs: TabDescriptor[] = workspace.files.map((file, index) => ({
+    id: fileTab(file.name),
+    domId: `playground-tab-file-${index}`,
+    label: file.name,
+    hasError: filesWithErrors.has(file.name),
+    // With one file there's nothing to tell apart — keep the tab plain.
+    isEntry: isMultiFile && file.name === workspace.entry,
+    onRename: () => startRename(file.name),
+    // The last file can't be deleted, so it gets no ×.
+    onDelete: isMultiFile ? () => handleDelete(file.name) : undefined,
+  }))
+  const configTab: TabDescriptor = {
+    id: 'config',
+    domId: 'playground-tab-config',
+    label: 'Config',
+    hasError: config.error != null,
+  }
+
   const { containerRef, splitPercent, handlePointerDown, nudge } = useResizableSplit()
 
   return (
@@ -293,18 +648,27 @@ export function Playground({
         style={{ width: editorExpanded ? `${splitPercent}%` : '100%', overflow: 'auto' }}
       >
         <style>{scrollbarStyle('.playground-preview-scroll', palette)}</style>
-        {specType === 'openapi' ? (
-          <OpenAPIRenderer
-            raw={debouncedDocText}
+        {specType === 'arazzo' ? (
+          <ArazzoRenderer
+            raw={debouncedEntry.content}
+            sources={arazzoSources}
+            loadSource={loadArazzoSource}
             config={previewConfig}
             plugins={plugins}
-            onDiagnostics={(d) => setDiagnostics(d as ParserDiagnostic[])}
+            onDiagnostics={(d) => setRendererDiagnostics(attributeArazzoDiagnostics(d))}
+          />
+        ) : specType === 'openapi' ? (
+          <OpenAPIRenderer
+            raw={debouncedEntry.content}
+            config={previewConfig}
+            plugins={plugins}
+            onDiagnostics={(d) => setRendererDiagnostics(d as ParserDiagnostic[])}
           />
         ) : (
           <AsyncAPIRenderer
-            raw={debouncedDocText}
+            raw={debouncedEntry.content}
             config={previewConfig}
-            onDiagnostics={(d) => setDiagnostics(d as ParserDiagnostic[])}
+            onDiagnostics={(d) => setRendererDiagnostics(d as ParserDiagnostic[])}
           />
         )}
       </div>
@@ -316,8 +680,24 @@ export function Playground({
           <div style={{ display: 'flex', flexDirection: 'column', width: `${100 - splitPercent}%` }}>
             <EditorTabs
               activeTab={activeTab}
-              onChange={setActiveTab}
+              onChange={handleTabChange}
               palette={palette}
+              fileTabs={fileTabs}
+              pinnedTabs={[configTab]}
+              actions={
+                <>
+                  <NewFileButton palette={palette} onClick={handleNewFile} />
+                  <FileMenu
+                    palette={palette}
+                    files={workspace.files.map((f) => ({ name: f.name, isEntry: f.name === workspace.entry }))}
+                    activeFile={configOpen ? null : currentFile.name}
+                    onOpen={openFile}
+                    onRename={startRename}
+                    onSetEntry={handleSetEntry}
+                    onDelete={handleDelete}
+                  />
+                </>
+              }
               trailing={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingRight: '6px' }}>
                   {shareEndpoint && <ShareButton palette={palette} onShare={handleShare} />}
@@ -326,34 +706,63 @@ export function Playground({
                   <ViewToggle expanded palette={palette} onChange={setEditorExpanded} />
                 </div>
               }
-              tabs={[
-                {
-                  id: 'doc',
-                  label: specType === 'openapi' ? 'OpenAPI Document' : 'AsyncAPI Document',
-                  hasError: hasDocErrors,
-                },
-                { id: 'config', label: 'Config', hasError: config.error != null },
-              ]}
             />
+            {naming && (
+              <FileNameBar
+                key={naming.file}
+                palette={palette}
+                label={naming.label}
+                initialName={naming.file}
+                onSubmit={submitName}
+                onCancel={() => setNaming(null)}
+              />
+            )}
             <div
-              id={`panel-${activeTab}`}
+              id="playground-editor-panel"
               role="tabpanel"
-              aria-labelledby={`tab-${activeTab}`}
+              aria-labelledby={configOpen ? configTab.domId : tabDomId(currentFile.name)}
               style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
             >
-              {activeTab === 'doc' ? (
+              {!configOpen ? (
                 <>
-                  <FetchSchema palette={palette} onLoad={setDocText} />
+                  <FetchSchema
+                    palette={palette}
+                    onLoadDocument={handleFetchedDocument}
+                    onAddSources={handleAddSources}
+                    onLoadWorkspace={(ws) => replaceWorkspace(ws)}
+                    hint={isMultiFile ? 'Fetching adds the document as a new file. Examples replace the workspace.' : undefined}
+                  />
                   <EditorPane
-                    ariaLabel={specType === 'openapi' ? 'OpenAPI document' : 'AsyncAPI document'}
-                    value={docText}
-                    onChange={setDocText}
+                    // Remount per file so undo history never crosses into another file.
+                    key={currentFile.name}
+                    ariaLabel={
+                      currentFile.name === workspace.entry
+                        ? `${currentFile.name} (${specLabel} document, rendered)`
+                        : currentFile.name
+                    }
+                    value={currentFile.content}
+                    onChange={(content) => handleFileEdit(currentFile.name, content)}
                     error={null}
                     mode={uiMode}
                     palette={palette}
-                    language={docLanguage}
+                    language={fileLanguage(currentFile.name, currentFile.content)}
                   />
-                  <DiagnosticsPanel diagnostics={diagnostics} palette={palette} />
+                  {specType === 'arazzo' && (
+                    <SourcesPanel
+                      palette={palette}
+                      rows={sourceRows}
+                      onOpenFile={openFile}
+                      onAddFile={handleAddFile}
+                      fetchText={fetchDocumentText}
+                      onRetry={retryRemoteSource}
+                    />
+                  )}
+                  <DiagnosticsPanel
+                    diagnostics={diagnostics}
+                    palette={palette}
+                    groupByFile={isMultiFile}
+                    onSelectFile={openFile}
+                  />
                 </>
               ) : (
                 <>
@@ -422,6 +831,58 @@ export function Playground({
               ×
             </button>
           )}
+        </div>
+      )}
+
+      {notice && (
+        <div
+          role="status"
+          style={{
+            position: 'absolute',
+            bottom: '16px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            maxWidth: 'calc(100% - 32px)',
+            padding: '8px 12px',
+            fontSize: '13px',
+            background: palette.chromeBg,
+            color: palette.textPrimary,
+            border: `1px solid ${palette.chromeBorder}`,
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            zIndex: 50,
+          }}
+        >
+          <span>{notice.message}</span>
+          {notice.undo && (
+            <button
+              type="button"
+              onClick={notice.undo}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                color: palette.focusRing,
+                fontWeight: 600,
+                fontFamily: 'inherit',
+                fontSize: 'inherit',
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            >
+              Undo
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            aria-label="Dismiss"
+            style={{ border: 'none', background: 'transparent', color: palette.textMuted, cursor: 'pointer', fontSize: '14px', padding: 0 }}
+          >
+            ×
+          </button>
         </div>
       )}
 

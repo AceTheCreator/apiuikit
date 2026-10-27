@@ -12,7 +12,7 @@ import dts from 'vite-plugin-dts'
 export default defineConfig({
   plugins: [
     react(),
-    dts({ include: ['src'], tsconfigPath: './tsconfig.json' }),
+    dts({ include: ['src'], exclude: ['src/tests'], tsconfigPath: './tsconfig.json' }),
   ],
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
@@ -42,6 +42,11 @@ export default defineConfig({
         'openapi-info': 'src/elements/openapi-info.tsx',
         schemas: 'src/elements/schemas.tsx',
         schema: 'src/elements/schema.tsx',
+        arazzo: 'src/elements/arazzo.tsx',
+        'arazzo-renderer': 'src/elements/arazzo-renderer.tsx',
+        'arazzo-workflow': 'src/elements/arazzo-workflow.tsx',
+        'arazzo-info': 'src/elements/arazzo-info.tsx',
+        'arazzo-workflows': 'src/elements/arazzo-workflows.tsx',
       },
       formats: ['es'],
       fileName: (_format, entryName) => `elements/${entryName}.js`,

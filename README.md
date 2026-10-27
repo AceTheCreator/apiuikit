@@ -6,14 +6,15 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 [![Website](https://img.shields.io/badge/website-apiuikit.com-1473FF.svg)](https://apiuikit.com)
 
-React component library for rendering API specifications. Point it at an AsyncAPI or OpenAPI document and get a full interactive UI, which includes: servers, channels/endpoints, operations, messages, schemas, with no manual mapping required.
+React component library for rendering API specifications. Point it at an AsyncAPI or OpenAPI document and get a full interactive UI, which includes: servers, channels/endpoints, operations, messages, schemas, with no manual mapping required. Arazzo workflows render too, each step showing the OpenAPI operation it calls.
 
 **[▶ Try it out in the Playground](https://playground.apiuikit.com)**
 
-> **Spec compatibility:** apiuikit renders AsyncAPI 3.x and OpenAPI 3.0/3.1
-> documents. Version compatibility does not imply that every specification
-> keyword has a dedicated UI; see [OpenAPI coverage](./docs/usage/openapi.md#coverage)
-> for the exact rendered features and deliberate limits.
+> **Spec compatibility:** apiuikit renders AsyncAPI 3.x, OpenAPI 3.0/3.1 and
+> Arazzo 1.0/1.1 documents. Version compatibility does not imply that every
+> specification keyword has a dedicated UI; see [OpenAPI coverage](./docs/usage/openapi.md#coverage)
+> and [Arazzo coverage](./docs/usage/arazzo.md#coverage) for the exact rendered
+> features and deliberate limits.
 
 ## Install
 
@@ -26,6 +27,7 @@ If you want to hand it a raw YAML/JSON string instead of a pre-parsed object, al
 ```bash
 npm install @asyncapi/parser      # for AsyncAPI documents
 npm install @scalar/openapi-parser # for OpenAPI documents
+npm install @usearazzo/parser      # for Arazzo documents (plus @scalar/openapi-parser for their sources)
 ```
 
 [![Edit Apiuikit React Component](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/sandbox/6jw4pf)
@@ -66,6 +68,19 @@ import doc from "./openapi.json";
 
 export default function App() {
   return <OpenAPI openapi={doc} />;
+}
+```
+
+[Arazzo](./docs/usage/arazzo.md) workflows use `Arazzo` / `ArazzoRenderer`. A workflow calls operations in other documents, so pass those as `sources`, keyed by each source description's `name`:
+
+```tsx
+import { Arazzo } from "apiuikit";
+import "apiuikit/style.css";
+import flows from "./flows.arazzo.json";
+import petstore from "./petstore.json";
+
+export default function App() {
+  return <Arazzo arazzo={flows} sources={{ petstore }} />;
 }
 ```
 
@@ -110,6 +125,7 @@ See the full usage docs for props, configuration options, and more:
 - [Avro schemas](./docs/usage/avro.md)
 - [Protobuf schemas](./docs/usage/protobuf.md)
 - [OpenAPI](./docs/usage/openapi.md) (`OpenAPI`, `OpenAPIRenderer`, composable sections, web components)
+- [Arazzo](./docs/usage/arazzo.md) (`Arazzo`, `ArazzoRenderer`, supplying sources, sections, web components)
 
 ## Usage with Web Components
 
@@ -133,7 +149,7 @@ const apiDoc = document.querySelector("#api-doc");
 apiDoc.spec = rawYamlOrJsonString;
 ```
 
-Use `<apiuikit-openapi-renderer>` for raw OpenAPI documents. If the document is already parsed, use `<apiuikit-asyncapi>` or `<apiuikit-openapi>` and assign the object to its `spec` property.
+Use `<apiuikit-openapi-renderer>` for raw OpenAPI documents. If the document is already parsed, use `<apiuikit-asyncapi>` or `<apiuikit-openapi>` and assign the object to its `spec` property. Arazzo has its own elements, loaded from their own subpaths; see [Arazzo elements](./docs/usage/with-webcomponents.md#arazzo-elements).
 
 See [Web Components](./docs/usage/with-webcomponents.md) for CDN usage, configuration, diagnostics, and framework integration.
 

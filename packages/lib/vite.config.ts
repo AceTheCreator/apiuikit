@@ -18,6 +18,31 @@ function browserNodePolyfills(): Plugin {
   }
 }
 
+// Vite stubs Node builtins (`fs` in protobufjs and the Arazzo parser) with a
+// module whose id is `__vite-browser-external`. Once more than one chunk
+// imports it, Rollup splits it into its own chunk named after that id. Vite's
+// dev server treats any URL containing that marker as its own stub and rewrites
+// named imports from it into a default import, which the built chunk doesn't
+// export, so a consumer serving dist/ unbundled (the playground) fails to load
+// the parsers. Give the chunk a name without the marker.
+function renameBrowserExternalChunk(): Plugin {
+  return {
+    name: 'rename-browser-external-chunk',
+    apply: 'build',
+    outputOptions(options) {
+      const { chunkFileNames } = options
+      if (typeof chunkFileNames !== 'string') return null
+      return {
+        ...options,
+        chunkFileNames: (chunk) =>
+          chunk.name.startsWith('__vite-browser-external')
+            ? chunkFileNames.replace('[name]', 'node-builtin-stub')
+            : chunkFileNames,
+      }
+    },
+  }
+}
+
 // Touched after every completed (re)build. The playground dev server reloads
 // off this marker instead of dist/, which is emptied mid-rebuild — see
 // packages/playground/DEVELOPMENT.md.
@@ -52,6 +77,7 @@ export default defineConfig({
     // object-inspect (pulled in by HTTPSnippet) probes Node's `util.inspect`.
     // Replace that probe before it becomes a browser-external shim.
     browserNodePolyfills(),
+    renameBrowserExternalChunk(),
     react(),
     // .d.ts generation is slow and unnecessary for the playground watch loop;
     // one-shot `vite build` / publish still emits types.

@@ -15,6 +15,8 @@ Plus standalone elements for individual sections — `<apiuikit-asyncapi-servers
 
 Single-item elements (`<apiuikit-asyncapi-operation>`, `<apiuikit-asyncapi-message>`, `<apiuikit-openapi-endpoint>`, `<apiuikit-openapi-webhook>`, `<apiuikit-schema>`) go one step further and embed one item inline, picked by attribute: `<apiuikit-openapi-endpoint operation-id="addPet">`. 
 
+[Arazzo](https://spec.openapis.org/arazzo/latest.html) workflows render with `<apiuikit-arazzo>` and `<apiuikit-arazzo-renderer>`, and in parts with `<apiuikit-arazzo-info>`, `<apiuikit-arazzo-workflows>` and `<apiuikit-arazzo-workflow>`. They take the document and its OpenAPI sources as properties, or as child `<script data-arazzo>` / `<script data-source="name">` tags so a static page needs no JavaScript. They load from their own subpaths (`@apiuikit/web-component/arazzo-renderer` and so on), not the all-in-one bundle.
+
 See [docs/usage/with-webcomponents.md](https://github.com/AceTheCreator/apiuikit/blob/master/docs/usage/with-webcomponents.md#section-elements) for the full prop reference.
 
 If you're building a React app, use [apiuikit](https://www.npmjs.com/package/apiuikit) directly instead of this package.

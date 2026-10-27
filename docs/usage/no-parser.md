@@ -4,6 +4,8 @@
 
 Use this entry when you already have a resolved AsyncAPI document; for example, fetched from your own API, bundled at build time, or processed server-side. The `@asyncapi/parser` package is not required and will never be included in your bundle.
 
+OpenAPI and Arazzo have the same kind of entry: `OpenAPI` (see [OpenAPI](./openapi.md)) and `Arazzo`, which also takes the workflow's OpenAPI sources as objects (see [Arazzo](./arazzo.md#arazzo-component-without-parser)).
+
 ## `AsyncAPI` component
 
 Pass a plain JavaScript object that matches the AsyncAPI 3.0 document shape.

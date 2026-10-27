@@ -1,0 +1,150 @@
+{
+  "arazzo": "1.0.1",
+  "info": {
+    "title": "Pet checkout",
+    "version": "1.0.0",
+    "description": "Find a pet in one API and pay for it in another."
+  },
+  "sourceDescriptions": [
+    {
+      "name": "pets",
+      "url": "./pets.yaml",
+      "type": "openapi"
+    },
+    {
+      "name": "payments",
+      "url": "./payments.yaml",
+      "type": "openapi"
+    }
+  ],
+  "workflows": [
+    {
+      "workflowId": "buy-pet",
+      "summary": "Buy a pet",
+      "description": "Looks the pet up, charges its price, then marks it sold.",
+      "inputs": {
+        "type": "object",
+        "required": [
+          "petId",
+          "cardToken"
+        ],
+        "properties": {
+          "petId": {
+            "type": "string",
+            "description": "The pet to buy."
+          },
+          "cardToken": {
+            "type": "string",
+            "description": "A tokenized card from the payment form."
+          }
+        }
+      },
+      "steps": [
+        {
+          "stepId": "find",
+          "operationId": "$sourceDescriptions.pets.getPet",
+          "parameters": [
+            {
+              "name": "petId",
+              "in": "path",
+              "value": "$inputs.petId"
+            }
+          ],
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ],
+          "outputs": {
+            "price": "$response.body#/price"
+          }
+        },
+        {
+          "stepId": "pay",
+          "operationId": "$sourceDescriptions.payments.createCharge",
+          "requestBody": {
+            "contentType": "application/json",
+            "payload": {
+              "amount": "$steps.find.outputs.price",
+              "source": "$inputs.cardToken"
+            }
+          },
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 201"
+            }
+          ],
+          "onFailure": [
+            {
+              "name": "card-declined",
+              "type": "end",
+              "criteria": [
+                {
+                  "condition": "$statusCode == 402"
+                }
+              ]
+            }
+          ],
+          "outputs": {
+            "chargeId": "$response.body#/id"
+          }
+        },
+        {
+          "stepId": "mark-sold",
+          "operationId": "$sourceDescriptions.pets.updatePet",
+          "parameters": [
+            {
+              "name": "petId",
+              "in": "path",
+              "value": "$inputs.petId"
+            }
+          ],
+          "requestBody": {
+            "contentType": "application/json",
+            "payload": {
+              "status": "sold"
+            }
+          },
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 200"
+            }
+          ]
+        }
+      ],
+      "outputs": {
+        "chargeId": "$steps.pay.outputs.chargeId"
+      }
+    },
+    {
+      "workflowId": "refund",
+      "summary": "Refund a purchase",
+      "inputs": {
+        "type": "object",
+        "properties": {
+          "chargeId": {
+            "type": "string"
+          }
+        }
+      },
+      "steps": [
+        {
+          "stepId": "refund",
+          "operationId": "$sourceDescriptions.payments.refundCharge",
+          "parameters": [
+            {
+              "name": "chargeId",
+              "in": "path",
+              "value": "$inputs.chargeId"
+            }
+          ],
+          "successCriteria": [
+            {
+              "condition": "$statusCode == 201"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

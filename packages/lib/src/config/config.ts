@@ -1,5 +1,6 @@
 import type { AsyncAPIDocumentData } from "../types/schema";
 import type { HttpMethod, OpenAPIDocumentData } from "../types/openapi";
+import type { ArazzoModel } from "../types/arazzo";
 
 export interface ConfigInterface {
   /**
@@ -36,7 +37,8 @@ export interface SidePanelConfig {
   topOffset?: number;
 }
 
-type MarkdownDocument = AsyncAPIDocumentData | OpenAPIDocumentData;
+/** Arazzo is exported from its resolved model, which has the sources loaded; see `resolveArazzoDocument`. */
+type MarkdownDocument = AsyncAPIDocumentData | OpenAPIDocumentData | ArazzoModel;
 
 /** What "View as Markdown" is being asked to open. Operation targets are
  * discriminated by their spec-specific address, preventing invalid
@@ -63,6 +65,14 @@ export type MarkdownTarget =
       kind: "operation";
       document: AsyncAPIDocumentData;
       /** AsyncAPI operation key, e.g. `"sendLightMeasurement"`. */
+      id: string;
+      method?: never;
+      path?: never;
+    }
+  | {
+      kind: "workflow";
+      document: ArazzoModel;
+      /** Arazzo `workflowId`, e.g. `"apply-coupon"`. */
       id: string;
       method?: never;
       path?: never;

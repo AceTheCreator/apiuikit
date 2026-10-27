@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `AsyncAPI` component renders a complete documentation page: sidebar, search, servers, operations, messages, schemas. If you want to build your own layout instead, render individual sections on their own, or compose several of them together.
+The `AsyncAPI` component renders a complete documentation page: sidebar, search, servers, operations, messages, schemas. If you want to build your own layout instead, render individual sections on their own, or compose several of them together. Arazzo documents have their own sections; see [Arazzo sections](#arazzo-sections).
 
 ## Rendering one section standalone
 
@@ -106,6 +106,27 @@ They also take `config`, `plugins`, and `layout` like the other sections, with o
 `OpenAPIEndpoint` and `OpenAPIWebhook` take an optional `onNavigate(operationId)`. A response `link` that points at another operation calls it, so you can scroll or route to wherever your page shows that operation. Without it, those links render as plain text.
 
 If nothing in the document matches, the component renders nothing and logs a `[apiuikit]` warning to the console.
+
+## Arazzo sections
+
+Arazzo has the same kind of sections: `ArazzoInfo` (title, description and a chip per source), `ArazzoWorkflows` (every workflow) and `ArazzoWorkflowSection` (one workflow, by `workflowId`), composed under `ArazzoProvider`:
+
+```tsx
+import { ArazzoProvider, ArazzoInfo, ArazzoWorkflowSection } from "apiuikit";
+
+<ArazzoProvider document={arazzoDocument} sources={{ petstore: petstoreDocument }}>
+  <ArazzoInfo />
+  <p>Most integrations start by applying a coupon.</p>
+  <ArazzoWorkflowSection workflowId="apply-coupon" />
+</ArazzoProvider>
+```
+
+Two differences from the OpenAPI and AsyncAPI sections:
+
+- Besides `document`, each takes the Arazzo source options (`sources`, `baseUrl`, `loadSource`, `maxDepth`, `onDiagnostics`), on the provider when composed. See [Arazzo](./arazzo.md#supplying-sources).
+- Resolving loads the sources, so it's asynchronous: a section renders nothing until its document has resolved. Under `ArazzoProvider`, that happens once for every section inside.
+
+`ArazzoWorkflowSection` is named with "Section" because `ArazzoWorkflow` is already the model's type. Like the single-item sections, it renders nothing and logs a warning when the document has no such workflow.
 
 ## Error handling
 

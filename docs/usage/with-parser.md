@@ -4,6 +4,8 @@
 
 The parser entry accepts a raw AsyncAPI YAML or JSON string, validates it, and renders the UI. The `@asyncapi/parser` package is loaded on demand via a dynamic import so it never lands in your bundle unless this path is used.
 
+The same pattern applies to the other specs, each with its own optional parser: `OpenAPIRenderer` needs `@scalar/openapi-parser` (see [OpenAPI](./openapi.md)), and `ArazzoRenderer` needs `@usearazzo/parser` (see [Arazzo](./arazzo.md#install)).
+
 ## Prerequisites
 
 Install the peer dependency:

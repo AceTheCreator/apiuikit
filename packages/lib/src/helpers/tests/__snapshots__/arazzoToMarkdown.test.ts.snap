@@ -1,0 +1,568 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`arazzoToMarkdown > describes the official buy now, pay later example 1`] = `
+"# BNPL Workflow description
+
+**Version:** 1.0.0 · **Arazzo:** 1.0.0
+
+Describes the steps to secure a loan at checkout from a BNPL platform. It is a multi-step process that requires multiple API calls across several API providers to be completed successfully.
+
+## Sources
+
+- \`BnplApi\` (OpenAPI): \`https://raw.githubusercontent.com/OAI/Arazzo-Specification/main/examples/1.0.0/bnpl-openapi.yaml\`
+
+## Workflows
+
+- \`ApplyForLoanAtCheckout\`: Apply for a loan at checkout using a BNPL platform (7 steps)
+
+## Apply for a loan at checkout using a BNPL platform
+
+**Workflow ID:** \`ApplyForLoanAtCheckout\` · 7 steps
+
+Describes the steps to secure a loan at checkout from a BNPL platform. It is a multistep process that requires multiple API calls across several API providers to be completed successfully.
+
+**Inputs** (JSON Schema):
+
+\`\`\`json
+{
+  "type": "object",
+  "required": [
+    "customer",
+    "products"
+  ],
+  "properties": {
+    "customer": {
+      "description": "Customer can either be the customer details, which will be used for enrollment, or a link to an existing customer resource as the customer already uses the BNPL platform\\n",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "firstName",
+            "lastName",
+            "dateOfBirth",
+            "postalCode"
+          ],
+          "properties": {
+            "firstName": {
+              "description": "First name of customer",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 70
+            },
+            "lastName": {
+              "description": "Last name of customer",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 70
+            },
+            "dateOfBirth": {
+              "description": "Customer date of birth",
+              "type": "string",
+              "format": "date-time"
+            },
+            "postalCode": {
+              "description": "Zip code or postal code of customer",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 70
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "uri"
+          ],
+          "properties": {
+            "uri": {
+              "description": "URI that points to an existing customer resource, as customer already enrolled on platform",
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "products": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "productCode",
+          "purchaseAmount"
+        ],
+        "properties": {
+          "merchantCategoryCode": {
+            "description": "Merchant category code of merchant. Only required for marketplace ecommerce platforms",
+            "type": "string",
+            "pattern": "^[0-9]{4}$"
+          },
+          "productCode": {
+            "description": "Product code for loan application. Required for eligibility check",
+            "type": "string"
+          },
+          "purchaseAmount": {
+            "description": "Product purchase amount and currency code",
+            "type": "object",
+            "required": [
+              "currency",
+              "amount"
+            ],
+            "properties": {
+              "currency": {
+                "description": "Currency code",
+                "type": "string",
+                "pattern": "^[A-Z]{3}$"
+              },
+              "amount": {
+                "description": "Amount",
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+\`\`\`
+
+### Step 1: \`checkLoanCanBeProvided\`
+
+Call the BNPL API to filter the basket for products qualifying for checkout loans. Pass in the array of products from the workflow input as the payload for the API call.
+
+Act on the response payload:
+
+- If a list of qualifying products is returned then submit customer choices.
+- If the list of qualifying products is empty then end the workflow
+
+**Calls:** \`POST /products\` (operation \`findEligibleProducts\` in source \`BnplApi\`): Retrieve eligible products
+
+**Request body** (\`application/json\`):
+
+\`\`\`json
+{
+  "customer": "{$inputs.customer}",
+  "products": "{$inputs.products}"
+}
+\`\`\`
+
+**Succeeds when:**
+
+- \`$statusCode == 200\`
+
+**On success:**
+
+- \`existingCustomerNotEligible\`: end the workflow when \`$statusCode == 200\` and \`$response.body#/existingCustomerNotEligible == false\`
+- \`qualifyingProductsFound\`: go to step \`getCustomerTermsAndConditions\` when \`$statusCode == 200\` and \`$response.body\` matches jsonpath \`$[?count(@.products) > 0]\`
+- \`qualifyingProductsNotFound\`: end the workflow when \`$statusCode == 200\` and \`$response.body\` matches jsonpath \`$[?count(@.products) == 0]\`
+
+**Outputs:**
+
+- \`eligibilityCheckRequired\`: \`$response.body#/eligibilityCheckRequired\`
+- \`eligibleProducts\`: \`$response.body#/products\`
+- \`totalLoanAmount\`: \`$response.body#/totalAmount\`
+
+### Step 2: \`getCustomerTermsAndConditions\`
+
+Get the terms and conditions for the BNPL loans. This is static data and therefore has no arguments.
+
+The data will be displayed to the customer and they'll accept the terms out-of-band.
+
+After this step the flow will need to do a customer eligibility check if required.
+
+**Calls:** \`GET /terms-and-conditions\` (operation \`getTermsAndConditions\` in source \`BnplApi\`): Retrieve the terms and conditions for BNPL products
+
+**Succeeds when:**
+
+- \`$statusCode == 200\`
+
+**On success:**
+
+- \`eligibilityCheckRequired\`: go to step \`createCustomer\` when \`$steps.checkLoanCanBeProvided.outputs.eligibilityCheckRequired == true\`
+- \`eligibilityCheckNotRequired\`: go to step \`initiateBnplTransaction\` when \`$steps.checkLoanCanBeProvided.outputs.eligibilityCheckRequired == false\`
+
+**Outputs:**
+
+- \`termsAndConditions\`: \`$response.body\`
+
+### Step 3: \`createCustomer\`
+
+Call the BNPL platform and verify the customer is eligible for the loan, which creates a customer resource. This step is skipped if the customer is already enrolled in the BNPL platform.
+
+Accepting the terms and conditions is set to true as the assumption is they have been accepted when this step is invoked.
+
+If the customer is eligible for the BNPL loan then a customer resource is created
+
+**Calls:** \`POST /customers\` (operation \`createCustomer\` in source \`BnplApi\`): Create a customer
+
+**Request body** (\`application/json\`):
+
+\`\`\`json
+{
+  "firstName": "{$inputs.customer#/firstName}",
+  "lastName": "{$inputs.customer#/lastName}",
+  "dateOfBirth": "{$inputs.customer#/dateOfBirth}",
+  "postalCode": "{$inputs.customer#/postalCode}",
+  "termsAndConditionsAccepted": true
+}
+\`\`\`
+
+**Succeeds when:**
+
+- \`$statusCode == 200 || $statusCode == 201\`
+
+**On success:**
+
+- \`customerIsEligible\`: go to step \`initiateBnplTransaction\` when \`$statusCode == 201\`
+- \`customerIsNotEligible\`: end the workflow when \`$statusCode == 200\`
+
+**Outputs:**
+
+- \`customer\`: \`$response.body#/links/self\`
+
+### Step 4: \`initiateBnplTransaction\`
+
+Initiate the BNPL transaction by sending the customer identifier, eligible products, and indicative loan amount to initiate the loan process
+
+**Calls:** \`POST /loan-transactions\` (operation \`createBnplTransaction\` in source \`BnplApi\`): Initiate a new loan transaction
+
+**Request body** (\`application/json\`):
+
+\`\`\`json
+{
+  "enrolledCustomer": "{$inputs.customer#/uri}",
+  "newCustomer": "{$steps.createCustomer.outputs.customer}",
+  "products": "{$steps.checkLoanCanBeProvided.outputs.eligibleProducts}"
+}
+\`\`\`
+
+**Succeeds when:**
+
+- \`$statusCode == 202\`
+
+**On success:**
+
+- \`CustomerAuthorizationRequired\`: go to step \`authenticateCustomerAndAuthorizeLoan\` when \`$response.body#/redirectAuthToken != null\`
+- \`CustomerAuthorizationNotRequired\`: go to step \`retrieveFinalizedPaymentPlan\` when \`$response.body#/redirectAuthToken == null\`
+
+**Outputs:**
+
+- \`redirectAuthToken\`: \`$response.body#/redirectAuthToken\`
+- \`loanTransactionResourceUrl\`: \`$response.body#/links/self\`
+
+### Step 5: \`authenticateCustomerAndAuthorizeLoan\`
+
+Authenticate the customer and seek authorization for the loan.
+
+Notes:
+
+- Authenticate in this case does not necessarily mean with a valid set of credentials. It could be to prove the identity of the end user, possibly doing an UMA style interaction (which is too complex to tie into this example).
+- A redirect is returned for to be sent to the customer. The customer should follow this, but the success of the authorisation is out-of-band.
+- This flow mimics OAuth style authorization but is not an exact match as it does not rely on an authorisation code/access token exchange (as this seems somewhat artificial in this context).
+
+**Calls:** \`GET /auth\` (operation \`getAuthorization\` in source \`BnplApi\`): Get customer authorisation
+
+**Parameters:**
+
+| Name | In | Value |
+| --- | --- | --- |
+| \`redirectAuthToken\` | query | \`$steps.authenticateCustomerAndAuthorizeLoan.outputs.redirectAuthToken\` |
+
+**Succeeds when:**
+
+- \`$statusCode == 302\`
+
+**Outputs:**
+
+- \`redirectUrl\`: \`$response.header.Location\`
+
+### Step 6: \`retrieveFinalizedPaymentPlan\`
+
+Retrieve finalized payment plan to show to customer once authorization is complete
+
+**Calls:** \`GET /loan-transactions/{loanTransactionId}\` (operation \`retrieveBnplLoanTransaction\` in source \`BnplApi\`): Retrieve loan
+
+**Parameters:**
+
+| Name | In | Value |
+| --- | --- | --- |
+| \`loanTransactionId\` | path | \`$steps.initiateBnplTransaction.outputs.loanTransactionId\` |
+
+**Succeeds when:**
+
+- \`$statusCode == 200\`
+
+**Outputs:**
+
+- \`finalizedPaymentPlan\`: \`$response.body\`
+
+### Step 7: \`updateOrderStatus\`
+
+Send update from eCommerce platform to indicate order fulfilled and loan is therefore active
+
+**Calls:** \`PATCH /loan-transactions/{loanTransactionId}/status\` (operation \`updateBnplLoanTransactionStatus\` in source \`BnplApi\`): Update loan status
+
+**Parameters:**
+
+| Name | In | Value |
+| --- | --- | --- |
+| \`loanTransactionId\` | path | \`$steps.initiateBnplTransaction.outputs.loanTransactionId\` |
+
+**Request body** (\`application/json\`):
+
+\`\`\`json
+{
+  "loanStatus": "Completed"
+}
+\`\`\`
+
+**Succeeds when:**
+
+- \`$statusCode == 204\`
+
+**Workflow outputs:**
+
+- \`finalizedPaymentPlan\`: \`$steps.retrieveFinalizedPaymentPlan.finalizedPaymentPlan\`
+"
+`;
+
+exports[`arazzoToMarkdown > describes the official pet coupons example 1`] = `
+"# Petstore - Apply Coupons
+
+**Version:** 1.0.0 · **Arazzo:** 1.0.0
+
+Illustrates a workflow whereby a client a) finds a pet in the petstore,  b) finds coupons for that pet, and finally c) orders the pet while applying the coupons from step b.
+
+## Sources
+
+- \`pet-coupons\` (OpenAPI): \`./pet-coupons.openapi.yaml\`
+
+## Workflows
+
+- \`apply-coupon\`: Apply a coupon to a pet order. (3 steps)
+- \`buy-available-pet\`: Buy an available pet if one is available. (2 steps)
+- \`place-order\`: Place an order for a pet. (1 step)
+
+## Apply a coupon to a pet order.
+
+**Workflow ID:** \`apply-coupon\` · 3 steps
+
+This is how you can find a pet, find an applicable coupon, and apply that coupon in your order. The workflow concludes by outputting the ID of the placed order.
+
+**Inputs** (JSON Schema):
+
+\`\`\`json
+{
+  "type": "object",
+  "properties": {
+    "my_pet_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Desired tags to use when searching for a pet, in CSV format (e.g. \\"puppy, dalmatian\\")"
+    },
+    "store_id": {
+      "type": "string",
+      "description": "Indicates the domain name of the store where the customer is browsing or buying pets, e.g. \\"pets.example.com\\" or \\"pets.example.co.uk\\"."
+    }
+  }
+}
+\`\`\`
+
+### Step 1: \`find-pet\`
+
+Find a pet based on the provided tags.
+
+**Calls:** \`GET /pet/findByTags\` (operation \`findPetsByTags\` in source \`pet-coupons\`): Finds Pets by tags
+
+**Parameters:**
+
+| Name | In | Value |
+| --- | --- | --- |
+| \`pet_tags\` | query | \`$inputs.my_pet_tags\` |
+
+**Succeeds when:**
+
+- \`$statusCode == 200\`
+
+**Outputs:**
+
+- \`my_pet_id\`: \`$response.body#/0/id\`
+
+### Step 2: \`find-coupons\`
+
+Find a coupon available for the selected pet.
+
+**Calls:** \`GET /pet/{petId}/coupons\` (operation \`getPetCoupons\` in source \`pet-coupons\`): Find a coupon available for a pet
+
+**Parameters:**
+
+| Name | In | Value |
+| --- | --- | --- |
+| \`pet_id\` | path | \`$steps.find-pet.outputs.my_pet_id\` |
+
+**Succeeds when:**
+
+- \`$statusCode == 200\`
+
+**Outputs:**
+
+- \`my_coupon_code\`: \`$response.body#/couponCode\`
+
+### Step 3: \`place-order\`
+
+Place an order for the pet, applying the coupon.
+
+**Runs workflow:** \`place-order\`: Place an order for a pet.
+
+**Parameters:**
+
+| Name | In | Value |
+| --- | --- | --- |
+| \`pet_id\` | input | \`$steps.find-pet.outputs.my_pet_id\` |
+| \`coupon_code\` | input | \`$steps.find-coupons.outputs.my_coupon_code\` |
+
+**Succeeds when:**
+
+- \`$statusCode == 200\`
+
+**Outputs:**
+
+- \`my_order_id\`: \`$outputs.workflow_order_id\`
+
+**Workflow outputs:**
+
+- \`apply_coupon_pet_order_id\`: \`$steps.place-order.outputs.my_order_id\`
+
+## Buy an available pet if one is available.
+
+**Workflow ID:** \`buy-available-pet\` · 2 steps
+
+This workflow demonstrates a workflow very similar to \`apply-coupon\`, by intention. It's meant to indicate how to reuse a step (\`place-order\`) as well as a parameter (\`page\`, \`pageSize\`).
+
+**Inputs** (JSON Schema):
+
+\`\`\`json
+{
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string",
+      "description": "Indicates the domain name of the store where the customer is browsing or buying pets, e.g. \\"pets.example.com\\" or \\"pets.example.co.uk\\"."
+    }
+  }
+}
+\`\`\`
+
+### Step 1: \`find-pet\`
+
+Find a pet that is available for purchase.
+
+**Calls:** \`GET /pet/findByStatus\` (operation \`findPetsByStatus\` in source \`pet-coupons\`): Finds Pets by status
+
+**Parameters:**
+
+| Name | In | Value |
+| --- | --- | --- |
+| \`status\` | query | \`available\` |
+| \`page\` | query | \`1\` |
+| \`pageSize\` | query | \`10\` |
+
+**Succeeds when:**
+
+- \`$statusCode == 200\`
+
+**Outputs:**
+
+- \`my_pet_id\`: \`$response.body#/0/id\`
+
+### Step 2: \`place-order\`
+
+Place an order for the pet.
+
+**Runs workflow:** \`place-order\`: Place an order for a pet.
+
+**Parameters:**
+
+| Name | In | Value |
+| --- | --- | --- |
+| \`pet_id\` | input | \`$steps.find-pet.outputs.my_pet_id\` |
+
+**Succeeds when:**
+
+- \`$statusCode == 200\`
+
+**Outputs:**
+
+- \`my_order_id\`: \`$outputs.workflow_order_id\`
+
+**Workflow outputs:**
+
+- \`buy_pet_order_id\`: \`$steps.place-order.outputs.my_order_id\`
+
+## Place an order for a pet.
+
+**Workflow ID:** \`place-order\` · 1 step
+
+This workflow places an order for a pet. It may be reused by other workflows as the "final step" in a purchase.
+
+**Inputs** (JSON Schema):
+
+\`\`\`json
+{
+  "type": "object",
+  "properties": {
+    "pet_id": {
+      "type": "integer",
+      "format": "int64",
+      "description": "The ID of the pet to place in the order."
+    },
+    "quantity": {
+      "type": "integer",
+      "format": "int32",
+      "description": "The number of pets to place in the order."
+    },
+    "coupon_code": {
+      "type": "string",
+      "description": "The coupon code to apply to the order."
+    }
+  }
+}
+\`\`\`
+
+### Step 1: \`place-order\`
+
+Place an order for the pet.
+
+**Calls:** \`POST /store/order\` (operation \`placeOrder\` in source \`pet-coupons\`): Place an order for a pet
+
+**Request body** (\`application/json\`):
+
+\`\`\`json
+{
+  "petId": "$inputs.pet_id",
+  "quantity": "$inputs.quantity",
+  "couponCode": "$inputs.coupon_code",
+  "status": "placed",
+  "complete": false
+}
+\`\`\`
+
+**Succeeds when:**
+
+- \`$statusCode == 200\`
+
+**Outputs:**
+
+- \`step_order_id\`: \`$response.body#/id\`
+
+**Workflow outputs:**
+
+- \`workflow_order_id\`: \`$steps.place-order.outputs.step_order_id\`
+"
+`;

@@ -203,6 +203,29 @@
   white-space: nowrap;
 }
 
+/* Arazzo: the dashed border that marches around an output while a chip
+   reading it is pointed at. An SVG stroke, so it follows the rounded corners. */
+.apiuikit-root .arazzo-marching-ants rect {
+  fill: none;
+  stroke: rgb(var(--color-secondary-500) / 1);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  animation: apiuikit-marching-ants 0.5s linear infinite;
+}
+
+@keyframes apiuikit-marching-ants {
+  to {
+    /* One dash + gap, so the loop is seamless. */
+    stroke-dashoffset: -7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apiuikit-root .arazzo-marching-ants rect {
+    animation: none;
+  }
+}
+
 .apiuikit-root ::highlight(search-match) {
   background-color: yellow;
   color: black;

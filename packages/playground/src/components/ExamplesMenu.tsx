@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { SUGGESTED_SCHEMAS } from '../data/suggestedSchemas'
-import type { SuggestedSchema } from '../data/suggestedSchemas'
+import type { SpecKind, SuggestedSchema } from '../data/suggestedSchemas'
 import type { UiPalette } from '../theme'
+import openapiLogo from '../assets/spec-logos/openapi.svg'
+import asyncapiLogo from '../assets/spec-logos/asyncapi.svg'
+import arazzoLogo from '../assets/spec-logos/arazzo.svg'
 
 interface ExamplesMenuProps {
   palette: UiPalette
@@ -23,6 +26,36 @@ function CaretIcon() {
     >
       <path d="M4 6l4 4 4-4" />
     </svg>
+  )
+}
+
+const SPEC_BADGES: Record<SpecKind, { name: string; logo: string }> = {
+  openapi: { name: 'OpenAPI', logo: openapiLogo },
+  asyncapi: { name: 'AsyncAPI', logo: asyncapiLogo },
+  arazzo: { name: 'Arazzo', logo: arazzoLogo },
+}
+
+function SpecPill({ spec, palette }: { spec: SpecKind; palette: UiPalette }) {
+  const { name, logo } = SPEC_BADGES[spec]
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        flexShrink: 0,
+        padding: '2px 8px 2px 6px',
+        fontSize: '0.75rem',
+        fontWeight: 500,
+        lineHeight: 1.4,
+        color: palette.textMuted,
+        border: `1px solid ${palette.chromeBorder}`,
+        borderRadius: '999px',
+      }}
+    >
+      <img src={logo} alt="" width={14} height={14} style={{ display: 'block' }} />
+      {name}
+    </span>
   )
 }
 
@@ -140,7 +173,7 @@ export function ExamplesMenu({ palette, onSelect }: ExamplesMenuProps) {
             top: 'calc(100% + 4px)',
             right: 0,
             zIndex: 30,
-            minWidth: '260px',
+            minWidth: '300px',
             maxHeight: '260px',
             overflowY: 'auto',
             padding: '4px',
@@ -178,7 +211,10 @@ export function ExamplesMenu({ palette, onSelect }: ExamplesMenuProps) {
                 outline: 'none',
               }}
             >
-              <div>{schema.label}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ flex: 1, minWidth: 0 }}>{schema.label}</span>
+                <SpecPill spec={schema.spec} palette={palette} />
+              </div>
               <div
                 style={{
                   fontSize: '0.6875rem',
@@ -189,7 +225,11 @@ export function ExamplesMenu({ palette, onSelect }: ExamplesMenuProps) {
               >
                 {/* Bundled examples have a `local://` URL that means nothing to
                     a reader — show what it actually is instead. */}
-                {schema.content === undefined ? schema.url : 'Local example'}
+                {schema.files
+                  ? `${schema.files.length} ${schema.files.length === 1 ? 'file' : 'files'}`
+                  : schema.content === undefined
+                    ? schema.url
+                    : 'Local example'}
               </div>
             </button>
           ))}

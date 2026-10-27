@@ -1,5 +1,23 @@
 import { NoCanvasDocsPage } from "./noCanvasDocsPage";
 
+type Spec = "AsyncAPI" | "OpenAPI" | "Arazzo";
+
+/**
+ * How the snippets pass the document. Arazzo sections also take the source
+ * documents their steps call, so theirs pass `sources` and say what it is.
+ */
+function documentUsage(spec: Spec) {
+  const documentVar = spec === "AsyncAPI" ? "asyncapiDocument" : spec === "OpenAPI" ? "openapiDocument" : "arazzoDocument";
+  return spec === "Arazzo"
+    ? {
+        documentVar,
+        documentProps: `document={${documentVar}} sources={{ petstore: petstoreDocument }}`,
+        sourcesText:
+          " `sources` holds the documents behind its `sourceDescriptions`, keyed by each source's `name`; any you leave out are loaded from their `url`.",
+      }
+    : { documentVar, documentProps: `document={${documentVar}}`, sourcesText: "" };
+}
+
 /**
  * Docs-page parameters shared by the public section stories: a plain-language
  * description, then a copy-paste usage snippet. The live preview stays on the
@@ -20,8 +38,8 @@ export function sectionDocs({
   summary: string;
   /** Sidebar entries to open, e.g. "Default or Stacked". */
   stories: string;
-  spec: "AsyncAPI" | "OpenAPI";
-  provider: "AsyncAPIProvider" | "OpenAPIProvider";
+  spec: Spec;
+  provider: `${Spec}Provider`;
   /** How `layout` behaves for this section. */
   alone: string;
   importNames: string[];
@@ -29,7 +47,7 @@ export function sectionDocs({
   /** Indented JSX rendered inside the provider. */
   composedChildren: string;
 }) {
-  const documentVar = spec === "AsyncAPI" ? "asyncapiDocument" : "openapiDocument";
+  const { documentVar, documentProps, sourcesText } = documentUsage(spec);
 
   return {
     page: NoCanvasDocsPage,
@@ -38,7 +56,7 @@ export function sectionDocs({
 
 Open **${stories}** in the sidebar to see it.
 
-\`document\` is the parsed ${spec} JSON, for example a JSON file you imported. Import the stylesheet once in your app: \`import "apiuikit/style.css"\`.
+\`document\` is the parsed ${spec} JSON, for example a JSON file you imported.${sourcesText} Import the stylesheet once in your app: \`import "apiuikit/style.css"\`.
 
 **On its own.** Pass \`document\` to the component. ${alone}
 
@@ -52,10 +70,10 @@ import "apiuikit/style.css";
 // ${documentVar} is the parsed ${spec} JSON.
 
 // On its own. "stacked" uses the full width.
-<${componentName} document={${documentVar}} layout="stacked" />
+<${componentName} ${documentProps} layout="stacked" />
 
 // With other sections. Pass the document once, on the provider.
-<${provider} document={${documentVar}}>
+<${provider} ${documentProps}>
 ${composedChildren}
 </${provider}>`,
     },
@@ -122,11 +140,12 @@ export function itemDocs({
   selector,
   composedChildren,
   tryIt = false,
+  alone = 'It uses the full width by default; `layout="columns"` instead leaves an empty column on the right so it lines up with Info and Servers.',
 }: {
   /** What the component shows. */
   summary: string;
-  spec: "AsyncAPI" | "OpenAPI";
-  provider: "AsyncAPIProvider" | "OpenAPIProvider";
+  spec: Spec;
+  provider: `${Spec}Provider`;
   componentName: string;
   /** The JSX props that pick the item, e.g. `operationId="createPet"`. */
   selector: string;
@@ -134,8 +153,10 @@ export function itemDocs({
   composedChildren: string;
   /** Whether the component has a Try it button (and a WithTryIt story) to mention. */
   tryIt?: boolean;
+  /** How `layout` behaves, for a component that doesn't default to the full width. */
+  alone?: string;
 }) {
-  const documentVar = spec === "AsyncAPI" ? "asyncapiDocument" : "openapiDocument";
+  const { documentVar, documentProps, sourcesText } = documentUsage(spec);
 
   return {
     page: NoCanvasDocsPage,
@@ -146,9 +167,9 @@ Open **Default** in the sidebar to see it.${tryIt ? `
 
 **Try it** is off by default. Turn it on with \`config={{ show: { tryIt: true } }}\`, then open **WithTryIt** to see the button in the header.${spec === "AsyncAPI" ? " The AsyncAPI button is a WebSocket client, so it only appears for operations with a `ws` or `wss` server." : ""}` : ""}
 
-\`document\` is the parsed ${spec} JSON. If nothing in it matches, the component renders nothing and logs a warning to the console. Import the stylesheet once in your app: \`import "apiuikit/style.css"\`.
+\`document\` is the parsed ${spec} JSON.${sourcesText} If nothing in it matches, the component renders nothing and logs a warning to the console. Import the stylesheet once in your app: \`import "apiuikit/style.css"\`.
 
-**On its own.** Pass \`document\` to the component. It uses the full width by default; \`layout="columns"\` instead leaves an empty column on the right so it lines up with Info and Servers.
+**On its own.** Pass \`document\` to the component. ${alone}
 
 **Mixed into your own page.** Put several inside \`${provider}\`, between your own content, and pass \`document\` once to the provider.`,
     },
@@ -160,10 +181,10 @@ import "apiuikit/style.css";
 // ${documentVar} is the parsed ${spec} JSON.
 
 // On its own.
-<${componentName} document={${documentVar}} ${selector} />
+<${componentName} ${documentProps} ${selector} />
 
 // Mixed into your own page. Pass the document once, on the provider.
-<${provider} document={${documentVar}}>
+<${provider} ${documentProps}>
 ${composedChildren}
 </${provider}>`,
     },

@@ -19,3 +19,9 @@ import "./elements/openapi-webhook";
 import "./elements/openapi-info";
 import "./elements/schemas";
 import "./elements/schema";
+// The Arazzo elements aren't registered here: this bundle inlines every lazy
+// import (the iife format can't split), so they'd add the Arazzo parser,
+// about 540 KB gzipped, for every page. Load them from their own entries,
+// where the parser stays a lazy chunk: "@apiuikit/web-component/arazzo",
+// "/arazzo-renderer", "/arazzo-info", "/arazzo-workflows" and
+// "/arazzo-workflow" (dist/elements/*.js).

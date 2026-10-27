@@ -8,6 +8,7 @@
     "ui-kit",
     "openapi",
     "asyncapi",
+    "arazzo",
     "swagger",
     "api-documentation",
     "api-docs",
@@ -75,6 +76,8 @@
     "@asyncapi/specs": "^6.8.1",
     "@json-schema-tools/reference-resolver": "^1.2.6",
     "@readme/httpsnippet": "^11.4.0",
+    "@swaggerexpert/arazzo-criterion": "^1.0.1",
+    "@swaggerexpert/arazzo-runtime-expression": "^3.2.0",
     "asyncsnippet": "^0.3.0",
     "fuse.js": "^7.5.0",
     "highlight.js": "^11.11.1",
@@ -92,6 +95,7 @@
   "peerDependencies": {
     "@asyncapi/parser": "^3.6.0",
     "@scalar/openapi-parser": "^0.28.10",
+    "@usearazzo/parser": "^1.0.1-alpha.7",
     "react": ">=18",
     "react-dom": ">=18"
   },
@@ -100,6 +104,9 @@
       "optional": true
     },
     "@scalar/openapi-parser": {
+      "optional": true
+    },
+    "@usearazzo/parser": {
       "optional": true
     }
   },
@@ -124,6 +131,7 @@
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@usearazzo/parser": "^1.0.1-alpha.7",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.0.0",

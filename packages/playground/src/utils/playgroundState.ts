@@ -1,26 +1,13 @@
 import LZString from 'lz-string'
+import { migrateSnapshot } from './snapshot'
+import type { PlaygroundSnapshot } from './snapshot'
 
-/**
- * Everything needed to reproduce a playground session. `config` is the raw
- * config editor text rather than the parsed value, so a mid-edit (invalid)
- * config round-trips exactly.
- */
-export interface PlaygroundSnapshot {
-  v: 1
-  doc: string
-  config: string
-}
+export type { PlaygroundSnapshot } from './snapshot'
 
 const STATE_STORAGE_KEY = 'apiuikit-playground-state'
 const SHARE_PARAM = 's'
 // Matches the share function's cap (api/share.ts).
 const MAX_SHARE_BYTES = 4 * 1024 * 1024
-
-export function isSnapshot(value: unknown): value is PlaygroundSnapshot {
-  if (!value || typeof value !== 'object') return false
-  const v = value as Record<string, unknown>
-  return v.v === 1 && typeof v.doc === 'string' && typeof v.config === 'string'
-}
 
 // Stored lz-string compressed: large specs (100k+ lines) would otherwise eat
 // most of the ~5M-character per-origin localStorage quota.
@@ -29,7 +16,8 @@ export function readStoredSnapshot(): PlaygroundSnapshot | null {
     const stored = localStorage.getItem(STATE_STORAGE_KEY)
     if (!stored) return null
     const parsed: unknown = JSON.parse(LZString.decompressFromUTF16(stored) ?? '')
-    return isSnapshot(parsed) ? parsed : null
+    // Sessions saved before workspaces (v1) come back as one-file workspaces.
+    return migrateSnapshot(parsed)
   } catch {
     return null
   }
@@ -59,7 +47,7 @@ export function clearShareId(): void {
 }
 
 function shareErrorMessage(status: number): string {
-  if (status === 413) return 'Spec too large to share'
+  if (status === 413) return 'Too large to share — all files together must be under 4 MB'
   if (status === 429) return 'Too many share requests — try again in a minute'
   if (status === 404) return 'Shared link not found'
   return `Share request failed (${status})`
@@ -68,7 +56,7 @@ function shareErrorMessage(status: number): string {
 /** Uploads the snapshot and returns the full share URL. */
 export async function createShare(endpoint: string, snapshot: PlaygroundSnapshot): Promise<string> {
   const body = JSON.stringify(snapshot)
-  // Checked up front so an oversized spec fails fast instead of uploading megabytes to be rejected.
+  // Checked up front (the cap covers every file in the workspace) so an oversized spec fails fast instead of uploading megabytes to be rejected.
   if (new Blob([body]).size > MAX_SHARE_BYTES) throw new Error(shareErrorMessage(413))
   const res = await fetch(endpoint, {
     method: 'POST',
@@ -90,7 +78,8 @@ export async function createShare(endpoint: string, snapshot: PlaygroundSnapshot
 export async function fetchShare(endpoint: string, id: string): Promise<PlaygroundSnapshot> {
   const res = await fetch(`${endpoint.replace(/\/$/, '')}/${encodeURIComponent(id)}`)
   if (!res.ok) throw new Error(shareErrorMessage(res.status))
-  const parsed: unknown = await res.json()
-  if (!isSnapshot(parsed)) throw new Error('Shared link is malformed')
-  return parsed
+  // Links created before workspaces hold a v1 single-document snapshot.
+  const snapshot = migrateSnapshot(await res.json())
+  if (!snapshot) throw new Error('Shared link is malformed')
+  return snapshot
 }
