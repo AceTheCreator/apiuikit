@@ -1,11 +1,13 @@
 name: CI
 
-# Reusable — invoked by deploy.yml and release.yml as their required first job
-# (`needs: ci`), plus workflow_dispatch for manually running it standalone.
+# Runs on every pull request, and as release.yml's required first job (`needs: ci`)
+# on pushes to master, plus workflow_dispatch for manually running it standalone.
+# Deploys are Vercel's Git integration, not a workflow (see CONTRIBUTING.md).
 # typecheck ignores pre-existing errors in the auto-generated src/types/asyncapi/**
 # model files (see packages/lib/scripts/typecheck.mjs); lint ignores that directory
 # outright (see packages/lib/eslint.config.js). Both still gate on everything else.
 on:
+  pull_request:
   workflow_call:
   workflow_dispatch:
 
@@ -48,12 +50,3 @@ jobs:
 
       - name: Build playground
         run: npm run build --workspace=packages/playground
-
-      - name: Upload playground build
-        uses: actions/upload-artifact@v4
-        with:
-          name: playground-dist
-          # vite outputs the standalone app build here — dist/ is reserved for
-          # the library's own build:lib output (see packages/playground/vite.config.ts).
-          path: packages/playground/dist-app
-          retention-days: 7

@@ -1,15 +1,17 @@
-import { getStore } from '@netlify/blobs'
-import type { Config, Context } from '@netlify/functions'
+import { get, put } from '@vercel/blob'
 
 // Share links for the playground: POST stores a { v, doc, config } snapshot in
-// Netlify Blobs and returns its id; GET /api/share/:id returns it. Ids are a
+// Vercel Blob and returns its id; GET /api/share/:id returns it. Ids are a
 // content hash, so sharing the same snapshot twice yields the same link and
 // stored entries never change — which is what makes the immutable GET caching
-// below safe. Entries never expire; `createdAt` metadata is kept so pruning can
-// be added later without a migration.
+// below safe. Entries never expire; Blob records `uploadedAt` on every entry so
+// pruning can be added later without a migration.
+//
+// /api/share/:id reaches this function as /api/share?id=:id via the rewrite in
+// vercel.json. Rate limiting is a Vercel Firewall rule on /api/share, not code.
 
-// Mirrored in src/utils/playgroundState.ts; Netlify caps function request bodies at ~6MB.
-const MAX_BODY_BYTES = 5 * 1024 * 1024
+// Mirrored in src/utils/playgroundState.ts; Vercel caps function request bodies at 4.5MB.
+const MAX_BODY_BYTES = 4 * 1024 * 1024
 const ID_PATTERN = /^[A-Za-z0-9_-]{12}$/
 
 function json(body: unknown, status: number, headers: Record<string, string> = {}) {
@@ -31,22 +33,29 @@ async function contentId(body: string): Promise<string> {
   return base64.replace(/\+/g, '-').replace(/\//g, '_').slice(0, 12)
 }
 
-export default async (req: Request, context: Context) => {
-  // Strong reads so a link opened right after it was created can't 404 on
-  // propagation lag.
-  const store = getStore({ name: 'playground-shares', consistency: 'strong' })
-  const id = context.params.id
+function blobPath(id: string): string {
+  return `playground-shares/${id}.json`
+}
+
+async function handler(req: Request): Promise<Response> {
+  const id = new URL(req.url).searchParams.get('id')
 
   if (req.method === 'GET') {
     // Missing or malformed ids are just links that can't exist — 404 like any
-    // other miss. (A function 404 also lets Netlify fall through to static-file
-    // lookups like `<id>/index.html`, which land here without an id.)
+    // other miss.
     if (!id || !ID_PATTERN.test(id)) return json({ error: 'Share not found' }, 404)
-    const body = await store.get(id)
-    if (body === null) return json({ error: 'Share not found' }, 404)
-    return new Response(body, {
+    // Bypass the Blob CDN cache so a link opened right after it was created
+    // can't 404 on a stale cached miss.
+    const blob = await get(blobPath(id), { access: 'private', useCache: false })
+    if (blob === null) return json({ error: 'Share not found' }, 404)
+    return new Response(blob.stream, {
       status: 200,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=31536000, immutable' },
+      // s-maxage is what lets Vercel's CDN cache a function response; it is
+      // stripped before the response reaches the browser.
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+      },
     })
   }
 
@@ -68,14 +77,17 @@ export default async (req: Request, context: Context) => {
     if (!isSnapshot(parsed)) return json({ error: 'Invalid snapshot' }, 400)
 
     const shareId = await contentId(body)
-    await store.set(shareId, body, { metadata: { createdAt: new Date().toISOString() } })
+    // Same id means same bytes, so re-sharing a snapshot rewrites it rather
+    // than failing on the existing entry.
+    await put(blobPath(shareId), body, {
+      access: 'private',
+      contentType: 'application/json',
+      allowOverwrite: true,
+    })
     return json({ id: shareId }, 201)
   }
 
   return json({ error: 'Method not allowed' }, 405, { Allow: id ? 'GET' : 'GET, POST' })
 }
 
-export const config: Config = {
-  path: ['/api/share', '/api/share/:id'],
-  rateLimit: { windowLimit: 20, windowSize: 60, aggregateBy: ['ip', 'domain'] },
-}
+export default { fetch: handler }
