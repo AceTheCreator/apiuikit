@@ -24,7 +24,6 @@ packages/lib/README.md
 # copies can't drift from the docs. Not hand-maintained here.
 packages/playground/public/llms.txt
 packages/playground/public/llms-full.txt
-packages/playground/public/_headers
 packages/playground/public/README.md
 packages/playground/public/docs/
 packages/playground/public/examples/
@@ -45,5 +44,5 @@ packages/playground/public/examples/
 # Vite dependency pre-bundling cache
 .vite/
 
-# Local Netlify folder
-.netlify
+# Local Vercel folder (vercel pull / vercel build)
+.vercel

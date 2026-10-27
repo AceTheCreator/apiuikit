@@ -5,7 +5,13 @@
 // Everything is generated from the repo's own markdown at build time rather
 // than hand-maintained, so a doc edit can't leave the published copies stale.
 // Output lands in packages/playground/public/, which Vite copies verbatim into
-// the build that Netlify publishes.
+// the build that Vercel publishes.
+//
+// Every .md file here plus llms.txt and llms-full.txt gets a header rule in
+// ../vercel.json: text/plain, because browsers download text/markdown instead
+// of displaying it, and Access-Control-Allow-Origin: * so tools can fetch them
+// cross-origin. Keep those patterns in sync if this script publishes new kinds
+// of files.
 //
 // The published paths mirror the repo layout (/README.md, /docs/usage/*.md),
 // which is what keeps the relative links *inside* those files working: the
@@ -122,20 +128,6 @@ function buildLlmsFullTxt(docs) {
   return header + sections.join("");
 }
 
-/** Netlify serves .md as text/markdown, which browsers download instead of
- * displaying. Serving them as plain text makes the links usable in a browser,
- * and the CORS header lets a tool fetch them cross-origin. Paths are listed
- * explicitly rather than globbed, since the set is known here anyway. */
-function buildHeaders(docs) {
-  const paths = ["llms.txt", "llms-full.txt", ...docs.map((doc) => doc.path)];
-
-  return paths
-    .map((path) =>
-      [`/${path}`, "  Content-Type: text/plain; charset=utf-8", "  Access-Control-Allow-Origin: *", ""].join("\n"),
-    )
-    .join("\n");
-}
-
 /**
  * The bundled example documents, rendered to Markdown at build time.
  *
@@ -193,9 +185,8 @@ async function main() {
 
   await writeFile(join(publicDir, "llms.txt"), buildLlmsTxt(docs));
   await writeFile(join(publicDir, "llms-full.txt"), buildLlmsFullTxt(docs));
-  await writeFile(join(publicDir, "_headers"), buildHeaders([...docs, ...examples.map((path) => ({ path }))]));
 
-  const written = docs.length + examples.length + 3;
+  const written = docs.length + examples.length + 2;
   console.log(`[docs-assets] wrote ${written} files to ${relative(repoRoot, publicDir)}/`);
 }
 

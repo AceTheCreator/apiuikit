@@ -1,7 +1,7 @@
 import { isWorkspace, singleFileWorkspace } from './workspace'
 import type { WorkspaceFile } from './workspace'
 
-// Kept free of browser APIs and dependencies: netlify/functions/share.mts
+// Kept free of browser APIs and dependencies: api/share.ts
 // imports this to validate uploads with exactly the rules the client reads by.
 
 /** The pre-workspace format: one document. Still read, never written. */

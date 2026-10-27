@@ -6,8 +6,8 @@ export type { PlaygroundSnapshot } from './snapshot'
 
 const STATE_STORAGE_KEY = 'apiuikit-playground-state'
 const SHARE_PARAM = 's'
-// Matches the share function's cap (netlify/functions/share.mts).
-const MAX_SHARE_BYTES = 5 * 1024 * 1024
+// Matches the share function's cap (api/share.ts).
+const MAX_SHARE_BYTES = 4 * 1024 * 1024
 
 // Stored lz-string compressed: large specs (100k+ lines) would otherwise eat
 // most of the ~5M-character per-origin localStorage quota.
@@ -47,7 +47,7 @@ export function clearShareId(): void {
 }
 
 function shareErrorMessage(status: number): string {
-  if (status === 413) return 'Too large to share — all files together must be under 5 MB'
+  if (status === 413) return 'Too large to share — all files together must be under 4 MB'
   if (status === 429) return 'Too many share requests — try again in a minute'
   if (status === 404) return 'Shared link not found'
   return `Share request failed (${status})`

@@ -114,6 +114,15 @@ npm publish   # runs prepublishOnly (build) then publishes
 
 Prefer the changesets flow so versions and changelogs stay consistent.
 
+## Deployments (maintainers)
+
+The playground and Storybook are two Vercel projects connected to this repo. Vercel builds every push: `master` goes to production, and pull requests get a preview link from the Vercel bot. Each project reads the `vercel.json` in its Root Directory:
+
+| Project | Root Directory | Notes |
+| --- | --- | --- |
+| Playground | `packages/playground` | `/api/share` needs a private Blob store connected under Storage (provides `BLOB_READ_WRITE_TOKEN`), and a Firewall rate-limit rule on `/api/share` |
+| Storybook | `packages/lib` | Static `storybook build` output, no extra setup |
+
 ## Docs
 
 Consumer-facing docs live under [`docs/`](./docs/). Update them when you change public APIs, props, or usage patterns. Also submit a pr to https://github.com/apiuikit/apiuikit-website to update the docs in the hosted doc website.
