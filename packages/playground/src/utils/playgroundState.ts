@@ -13,8 +13,8 @@ export interface PlaygroundSnapshot {
 
 const STATE_STORAGE_KEY = 'apiuikit-playground-state'
 const SHARE_PARAM = 's'
-// Matches the share function's cap (netlify/functions/share.mts).
-const MAX_SHARE_BYTES = 5 * 1024 * 1024
+// Matches the share function's cap (api/share.ts).
+const MAX_SHARE_BYTES = 4 * 1024 * 1024
 
 export function isSnapshot(value: unknown): value is PlaygroundSnapshot {
   if (!value || typeof value !== 'object') return false
