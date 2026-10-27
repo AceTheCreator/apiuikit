@@ -90,6 +90,37 @@ Wait for `[0] built in …` in the terminal if the page looks wrong after a lib 
 
 On first start you may see one extra reload — the watch build finishes after the initial build. Harmless.
 
+## Workspace (multiple files)
+
+The editor holds a workspace of named files (`src/utils/workspace.ts`), not a
+single document. One file is the **entry**: it's the one rendered, and spec
+detection runs on it. The others are there to be referenced (Arazzo sources,
+external `$ref`s — not resolved yet).
+
+- **Entry file.** Marked with a play icon on its tab once there's more than one
+  file. Change it from the `⋯` file menu. It can't be deleted; make another
+  file the entry first, which also means the workspace is never empty.
+- **File names** are path-like (`specs/petstore.yaml`) and unique. They're how
+  files are addressed: `resolveWorkspacePath` / `readWorkspaceFile` map a
+  reference found in one file (e.g. a `url`) to another file.
+- **Fetch** replaces a one-file workspace (the old behaviour) but adds a new
+  file to a multi-file one. Picking an example always replaces the workspace;
+  examples in `src/data/suggestedSchemas.ts` can list several `files` plus an
+  `entry`.
+- **Saved state and share links** use snapshot `v: 2` (`src/utils/snapshot.ts`,
+  also used by the share function to validate uploads). `v: 1` state and old
+  `?s=` links are migrated to a one-file workspace on read. The 5 MB share cap
+  covers all files together.
+
+## Tests
+
+```bash
+npm run test --workspace=packages/playground
+```
+
+Unit tests for the workspace model, snapshot migration and example loading
+live in `src/**/tests/`. The root `npm run test` runs them after the library's.
+
 ## Troubleshooting
 
 **Page blank / `Failed to load url …apiuikit.es.js`**

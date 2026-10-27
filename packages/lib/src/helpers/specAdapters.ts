@@ -11,6 +11,8 @@
 import type { MarkdownTarget } from "../config/config";
 import type { AsyncAPIDocumentData } from "../types/schema";
 import { flattenEndpoints, HTTP_METHODS, type OpenAPIDocumentData } from "../types/openapi";
+import type { ArazzoModel } from "../types/arazzo";
+import { arazzoToMarkdown, arazzoWorkflowToMarkdown } from "./arazzoToMarkdown";
 import {
   asyncApiOperationToMarkdown,
   asyncApiToMarkdown,
@@ -120,13 +122,59 @@ const asyncapi = defineSpecAdapter<AsyncAPIDocumentData>({
   },
 });
 
+const isArazzoModel = (doc: Record<string, unknown>) =>
+  Array.isArray(doc.workflows) && Array.isArray(doc.sources) && typeof doc.document === "object" && doc.document !== null;
+
+/**
+ * Arazzo is serialized from its resolved model, not the document: saying what
+ * a step calls needs its source loaded, which is asynchronous, and these
+ * helpers are synchronous. A plain document is pointed at the resolver rather
+ * than exported with every step unlinked.
+ */
+function requireArazzoModel(doc: ArazzoModel): ArazzoModel {
+  if (!isArazzoModel(doc as unknown as Record<string, unknown>)) {
+    throw new Error(
+      "[apiuikit] Arazzo documents are exported from their resolved model, which has the sources loaded. " +
+        "Resolve it first: `const { model } = await resolveArazzoDocument(document, { sources })`, then pass `model`.",
+    );
+  }
+  return doc;
+}
+
+const arazzo = defineSpecAdapter<ArazzoModel>({
+  name: "Arazzo",
+  // The model keeps the version under the same `arazzo` key as the document.
+  matches: (doc) => typeof doc.arazzo === "string",
+  sectionTitle: "Workflows",
+  title: (doc) => requireArazzoModel(doc).info.title ?? "Workflows",
+  summary: (doc) => {
+    const { info } = requireArazzoModel(doc);
+    return firstLine(info.summary) ?? firstLine(info.description);
+  },
+  targets: (doc) =>
+    requireArazzoModel(doc).workflows.map((workflow) => ({
+      key: workflow.workflowId,
+      label: workflow.summary ?? workflow.workflowId,
+      summary: firstLine(workflow.description),
+      target: { kind: "workflow", document: doc, id: workflow.workflowId },
+    })),
+  toMarkdown: (doc, target) => {
+    const model = requireArazzoModel(doc);
+    if (!target || target.kind === "document") return arazzoToMarkdown(model);
+    if (target.kind !== "workflow" || typeof target.id !== "string" || !target.id) {
+      throw new Error("[apiuikit] An Arazzo target requires a workflow id.");
+    }
+    return arazzoWorkflowToMarkdown(model, target.id);
+  },
+});
+
 /** Add a spec by adding its adapter here. Order only matters if two adapters
  * could match the same document, which the version-key sniffing prevents. */
-const ADAPTERS: SpecAdapter[] = [openapi, asyncapi];
+const ADAPTERS: SpecAdapter[] = [openapi, asyncapi, arazzo];
 
 /**
  * Picks the adapter for a document by sniffing its version key (`openapi`,
- * `swagger`, `asyncapi`), the same discriminant the renderers use to choose a
+ * `swagger`, `asyncapi`, `arazzo`), the same discriminant the renderers use to choose a
  * component. Throws rather than guessing: silently treating an unrecognized
  * document as one spec would emit confidently wrong output.
  */
@@ -136,7 +184,7 @@ export function adapterFor(document: unknown): SpecAdapter {
 
   if (!adapter) {
     throw new Error(
-      `[apiuikit] Unrecognized document: expected a top-level "openapi", "swagger", or "asyncapi" version key. ` +
+      `[apiuikit] Unrecognized document: expected a top-level "openapi", "swagger", "asyncapi" or "arazzo" version key. ` +
         `Supported specs: ${ADAPTERS.map((a) => a.name).join(", ")}.`,
     );
   }

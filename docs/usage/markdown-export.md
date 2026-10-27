@@ -63,7 +63,7 @@ Pointing at a URL only helps if something serves Markdown there. Three exported 
 
 | Helper | Returns |
 |---|---|
-| `listDocumentTargets(doc)` | Every linkable item: OpenAPI endpoints, AsyncAPI operations |
+| `listDocumentTargets(doc)` | Every linkable item: OpenAPI endpoints, AsyncAPI operations, Arazzo workflows |
 | `documentToMarkdown(doc, target?)` | Markdown for one target, or the whole document when omitted |
 | `documentToLlmsTxt(doc, options?)` | An `llms.txt` index linking each target |
 
@@ -131,9 +131,26 @@ Markdown and `llms.txt` are usually served as `text/markdown` by default, which 
   Access-Control-Allow-Origin: *
 ```
 
+### Arazzo
+
+Arazzo documents go through the same three helpers, given the **resolved model** instead of the document: saying what a step calls needs its source loaded, which is asynchronous, and these helpers aren't. Resolve with `resolveArazzoDocument` from `apiuikit` (it doesn't need the YAML parser for objects), then serialize:
+
+```ts
+import { resolveArazzoDocument } from "apiuikit";
+import { documentToLlmsTxt, documentToMarkdown, listDocumentTargets, targetSlug } from "apiuikit/markdown";
+
+const { model } = await resolveArazzoDocument(arazzoDocument, { sources: { petstore: petstoreDocument } });
+for (const entry of listDocumentTargets(model)) {
+  await writeFile(`public/workflows/${targetSlug(entry.key)}.md`, documentToMarkdown(model, entry.target));
+}
+await writeFile("public/llms.txt", documentToLlmsTxt(model, { baseUrl: `${BASE}/workflows` }));
+```
+
+Each workflow is a target (`{ kind: "workflow", document: model, id: workflowId }`), labelled with its summary. Passing the plain document throws, with a message pointing at `resolveArazzoDocument`. The resolver isn't re-exported from `apiuikit/markdown` because it carries the optional YAML parsers, which would add megabytes to that entry.
+
 ### Spec-specific serializers
 
-If you already know which spec you have, `asyncApiToMarkdown` and `openApiToMarkdown` (plus `asyncApiOperationToMarkdown` and `openApiEndpointToMarkdown`) are exported too. Each takes an optional trailing `deref` for resolving `$ref` pointers, defaulting to resolving against the document itself.
+If you already know which spec you have, `asyncApiToMarkdown` and `openApiToMarkdown` (plus `asyncApiOperationToMarkdown` and `openApiEndpointToMarkdown`) are exported too, as are `arazzoToMarkdown(model)` and `arazzoWorkflowToMarkdown(model, workflowId)`. Each takes an optional trailing `deref` for resolving `$ref` pointers, defaulting to resolving against the document itself.
 
 ### Adding a spec
 

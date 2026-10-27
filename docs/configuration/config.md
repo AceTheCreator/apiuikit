@@ -77,6 +77,8 @@ interface ThemeModeColors {
 
   `search` controls whether the search panel is shown. `schemas`, `messageExamples`, and `tryIt` default to `false`. All other fields default to `true`.
 
+  Arazzo pages honour `info`, `search`, `copyMarkdown`, and `sidebar`; operation flags such as `codeSamples` and `tryIt` apply to the operations embedded in their steps. See [Arazzo](../usage/arazzo.md#config).
+
 - **show.tryIt?: boolean**
 
   Adds a **Try it** button to the operation side panel's header. Off by default.

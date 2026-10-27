@@ -78,6 +78,7 @@ export default defineConfig(({ mode }) => {
             /^@uiw\//,
             /^@asyncapi\//,
             /^lz-string/,
+            /^yaml(\/|$)/,
           ],
         },
       },
@@ -88,6 +89,19 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), libRebuildReload()],
     resolve: { dedupe: linkedDeps },
+    optimizeDeps: {
+      // When the try-it plugins are installed (not linked), Vite pre-bundles
+      // them — and follows their `apiuikit/plugin` import into a second copy of
+      // the library inside the pre-bundle. The plugin then reads that copy's
+      // DocumentContext, which no provider fills, and throws. Serving them
+      // unbundled lets `apiuikit` resolve to the one copy the app uses.
+      exclude: ['@apiuikit/openapi-try-it-plugin', '@apiuikit/ws-try-it-plugin'],
+      // Their own dependencies still need pre-bundling (react-json-view is CommonJS).
+      include: [
+        '@apiuikit/ws-try-it-plugin > @microlink/react-json-view',
+        '@apiuikit/ws-try-it-plugin > @cfworker/json-schema',
+      ],
+    },
     server: {
       fs: {
         // The linked try-it plugins live outside the workspace root.

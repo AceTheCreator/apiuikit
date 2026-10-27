@@ -1,0 +1,52 @@
+openapi: 3.1.0
+info:
+  title: Pets
+  version: 1.0.0
+paths:
+  /pets/{petId}:
+    parameters:
+      - name: petId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getPet
+      summary: Get a pet
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+    patch:
+      operationId: updatePet
+      summary: Update a pet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [available, sold]
+      responses:
+        "200":
+          description: The updated pet.
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: integer
+          description: In cents.
+        status:
+          type: string
+          enum: [available, sold]

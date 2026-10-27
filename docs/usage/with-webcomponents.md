@@ -10,6 +10,7 @@ Use apiuikit from Vue, Angular, Svelte, plain HTML, or any other environment tha
 | `<apiuikit-asyncapi>` | You already have a parsed AsyncAPI document object |
 | `<apiuikit-openapi-renderer>` | You have a raw OpenAPI YAML or JSON string |
 | `<apiuikit-openapi>` | You already have a parsed OpenAPI document object |
+| `<apiuikit-arazzo-renderer>` / `<apiuikit-arazzo>` | An Arazzo workflow document, as text or parsed. See [Arazzo elements](#arazzo-elements) |
 
 There are also standalone elements for individual document sections (servers, operations, messages, schemas, info), and for single items within them (one operation, message, endpoint, webhook, or schema). See [Section elements](#section-elements) below.
 
@@ -34,7 +35,7 @@ No extra packages are required — React, ReactDOM, and parsing support are bund
 
 ## Modular imports
 
-The default entry point above registers every element. If you only use a few, import just those instead — each subpath registers only its own element:
+The default entry point above registers every element except the [Arazzo ones](#arazzo-elements), which load from their own subpaths. If you only use a few, import just those instead — each subpath registers only its own element:
 
 ```js
 import "@apiuikit/web-component/asyncapi-renderer";  // <apiuikit-asyncapi-renderer> only
@@ -55,6 +56,11 @@ import "@apiuikit/web-component/openapi-webhook";     // <apiuikit-openapi-webho
 import "@apiuikit/web-component/openapi-info";        // <apiuikit-openapi-info> only
 import "@apiuikit/web-component/schemas";             // <apiuikit-schemas> only — shared by both spec types
 import "@apiuikit/web-component/schema";              // <apiuikit-schema> only
+import "@apiuikit/web-component/arazzo";              // <apiuikit-arazzo> only
+import "@apiuikit/web-component/arazzo-renderer";     // <apiuikit-arazzo-renderer> only
+import "@apiuikit/web-component/arazzo-info";         // <apiuikit-arazzo-info> only
+import "@apiuikit/web-component/arazzo-workflows";    // <apiuikit-arazzo-workflows> only
+import "@apiuikit/web-component/arazzo-workflow";     // <apiuikit-arazzo-workflow> only
 import "@apiuikit/web-component/style.css";
 ```
 
@@ -219,6 +225,51 @@ el.onNavigate = (operationId) => {
   document.querySelector(`apiuikit-openapi-endpoint[operation-id="${operationId}"]`)?.scrollIntoView();
 };
 ```
+
+## Arazzo elements
+
+Five elements render [Arazzo](./arazzo.md) workflows, mirroring `Arazzo`, `ArazzoRenderer`, `ArazzoInfo`, `ArazzoWorkflows` and `ArazzoWorkflowSection`:
+
+| Element | Subpath | `spec` |
+|---|---|---|
+| `<apiuikit-arazzo>` | `@apiuikit/web-component/arazzo` | The parsed document (property only) |
+| `<apiuikit-arazzo-renderer>` | `@apiuikit/web-component/arazzo-renderer` | YAML/JSON text (attribute or property) |
+| `<apiuikit-arazzo-info>` | `@apiuikit/web-component/arazzo-info` | Either; plus `layout` |
+| `<apiuikit-arazzo-workflows>` | `@apiuikit/web-component/arazzo-workflows` | Either; plus `layout` |
+| `<apiuikit-arazzo-workflow>` | `@apiuikit/web-component/arazzo-workflow` | Either; plus `workflow-id` and `layout` |
+
+All five also take `sources` (property only: source documents keyed by source name, parsed or text), `base-url` (relative source URLs not in `sources` are fetched against it), `config`, and `onDiagnostics`.
+
+They are **not** in the all-in-one bundle (`@apiuikit/web-component`, `web-component.iife.js`): that bundle can't load code lazily, so they would add the Arazzo parser, about 540 KB gzipped, to every page. Import them from their subpaths, where the parser loads only when needed. Without a bundler, load the ES module from a CDN:
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@apiuikit/web-component/dist/web-component.css" />
+<script type="module" src="https://cdn.jsdelivr.net/npm/@apiuikit/web-component/dist/elements/arazzo-renderer.js"></script>
+```
+
+### Documents in the page, without JavaScript
+
+The document and its sources can be child `<script>` tags with a data type, which the browser neither runs nor shows: `data-arazzo` for the Arazzo document, `data-source="name"` for each source. Indentation shared by every line is removed, so YAML can be indented to match the HTML.
+
+```html
+<apiuikit-arazzo-renderer>
+  <script type="application/yaml" data-arazzo>
+    arazzo: 1.0.1
+    info: { title: Pet checkout, version: 1.0.0 }
+    sourceDescriptions:
+      - { name: pets, url: ./pets.yaml, type: openapi }
+    workflows: ...
+  </script>
+  <script type="application/yaml" data-source="pets">
+    openapi: 3.1.0
+    ...
+  </script>
+</apiuikit-arazzo-renderer>
+```
+
+When both are set, properties win: a `spec` property or attribute over `<script data-arazzo>`, and each `sources` property entry over a child script with the same name (the rest are combined). Child scripts are read once, when the element is first added to the page, and the element's rendering then replaces them; to change a document later, set the property.
+
+`<apiuikit-arazzo>` takes its document as a property only; for a document written in the page, use any of the others. Sources as child scripts work on all five.
 
 ## Setting props from HTML vs JavaScript
 

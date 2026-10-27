@@ -11,7 +11,7 @@ const preview: Preview = {
     },
     options: {
       storySort: (a, b) => {
-        const roots = ["Introduction", "AsyncAPI", "OpenAPI", "Shared"];
+        const roots = ["Introduction", "AsyncAPI", "OpenAPI", "Arazzo", "Shared"];
         const asyncapi = [
           "AsyncAPI",
           "AsyncAPIRenderer",
@@ -34,6 +34,7 @@ const preview: Preview = {
           "Webhooks",
           "Webhook",
         ];
+        const arazzo = ["Arazzo", "ArazzoRenderer", "Info", "Workflows", "Workflow"];
 
         const aRoot = a.title.split("/")[0] ?? "";
         const bRoot = b.title.split("/")[0] ?? "";
@@ -43,7 +44,7 @@ const preview: Preview = {
         if (rootDelta !== 0) return rootDelta;
 
         const children =
-          aRoot === "AsyncAPI" ? asyncapi : aRoot === "OpenAPI" ? openapi : [];
+          aRoot === "AsyncAPI" ? asyncapi : aRoot === "OpenAPI" ? openapi : aRoot === "Arazzo" ? arazzo : [];
         if (children.length === 0) return a.title.localeCompare(b.title);
 
         const aChild = a.title.split("/")[1] ?? "";

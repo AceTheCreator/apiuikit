@@ -48,6 +48,11 @@
     <a href="#schema">Schema</a>
     <a href="#compose-asyncapi">Compose AsyncAPI</a>
     <a href="#compose-openapi">Compose OpenAPI</a>
+    <a href="#arazzo-renderer">Arazzo renderer</a>
+    <a href="#arazzo">Arazzo</a>
+    <a href="#arazzo-info">Arazzo info</a>
+    <a href="#arazzo-workflows">Arazzo workflows</a>
+    <a href="#arazzo-workflow">Arazzo workflow</a>
   </nav>
 
   <!-- Full-document elements -->
@@ -233,7 +238,280 @@
     </div>
   </div>
 
+
+  <!-- Arazzo elements. Not in the all-in-one bundle (see src/index.ts): each
+       loads from its own entry, below, where the parser stays a lazy chunk. -->
+  <div class="section" id="arazzo-renderer">
+    <h2>No JavaScript — &lt;apiuikit-arazzo-renderer&gt;</h2>
+    <p>The Arazzo document and both OpenAPI sources are child <code>&lt;script type="application/yaml"&gt;</code> tags: <code>data-arazzo</code> for the document, <code>data-source="name"</code> for each source. Nothing on this page sets a property. Subpath: <code>@apiuikit/web-component/arazzo-renderer</code>.</p>
+    <div class="frame">
+      <apiuikit-arazzo-renderer id="arazzo-renderer-el">
+      <script type="application/yaml" data-arazzo>
+        arazzo: 1.0.1
+        info:
+          title: Pet checkout
+          version: 1.0.0
+          description: Find a pet in one API and pay for it in another.
+        sourceDescriptions:
+          - name: pets
+            url: ./pets.yaml
+            type: openapi
+          - name: payments
+            url: ./payments.yaml
+            type: openapi
+        workflows:
+          - workflowId: buy-pet
+            summary: Buy a pet
+            description: Looks the pet up, charges its price, then marks it sold.
+            inputs:
+              type: object
+              required: [petId, cardToken]
+              properties:
+                petId:
+                  type: string
+                  description: The pet to buy.
+                cardToken:
+                  type: string
+                  description: A tokenized card from the payment form.
+            steps:
+              - stepId: find
+                operationId: $sourceDescriptions.pets.getPet
+                parameters:
+                  - name: petId
+                    in: path
+                    value: $inputs.petId
+                successCriteria:
+                  - condition: $statusCode == 200
+                outputs:
+                  price: $response.body#/price
+              - stepId: pay
+                operationId: $sourceDescriptions.payments.createCharge
+                requestBody:
+                  contentType: application/json
+                  payload:
+                    amount: $steps.find.outputs.price
+                    source: $inputs.cardToken
+                successCriteria:
+                  - condition: $statusCode == 201
+                onFailure:
+                  - name: card-declined
+                    type: end
+                    criteria:
+                      - condition: $statusCode == 402
+                outputs:
+                  chargeId: $response.body#/id
+              - stepId: mark-sold
+                operationId: $sourceDescriptions.pets.updatePet
+                parameters:
+                  - name: petId
+                    in: path
+                    value: $inputs.petId
+                requestBody:
+                  contentType: application/json
+                  payload:
+                    status: sold
+                successCriteria:
+                  - condition: $statusCode == 200
+            outputs:
+              chargeId: $steps.pay.outputs.chargeId
+          - workflowId: refund
+            summary: Refund a purchase
+            inputs:
+              type: object
+              properties:
+                chargeId:
+                  type: string
+            steps:
+              - stepId: refund
+                operationId: $sourceDescriptions.payments.refundCharge
+                parameters:
+                  - name: chargeId
+                    in: path
+                    value: $inputs.chargeId
+                successCriteria:
+                  - condition: $statusCode == 201
+      </script>
+      <script type="application/yaml" data-source="pets">
+        openapi: 3.1.0
+        info:
+          title: Pets
+          version: 1.0.0
+        paths:
+          /pets/{petId}:
+            parameters:
+              - name: petId
+                in: path
+                required: true
+                schema:
+                  type: string
+            get:
+              operationId: getPet
+              summary: Get a pet
+              responses:
+                "200":
+                  description: The pet.
+                  content:
+                    application/json:
+                      schema:
+                        $ref: "#/components/schemas/Pet"
+            patch:
+              operationId: updatePet
+              summary: Update a pet
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        status:
+                          type: string
+                          enum: [available, sold]
+              responses:
+                "200":
+                  description: The updated pet.
+        components:
+          schemas:
+            Pet:
+              type: object
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                price:
+                  type: integer
+                  description: In cents.
+                status:
+                  type: string
+                  enum: [available, sold]
+      </script>
+      <script type="application/yaml" data-source="payments">
+        openapi: 3.1.0
+        info:
+          title: Payments
+          version: 1.0.0
+        paths:
+          /charges:
+            post:
+              operationId: createCharge
+              summary: Charge a card
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required: [amount, source]
+                      properties:
+                        amount:
+                          type: integer
+                          description: In cents.
+                        source:
+                          type: string
+                          description: A card token.
+              responses:
+                "201":
+                  description: The charge.
+                "402":
+                  description: The card was declined.
+          /charges/{chargeId}/refunds:
+            post:
+              operationId: refundCharge
+              summary: Refund a charge
+              parameters:
+                - name: chargeId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              responses:
+                "201":
+                  description: The refund.
+      </script>
+      </apiuikit-arazzo-renderer>
+    </div>
+  </div>
+
+  <div class="section" id="arazzo">
+    <h2>Without Parser — &lt;apiuikit-arazzo&gt;</h2>
+    <p>The parsed document set as <code>.spec</code>. Its sources aren't supplied, so they're fetched against <code>base-url="/demo/arazzo/"</code>. Subpath: <code>@apiuikit/web-component/arazzo</code>.</p>
+    <div class="frame">
+      <apiuikit-arazzo id="arazzo-el" base-url="/demo/arazzo/"></apiuikit-arazzo>
+    </div>
+  </div>
+
+  <div class="section" id="arazzo-info">
+    <h2>Info — &lt;apiuikit-arazzo-info&gt;</h2>
+    <p>The title, description, and a chip per source. Sources fetched against <code>base-url</code>. Subpath: <code>@apiuikit/web-component/arazzo-info</code>.</p>
+    <div class="frame">
+      <apiuikit-arazzo-info id="arazzo-info-el" base-url="/demo/arazzo/" layout="stacked"></apiuikit-arazzo-info>
+    </div>
+  </div>
+
+  <div class="section" id="arazzo-workflows">
+    <h2>Every workflow — &lt;apiuikit-arazzo-workflows&gt;</h2>
+    <p>The list of workflows, then each one in full. Sources fetched against <code>base-url</code>. Subpath: <code>@apiuikit/web-component/arazzo-workflows</code>.</p>
+    <div class="frame">
+      <apiuikit-arazzo-workflows id="arazzo-workflows-el" base-url="/demo/arazzo/" layout="stacked"></apiuikit-arazzo-workflows>
+    </div>
+  </div>
+
+  <div class="section" id="arazzo-workflow">
+    <h2>Single workflow — &lt;apiuikit-arazzo-workflow&gt;</h2>
+    <p>One workflow, picked with <code>workflow-id</code>. Sources from both places: <code>payments</code> from a child script, <code>pets</code> from the <code>.sources</code> property (a property entry wins over a child script with the same name). Subpath: <code>@apiuikit/web-component/arazzo-workflow</code>.</p>
+    <div class="frame">
+      <apiuikit-arazzo-workflow id="arazzo-workflow-el" workflow-id="buy-pet" layout="stacked">
+      <script type="application/yaml" data-source="payments">
+        openapi: 3.1.0
+        info:
+          title: Payments
+          version: 1.0.0
+        paths:
+          /charges:
+            post:
+              operationId: createCharge
+              summary: Charge a card
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      required: [amount, source]
+                      properties:
+                        amount:
+                          type: integer
+                          description: In cents.
+                        source:
+                          type: string
+                          description: A card token.
+              responses:
+                "201":
+                  description: The charge.
+                "402":
+                  description: The card was declined.
+          /charges/{chargeId}/refunds:
+            post:
+              operationId: refundCharge
+              summary: Refund a charge
+              parameters:
+                - name: chargeId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+              responses:
+                "201":
+                  description: The refund.
+      </script>
+      </apiuikit-arazzo-workflow>
+    </div>
+  </div>
+
   <script type="module" src="/dist/web-component.es.js"></script>
+  <script type="module" src="/dist/elements/arazzo-renderer.js"></script>
+  <script type="module" src="/dist/elements/arazzo.js"></script>
+  <script type="module" src="/dist/elements/arazzo-info.js"></script>
+  <script type="module" src="/dist/elements/arazzo-workflows.js"></script>
+  <script type="module" src="/dist/elements/arazzo-workflow.js"></script>
   <script type="module">
     function assign(ids, spec) {
       for (const id of ids) {
@@ -287,6 +565,15 @@
       "compose-oa-webhooks",
       "compose-oa-schemas",
     ], openapi);
+
+    const [checkout, petsYaml] = await Promise.all([
+      fetch("/demo/arazzo/pet-checkout.arazzo.json").then((res) => res.json()),
+      fetch("/demo/arazzo/pets.yaml").then((res) => res.text()),
+    ]);
+    assign(["arazzo-el", "arazzo-info-el", "arazzo-workflows-el"], checkout);
+    const workflowEl = document.getElementById("arazzo-workflow-el");
+    workflowEl.sources = { pets: petsYaml };
+    workflowEl.spec = checkout;
   </script>
 </body>
 </html>

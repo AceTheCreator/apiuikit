@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: Payments
+  version: 1.0.0
+paths:
+  /charges:
+    post:
+      operationId: createCharge
+      summary: Charge a card
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, source]
+              properties:
+                amount:
+                  type: integer
+                  description: In cents.
+                source:
+                  type: string
+                  description: A card token.
+      responses:
+        "201":
+          description: The charge.
+        "402":
+          description: The card was declined.
+  /charges/{chargeId}/refunds:
+    post:
+      operationId: refundCharge
+      summary: Refund a charge
+      parameters:
+        - name: chargeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: The refund.

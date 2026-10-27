@@ -23,7 +23,8 @@ export type {
 // Publish an AI-discoverable docs site from a document, outside a rendered
 // tree: these produce what a `config.markdown.url` points at, from a build
 // step or a server route. Spec-agnostic — they dispatch on the document's own
-// version key, so the same code path handles AsyncAPI and OpenAPI.
+// version key, so the same code path handles AsyncAPI and OpenAPI, and
+// Arazzo given its resolved model (from `resolveArazzoDocument`).
 export { documentToLlmsTxt, documentToMarkdown, listDocumentTargets, targetSlug } from './helpers/llmsTxt';
 export type { DocumentTarget, LlmsTxtLink, LlmsTxtOptions } from './helpers/llmsTxt';
 export { markdownForLlm } from './helpers/markdownForLlm';
@@ -37,6 +38,8 @@ export {
   openApiEndpointToMarkdown,
   openApiToMarkdown,
 } from './helpers/toMarkdown';
+// Arazzo serializes its resolved model, which has the sources loaded.
+export { arazzoToMarkdown, arazzoWorkflowToMarkdown } from './helpers/arazzoToMarkdown';
 export { defaultConfig } from './config';
 
 // Deep-linking: the selected tab/item for a document, shared between
@@ -56,12 +59,18 @@ export type {
 } from './types/openapi';
 
 export {
+  useArazzoDocumentContext,
   useAsyncAPIDocument,
   useAsyncAPIDocumentContext,
   useDocumentContext,
   useOpenAPIDocumentContext,
 } from './contexts';
-export type { DocumentContextValue, AsyncAPIDocumentContextValue, OpenAPIDocumentContextValue } from './contexts';
+export type {
+  DocumentContextValue,
+  ArazzoDocumentContextValue,
+  AsyncAPIDocumentContextValue,
+  OpenAPIDocumentContextValue,
+} from './contexts';
 
 // Re-exported (also, more ergonomically, from the `apiuikit/plugin` subpath)
 // so a plugin author's `DocumentContext` is the exact same singleton this
@@ -84,6 +93,50 @@ export { AsyncAPIRenderer } from './containers/AsyncAPI/AsyncAPIRenderer';
 
 export { parseAndRender as parseAndRenderOpenAPI } from './helpers/openapiParser';
 export { OpenAPIRenderer } from './containers/OpenAPI/OpenAPIRenderer';
+
+// Arazzo pages: `Arazzo` takes the parsed document and its sources,
+// `ArazzoRenderer` YAML/JSON text. Both load their page code on demand.
+export { default as Arazzo } from './containers/Arazzo/Arazzo';
+export type { IArazzoProps, ArazzoCommonProps } from './containers/Arazzo/Arazzo';
+export { ArazzoRenderer } from './containers/Arazzo/ArazzoRenderer';
+export type { ArazzoRendererProps } from './containers/Arazzo/ArazzoRenderer';
+
+// Arazzo: the resolved workflow model, with each step linked to the operation
+// it calls in its OpenAPI source. `parseArazzoDocument` reads YAML/JSON text
+// (needs the optional `@usearazzo/parser`); `resolveArazzoDocument` takes an
+// object. See ./types/arazzo for the model.
+export { parseArazzoDocument, resolveArazzoDocument } from './helpers/arazzoModel';
+export type {
+  ArazzoAction,
+  ArazzoComponentOrigin,
+  ArazzoCriterion,
+  ArazzoDiagnostic,
+  ArazzoDocumentData,
+  ArazzoExpression,
+  ArazzoExpressionTarget,
+  ArazzoModel,
+  ArazzoOutput,
+  ArazzoParameter,
+  ArazzoParseResult,
+  ArazzoRequestBody,
+  ArazzoResolveOptions,
+  ArazzoSource,
+  ArazzoSourceDescriptionData,
+  ArazzoSourceInput,
+  ArazzoSourceUnresolvedReason,
+  ArazzoStep,
+  ArazzoStepTarget,
+  ArazzoTextValue,
+  ArazzoUnlinked,
+  ArazzoUnlinkedReason,
+  ArazzoValue,
+  ArazzoValueUse,
+  ArazzoWorkflow,
+  ArazzoWorkflowData,
+  ArazzoWorkflowLink,
+  CriterionConditionNode,
+  RuntimeExpressionNode,
+} from './types/arazzo';
 
 // Composable standalone sections: render one part of a document on its own,
 // or several together under <AsyncAPIProvider>. See ./public/sections.
@@ -118,3 +171,13 @@ export {
   OpenAPIInfo,
 } from './public/openapiSections';
 export type { OpenAPISectionProps, OpenAPIEndpointProps, OpenAPIWebhookProps } from './public/openapiSections';
+
+// Composable Arazzo sections. They resolve asynchronously, so compose them
+// under one <ArazzoProvider> to load the document's sources once.
+export { ArazzoProvider, ArazzoInfo, ArazzoWorkflows, ArazzoWorkflowSection } from './public/arazzoSections';
+export type {
+  ArazzoProviderProps,
+  ArazzoSectionProps,
+  ArazzoSourceProps,
+  ArazzoWorkflowSectionProps,
+} from './public/arazzoSections';

@@ -11,7 +11,7 @@ import dts from 'vite-plugin-dts'
 export default defineConfig({
   plugins: [
     react(),
-    dts({ include: ['src'], tsconfigPath: './tsconfig.json' }),
+    dts({ include: ['src'], exclude: ['src/tests'], tsconfigPath: './tsconfig.json' }),
   ],
   // React/ReactDOM reference process.env.NODE_ENV internally. The browser
   // has no `process` global to resolve it, so it's hardcoded at build time.

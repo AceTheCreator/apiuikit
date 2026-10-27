@@ -1,14 +1,16 @@
 import { getStore } from '@netlify/blobs'
 import type { Config, Context } from '@netlify/functions'
+import { isKnownSnapshot } from '../../src/utils/snapshot'
 
-// Share links for the playground: POST stores a { v, doc, config } snapshot in
+// Share links for the playground: POST stores a workspace snapshot (see
+// src/utils/snapshot.ts — v2 { files, entry, config }, or a legacy v1 { doc, config }) in
 // Netlify Blobs and returns its id; GET /api/share/:id returns it. Ids are a
 // content hash, so sharing the same snapshot twice yields the same link and
 // stored entries never change — which is what makes the immutable GET caching
 // below safe. Entries never expire; `createdAt` metadata is kept so pruning can
 // be added later without a migration.
 
-// Mirrored in src/utils/playgroundState.ts; Netlify caps function request bodies at ~6MB.
+// Mirrored in src/utils/playgroundState.ts; the cap covers the whole workspace. Netlify caps function request bodies at ~6MB.
 const MAX_BODY_BYTES = 5 * 1024 * 1024
 const ID_PATTERN = /^[A-Za-z0-9_-]{12}$/
 
@@ -17,12 +19,6 @@ function json(body: unknown, status: number, headers: Record<string, string> = {
     status,
     headers: { 'Content-Type': 'application/json', ...headers },
   })
-}
-
-function isSnapshot(value: unknown): boolean {
-  if (!value || typeof value !== 'object') return false
-  const v = value as Record<string, unknown>
-  return v.v === 1 && typeof v.doc === 'string' && typeof v.config === 'string'
 }
 
 async function contentId(body: string): Promise<string> {
@@ -52,11 +48,11 @@ export default async (req: Request, context: Context) => {
 
   if (req.method === 'POST' && !id) {
     const declaredLength = Number(req.headers.get('content-length') ?? 0)
-    if (declaredLength > MAX_BODY_BYTES) return json({ error: 'Spec too large to share' }, 413)
+    if (declaredLength > MAX_BODY_BYTES) return json({ error: 'Too large to share — all files together must be under 5 MB' }, 413)
 
     const body = await req.text()
     if (new TextEncoder().encode(body).byteLength > MAX_BODY_BYTES) {
-      return json({ error: 'Spec too large to share' }, 413)
+      return json({ error: 'Too large to share — all files together must be under 5 MB' }, 413)
     }
 
     let parsed: unknown
@@ -65,7 +61,7 @@ export default async (req: Request, context: Context) => {
     } catch {
       return json({ error: 'Body must be JSON' }, 400)
     }
-    if (!isSnapshot(parsed)) return json({ error: 'Invalid snapshot' }, 400)
+    if (!isKnownSnapshot(parsed)) return json({ error: 'Invalid snapshot' }, 400)
 
     const shareId = await contentId(body)
     await store.set(shareId, body, { metadata: { createdAt: new Date().toISOString() } })

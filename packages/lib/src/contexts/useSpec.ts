@@ -1,13 +1,14 @@
 import { createContext, useContext } from "react";
 import type { AsyncAPIDocumentData } from "../types/schema";
 import type { OpenAPIDocumentData } from "../types/openapi";
+import type { ArazzoDocumentData, ArazzoModel } from "../types/arazzo";
 import type { ConfigInterface, MarkdownUrlResolver, SidePanelContainment } from "../config/config";
 import type { ApiuikitPlugin } from "../plugins/types";
 import type { PluginSlotRegistry } from "../plugins/registry";
 import type { ResolvedThemeMode } from "../utils/theme";
 
 /** Which spec produced the ambient document. The discriminant of DocumentContextValue. */
-export type SpecType = "asyncapi" | "openapi";
+export type SpecType = "asyncapi" | "openapi" | "arazzo";
 
 interface DocumentContextBase {
   /** Resolves a JSON Pointer $ref string to the object it references in the document. */
@@ -64,6 +65,14 @@ export interface OpenAPIDocumentContextValue extends DocumentContextBase {
   document: OpenAPIDocumentData;
 }
 
+export interface ArazzoDocumentContextValue extends DocumentContextBase {
+  specType: "arazzo";
+  /** The Arazzo document, with its `inputs` schemas' internal `$ref`s inlined; `deref` resolves against it. */
+  document: ArazzoDocumentData;
+  /** The resolved model: sources loaded, steps linked, expressions parsed. */
+  model: ArazzoModel;
+}
+
 /**
  * Discriminated on `specType`: checking it narrows `document` to the matching
  * spec's shape, so spec-specific consumers don't need to cast. Spec-agnostic
@@ -71,7 +80,10 @@ export interface OpenAPIDocumentContextValue extends DocumentContextBase {
  * SearchPanel, SchemaTree, ExpandToggle, ...) work under any provider without
  * looking at the discriminant.
  */
-export type DocumentContextValue = AsyncAPIDocumentContextValue | OpenAPIDocumentContextValue;
+export type DocumentContextValue =
+  | AsyncAPIDocumentContextValue
+  | OpenAPIDocumentContextValue
+  | ArazzoDocumentContextValue;
 
 // Shared by every spec type's provider (AsyncAPIDocumentProvider,
 // OpenAPIDocumentProvider, ...): one context regardless of which spec
@@ -82,7 +94,7 @@ export const useDocumentContext = () => {
   const context = useContext(DocumentContext);
   if (!context) {
     throw new Error(
-      "useDocumentContext must be used within a document provider (AsyncAPIDocumentProvider or OpenAPIDocumentProvider)"
+      "useDocumentContext must be used within a document provider (AsyncAPIDocumentProvider, OpenAPIDocumentProvider or ArazzoDocumentProvider)"
     );
   }
   return context;
@@ -107,6 +119,18 @@ export const useOpenAPIDocumentContext = (): OpenAPIDocumentContextValue => {
   if (context.specType !== "openapi") {
     throw new Error(
       `useOpenAPIDocumentContext expected an OpenAPI document provider, but received provider type "${context.specType}"`,
+    );
+  }
+  return context;
+};
+
+/** Returns an Arazzo context and fails fast when rendered under the wrong
+ * document provider. */
+export const useArazzoDocumentContext = (): ArazzoDocumentContextValue => {
+  const context = useDocumentContext();
+  if (context.specType !== "arazzo") {
+    throw new Error(
+      `useArazzoDocumentContext expected an Arazzo document provider, but received provider type "${context.specType}"`,
     );
   }
   return context;
