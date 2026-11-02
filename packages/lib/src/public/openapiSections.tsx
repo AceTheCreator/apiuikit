@@ -12,7 +12,7 @@ import EndpointContainer from "../containers/Path/Endpoint";
 import { describeEndpointSelector, EndpointSelector, findEndpoint } from "../helpers/findItem";
 import OpenAPIInformation from "../containers/Information/OpenAPIInformation";
 import type { SectionLayout } from "../components/Section";
-import { createSectionRoot } from "./createSectionRoot";
+import { createSectionRoot, TRANSPARENT_ROOT_CLASS } from "./createSectionRoot";
 import { useNotFoundWarning } from "./useNotFoundWarning";
 
 /**
@@ -140,7 +140,7 @@ function OpenAPIEndpointsBody({ layout }: { layout?: SectionLayout }) {
  */
 export function OpenAPIEndpoints({ layout, ...providerProps }: OpenAPISectionProps) {
   return (
-    <SectionRoot {...providerProps}>
+    <SectionRoot {...providerProps} className={TRANSPARENT_ROOT_CLASS}>
       <OpenAPIEndpointsBody layout={layout} />
     </SectionRoot>
   );
@@ -177,7 +177,7 @@ function OpenAPIWebhooksBody({ layout }: { layout?: SectionLayout }) {
  */
 export function OpenAPIWebhooks({ layout, ...providerProps }: OpenAPISectionProps) {
   return (
-    <SectionRoot {...providerProps}>
+    <SectionRoot {...providerProps} className={TRANSPARENT_ROOT_CLASS}>
       <OpenAPIWebhooksBody layout={layout} />
     </SectionRoot>
   );
@@ -240,7 +240,7 @@ export function OpenAPIEndpoint(props: OpenAPIEndpointProps) {
   const selector: EndpointSelector =
     "operationId" in props ? { operationId: props.operationId } : { method: props.method, path: props.path };
   return (
-    <SectionRoot document={document} config={config} plugins={plugins}>
+    <SectionRoot document={document} config={config} plugins={plugins} className={TRANSPARENT_ROOT_CLASS}>
       <OpenAPIEndpointBody selector={selector} onNavigate={onNavigate} layout={layout} />
     </SectionRoot>
   );
@@ -294,7 +294,7 @@ function OpenAPIWebhookBody({
  */
 export function OpenAPIWebhook({ name, method, onNavigate, layout = "stacked", ...providerProps }: OpenAPIWebhookProps) {
   return (
-    <SectionRoot {...providerProps}>
+    <SectionRoot {...providerProps} className={TRANSPARENT_ROOT_CLASS}>
       <OpenAPIWebhookBody name={name} method={method} onNavigate={onNavigate} layout={layout} />
     </SectionRoot>
   );

@@ -14,7 +14,7 @@ import MessagesContainer from "../containers/Messages/Messages";
 import MessageCard from "../containers/Messages/MessageCard";
 import Information from "../containers/Information/Information";
 import type { SectionLayout } from "../components/Section";
-import { createSectionRoot } from "./createSectionRoot";
+import { createSectionRoot, TRANSPARENT_ROOT_CLASS } from "./createSectionRoot";
 import { useNotFoundWarning } from "./useNotFoundWarning";
 
 /**
@@ -160,7 +160,7 @@ function OperationsBody({ layout }: { layout?: SectionLayout }) {
  */
 export function AsyncAPIOperations({ layout, ...providerProps }: SectionProps) {
   return (
-    <SectionRoot {...providerProps}>
+    <SectionRoot {...providerProps} className={TRANSPARENT_ROOT_CLASS}>
       <OperationsBody layout={layout} />
     </SectionRoot>
   );
@@ -191,7 +191,7 @@ function AsyncAPIOperationBody({ operationId, layout }: { operationId: string; l
  */
 export function AsyncAPIOperation({ operationId, layout = "stacked", ...providerProps }: AsyncAPIOperationProps) {
   return (
-    <SectionRoot {...providerProps}>
+    <SectionRoot {...providerProps} className={TRANSPARENT_ROOT_CLASS}>
       <AsyncAPIOperationBody operationId={operationId} layout={layout} />
     </SectionRoot>
   );
@@ -218,7 +218,7 @@ function MessagesBody({ layout }: { layout?: SectionLayout }) {
  */
 export function AsyncAPIMessages({ layout, ...providerProps }: SectionProps) {
   return (
-    <SectionRoot {...providerProps}>
+    <SectionRoot {...providerProps} className={TRANSPARENT_ROOT_CLASS}>
       <MessagesBody layout={layout} />
     </SectionRoot>
   );
@@ -249,7 +249,7 @@ function AsyncAPIMessageBody({ messageId, layout }: { messageId: string; layout?
  */
 export function AsyncAPIMessage({ messageId, layout = "stacked", ...providerProps }: AsyncAPIMessageProps) {
   return (
-    <SectionRoot {...providerProps}>
+    <SectionRoot {...providerProps} className={TRANSPARENT_ROOT_CLASS}>
       <AsyncAPIMessageBody messageId={messageId} layout={layout} />
     </SectionRoot>
   );

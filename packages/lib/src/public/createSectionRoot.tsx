@@ -15,6 +15,15 @@ export interface GenericSectionProps<T> {
 }
 
 /**
+ * Root class for standalone sections that frame their own content: the
+ * single-item cards (one endpoint, webhook, operation, message or schema) and
+ * the list sections, whose tables are bordered boxes. They sit in someone
+ * else's page, so the root drops its page background (see index.css) and
+ * the host's background shows around the card or table instead.
+ */
+export const TRANSPARENT_ROOT_CLASS = "apiuikit-root--transparent";
+
+/**
  * Builds a `SectionRoot`: renders `children` inside the ambient document
  * context if there is one of the matching spec type (composed mode, e.g.
  * under <AsyncAPIProvider>), otherwise resolves the `document` prop and sets
@@ -28,9 +37,17 @@ export interface GenericSectionProps<T> {
  * section warns, then falls back to its own `document` prop if one was given;
  * without one it renders under the mismatched context anyway (typically
  * empty) rather than crashing the tree.
+ *
+ * `className` goes on the provider's root, so it only applies standalone.
  */
 export function createSectionRoot<T>(
-  Provider: ComponentType<{ document: T; config?: ConfigInterface; plugins?: ApiuikitPlugin[]; children: ReactNode }>,
+  Provider: ComponentType<{
+    document: T;
+    config?: ConfigInterface;
+    plugins?: ApiuikitPlugin[];
+    className?: string;
+    children: ReactNode;
+  }>,
   specLabel: string,
   specType: SpecType,
 ) {
@@ -38,8 +55,9 @@ export function createSectionRoot<T>(
     document,
     config,
     plugins,
+    className,
     children,
-  }: GenericSectionProps<T> & { children: ReactNode }) {
+  }: GenericSectionProps<T> & { className?: string; children: ReactNode }) {
     const ambient = useContext(DocumentContext);
     const resolved = useMemo(
       () => (document ? resolveDocument(document) : null),
@@ -69,7 +87,7 @@ export function createSectionRoot<T>(
     }
 
     return (
-      <Provider document={resolved} config={config} plugins={plugins}>
+      <Provider document={resolved} config={config} plugins={plugins} className={className}>
         {children}
       </Provider>
     );

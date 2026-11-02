@@ -124,6 +124,24 @@ function scopeLibraryGlobals() {
         if (layer.params !== PREFLIGHT_LAYER || !layer.nodes) return
         layer.replaceWith(...layer.nodes)
       })
+
+      // Tailwind's `@layer theme, base, components, utilities;` order
+      // statement outlives most of the layers it names: preflight is
+      // unwrapped above and utilities are emitted unlayered. Drop the names
+      // no block uses. The bare statement isn't only dead weight: clean-css,
+      // the CSS minifier in Docusaurus's webpack build, misparses it and
+      // silently discards the rule that follows, which is our scoped
+      // `box-sizing`/`border`/`margin` reset.
+      const usedLayers = new Set()
+      root.walkAtRules('layer', (layer) => {
+        if (layer.nodes) usedLayers.add(layer.params.trim())
+      })
+      root.walkAtRules('layer', (layer) => {
+        if (layer.nodes) return
+        const names = layer.params.split(',').map((name) => name.trim()).filter((name) => usedLayers.has(name))
+        if (names.length === 0) layer.remove()
+        else layer.params = names.join(', ')
+      })
     },
   }
 }

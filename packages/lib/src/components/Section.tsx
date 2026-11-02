@@ -26,6 +26,12 @@ interface SectionProps {
    */
   layout?: SectionLayout;
   /**
+   * Keeps the section's default top margin. Set false for a section that is
+   * the whole embed (a single endpoint, operation, message or schema card),
+   * where the margin is only empty space inside apiuikit's root.
+   */
+  topSpacing?: boolean;
+  /**
    * Keeps the section's default bottom margin. Set false where the section
    * sits directly above related content that brings its own `mt-6`: Section
    * is a flex item in both places, and flex-item margins don't collapse, so
@@ -43,6 +49,7 @@ export default function Section({
   reverseLayoutOnMobile = false,
   mobileLeadContent,
   layout = "columns",
+  topSpacing = true,
   bottomSpacing = true,
 }: SectionProps) {
   const stacked = layout === "stacked";
@@ -55,7 +62,7 @@ export default function Section({
 
   return (
     <div
-      className={`w-full mt-6 ${bottomSpacing ? "mb-6" : ""} ${
+      className={`w-full ${topSpacing ? "mt-6" : ""} ${bottomSpacing ? "mb-6" : ""} ${
         stacked ? "" : SECTION_COLUMNS_WIDTH
       }`}
     >

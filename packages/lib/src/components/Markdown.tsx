@@ -1,7 +1,7 @@
 import React from "react";
-import DOMPurify from "isomorphic-dompurify";
 
 import { renderMarkdown } from "../helpers/marked";
+import { sanitizeHtml, useCanSanitizeHtml } from "../helpers/sanitize";
 
 // Tailwind Typography's default prose palette is designed for a light page
 // and sets colors on descendants through its own --tw-prose-* variables.
@@ -30,6 +30,10 @@ const Markdown: React.FunctionComponent<{
   /** Extra classes merged onto the root `.prose` div — e.g. `prose-sm` to shrink it for a compact context. */
   className?: string;
 }> = ({ children, className = "" }) => {
+  // Server rendering and hydration get Markdown with raw HTML reduced to
+  // text; the full, DOMPurify-sanitized version replaces it once hydrated.
+  const canSanitize = useCanSanitizeHtml();
+
   if (!children) {
     return null;
   }
@@ -42,7 +46,7 @@ const Markdown: React.FunctionComponent<{
       className={`prose max-w-none prose-code:before:content-none prose-code:after:content-none ${className}`}
       style={proseTheme}
       dangerouslySetInnerHTML={{
-        __html: DOMPurify.sanitize(renderMarkdown(children)),
+        __html: canSanitize ? sanitizeHtml(renderMarkdown(children)) : renderMarkdown(children, { serverSafe: true }),
       }}
     />
   );

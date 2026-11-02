@@ -13,6 +13,7 @@ import SchemaCard from "../containers/Schema/SchemaCard";
 import Section, { type SectionLayout } from "../components/Section";
 import { resolveSchemaInput } from "../helpers/schemaFormat";
 import { useProtobufConverterReady } from "../helpers/protobuf/lazyProtoToJsonSchema";
+import { TRANSPARENT_ROOT_CLASS } from "./createSectionRoot";
 import { useNotFoundWarning } from "./useNotFoundWarning";
 
 /**
@@ -79,8 +80,9 @@ function SchemaRoot({
   config,
   plugins,
   sectionName,
+  className,
   children,
-}: Omit<SchemasSectionProps, "layout"> & { sectionName: string; children: ReactNode }) {
+}: Omit<SchemasSectionProps, "layout"> & { sectionName: string; className?: string; children: ReactNode }) {
   const ambient = useContext(DocumentContext);
   const resolved = useMemo(
     () => (document ? resolveDocument(document) : null),
@@ -101,14 +103,14 @@ function SchemaRoot({
   // version key.
   if (isOpenAPI(resolved)) {
     return (
-      <OpenAPIDocumentProvider document={resolved} config={config} plugins={plugins}>
+      <OpenAPIDocumentProvider document={resolved} config={config} plugins={plugins} className={className}>
         {children}
       </OpenAPIDocumentProvider>
     );
   }
 
   return (
-    <AsyncAPIDocumentProvider document={resolved} config={config} plugins={plugins}>
+    <AsyncAPIDocumentProvider document={resolved} config={config} plugins={plugins} className={className}>
       {children}
     </AsyncAPIDocumentProvider>
   );
@@ -123,7 +125,7 @@ function SchemaRoot({
  */
 export function Schemas({ layout, ...rootProps }: SchemasSectionProps) {
   return (
-    <SchemaRoot {...rootProps} sectionName="Schemas">
+    <SchemaRoot {...rootProps} sectionName="Schemas" className={TRANSPARENT_ROOT_CLASS}>
       <SchemasBody layout={layout} />
     </SchemaRoot>
   );
@@ -154,6 +156,8 @@ function SchemaBody({ name, layout }: { name: string; layout?: SectionLayout }) 
         content={<SchemaCard schemaName={name} resolved={resolved} />}
         stickySideContent={false}
         layout={layout}
+        topSpacing={false}
+        bottomSpacing={false}
       />
     </div>
   );
@@ -169,7 +173,7 @@ function SchemaBody({ name, layout }: { name: string; layout?: SectionLayout }) 
  */
 export function Schema({ name, layout = "stacked", ...rootProps }: SchemaSectionProps) {
   return (
-    <SchemaRoot {...rootProps} sectionName="Schema">
+    <SchemaRoot {...rootProps} sectionName="Schema" className={TRANSPARENT_ROOT_CLASS}>
       <SchemaBody name={name} layout={layout} />
     </SchemaRoot>
   );

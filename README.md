@@ -105,6 +105,7 @@ See the full usage docs for props, configuration options, and more:
 - [Composable Sections](./docs/usage/sections.md) (`AsyncAPIServers`, `AsyncAPIOperations`, `AsyncAPIMessages`, `Schemas`, `AsyncAPIInfo`, `AsyncAPIProvider`)
 - [Configuration](./docs/configuration/config.md) (`ConfigInterface`: theme, show flags, sidebar, sidePanel, etc.)
 - [Web Components](./docs/usage/with-webcomponents.md) (`<apiuikit-asyncapi>`, `<apiuikit-asyncapi-renderer>`, use apiuikit from any framework)
+- [MDX and Docusaurus Integration](./docs/usage/mdx.md) (components inside `.mdx` pages, Docusaurus setup, dark mode, Next.js)
 - [Plugins](./docs/usage/plugins.md) (`plugins` prop, `definePlugin`, writing and publishing your own)
 - [Markdown export](./docs/usage/markdown-export.md) (making your docs AI-readable: `config.markdown.url`, `documentToMarkdown`, `documentToLlmsTxt`)
 - [Avro schemas](./docs/usage/avro.md)

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import DOMPurify from 'isomorphic-dompurify';
 import { hljs } from '../helpers/marked';
+import { canSanitizeHtml, sanitizeHtml } from '../helpers/sanitize';
 import IconCopy from '../icons/Copy';
 import IconCheck from '../icons/Check';
 import IconArrowDown from '../icons/ArrowDown';
@@ -107,6 +107,10 @@ export function CodeBlock({
   // there's no generated markup to sanitize.
   const registered = hljs.getLanguage(language);
   const highlighted = registered ? hljs.highlight(code, { language }).value : null;
+  // highlight.js escapes the source and only adds <span class> tags, so its
+  // output is safe on its own. DOMPurify is a second layer where a DOM exists
+  // to run it; without one (server rendering) the output is used as is.
+  const highlightedHtml = highlighted !== null && canSanitizeHtml() ? sanitizeHtml(highlighted) : highlighted;
   const label = status === 'copied' ? 'Copied' : status === 'error' ? 'Copy failed' : 'Copy to clipboard';
   const clipped = canExpand && !expanded;
   const lineCount = code.replace(/\n+$/, '').split('\n').length;
@@ -143,10 +147,10 @@ export function CodeBlock({
           style={canExpand ? { maxHeight: expanded ? contentHeight : collapsedMaxHeight } : undefined}
           className={`text-xs rounded overflow-x-auto transition-[max-height] duration-300 ease-in-out ${canExpand ? 'overflow-y-hidden' : ''}`}
         >
-          {highlighted !== null ? (
+          {highlightedHtml !== null ? (
             <code
               className={`hljs language-${language}`}
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlighted) }}
+              dangerouslySetInnerHTML={{ __html: highlightedHtml }}
             />
           ) : (
             <code className="hljs">{code}</code>

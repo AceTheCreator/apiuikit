@@ -22,9 +22,41 @@
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 }
 
+/* Standalone sections that frame their own content (single-item cards and
+   list sections with a bordered table) sit in the host's page, so the root
+   doesn't paint a page background around that frame. */
+.apiuikit-root.apiuikit-root--transparent {
+  background-color: transparent;
+}
+
 .apiuikit-root a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Host sites style tables with compound element selectors that outrank the
+   scoped preflight. Docusaurus's Infima, for one, sets `table { display:
+   block }` (so `w-full` no longer stretches the grid and the table shrinks
+   to its content), stripes `table tr:nth-child(2n)`, and colors `table th`.
+   These resets use one class and up to three elements: enough to beat
+   selectors like `table tr:nth-child(2n)` (one class, two elements), and
+   still weaker than our own utilities (two classes), so a `bg-*` or `block`
+   on any of these elements keeps working. */
+.apiuikit-root table {
+  display: table;
+  overflow: visible;
+}
+
+.apiuikit-root table > thead,
+.apiuikit-root table > thead > tr,
+.apiuikit-root table > tbody > tr,
+.apiuikit-root table > thead > tr > th {
+  background-color: transparent;
+}
+
+.apiuikit-root table > thead > tr > th {
+  color: inherit;
+  font-weight: inherit;
 }
 
 .apiuikit-root {
