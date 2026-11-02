@@ -20,6 +20,8 @@ export default function OperationCard({ operationKey, op, layout }: OperationCar
       <Section
         stickySideContent={false}
         layout={layout}
+        topSpacing={false}
+        bottomSpacing={false}
         content={
           <ItemCard
             title={<OperationTitle op={op} operationKey={operationKey} />}

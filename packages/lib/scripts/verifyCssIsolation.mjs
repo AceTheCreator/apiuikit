@@ -83,6 +83,9 @@ const requiredRules = [
   { selector: `${ROOT} img`, property: 'max-width', value: '100%', unlayered: true },
   { selector: `${ROOT} table`, property: 'border-collapse', value: 'collapse', unlayered: true },
   { selector: `${ROOT} hr`, property: 'border-top-width', value: '1px', unlayered: true },
+  // Host CSS such as Docusaurus's `table { display: block }` would otherwise
+  // stop `w-full` tables from filling their container.
+  { selector: `${ROOT} table`, property: 'display', value: 'table', unlayered: true },
 ]
 
 for (const expected of requiredRules) {
@@ -103,3 +106,13 @@ for (const expected of requiredRules) {
     )
   }
 }
+
+// A block-less `@layer a, b;` statement makes clean-css (Docusaurus's webpack
+// CSS minifier) drop the rule after it, which is the scoped reset above.
+root.walkAtRules('layer', (layer) => {
+  if (!layer.nodes) {
+    throw new Error(
+      `[apiuikit] CSS isolation check failed: block-less @layer ${layer.params} statement`,
+    )
+  }
+})

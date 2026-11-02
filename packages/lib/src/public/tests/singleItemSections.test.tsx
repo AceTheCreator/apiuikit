@@ -2,9 +2,25 @@ import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AsyncAPIDocumentData } from "../../types/schema";
 import type { OpenAPIDocumentData } from "../../types/openapi";
-import { AsyncAPIMessage, AsyncAPIOperation, AsyncAPIProvider } from "../sections";
-import { OpenAPIEndpoint, OpenAPIProvider, OpenAPIWebhook } from "../openapiSections";
-import { Schema } from "../schemasSection";
+import {
+  AsyncAPIInfo,
+  AsyncAPIMessage,
+  AsyncAPIMessages,
+  AsyncAPIOperation,
+  AsyncAPIOperations,
+  AsyncAPIProvider,
+  AsyncAPIServers,
+} from "../sections";
+import {
+  OpenAPIEndpoint,
+  OpenAPIEndpoints,
+  OpenAPIInfo,
+  OpenAPIProvider,
+  OpenAPIServers,
+  OpenAPIWebhook,
+  OpenAPIWebhooks,
+} from "../openapiSections";
+import { Schema, Schemas } from "../schemasSection";
 
 const asyncDoc = {
   asyncapi: "3.0.0",
@@ -201,5 +217,53 @@ describe("Schema", () => {
   it("throws a helpful error with neither a document nor a provider", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() => render(<Schema name="Pet" />)).toThrow(/The Schema section needs a `document` prop/);
+  });
+});
+
+// Standalone sections that frame their own content (a card, or a bordered
+// table) sit in someone else's page, so their root paints no background.
+describe("standalone section framing", () => {
+  const rootOf = (container: HTMLElement) => container.querySelector(".apiuikit-root") as HTMLElement;
+
+  it.each([
+    ["OpenAPIEndpoint", () => <OpenAPIEndpoint document={openDoc} operationId="listPets" />],
+    ["OpenAPIWebhook", () => <OpenAPIWebhook document={openDoc} name="newPet" />],
+    ["AsyncAPIOperation", () => <AsyncAPIOperation document={asyncDoc} operationId="receiveMeasurement" />],
+    ["AsyncAPIMessage", () => <AsyncAPIMessage document={asyncDoc} messageId="lightMeasured" />],
+    ["Schema", () => <Schema document={openDoc} name="Pet" />],
+  ])("%s has a transparent root and no margin around its card", (_, renderItem) => {
+    const root = rootOf(render(renderItem()).container);
+
+    expect(root).toHaveClass("apiuikit-root--transparent");
+    expect(root.querySelector(".mt-6, .mb-6")).toBeNull();
+  });
+
+  it.each([
+    ["OpenAPIEndpoints", () => <OpenAPIEndpoints document={openDoc} />],
+    ["OpenAPIWebhooks", () => <OpenAPIWebhooks document={openDoc} />],
+    ["AsyncAPIOperations", () => <AsyncAPIOperations document={asyncDoc} />],
+    ["AsyncAPIMessages", () => <AsyncAPIMessages document={asyncDoc} />],
+    ["Schemas", () => <Schemas document={openDoc} />],
+  ])("%s has a transparent root around its table", (_, renderList) => {
+    expect(rootOf(render(renderList()).container)).toHaveClass("apiuikit-root--transparent");
+  });
+
+  it.each([
+    ["OpenAPIServers", () => <OpenAPIServers document={openDoc} />],
+    ["OpenAPIInfo", () => <OpenAPIInfo document={openDoc} />],
+    ["AsyncAPIServers", () => <AsyncAPIServers document={asyncDoc} />],
+    ["AsyncAPIInfo", () => <AsyncAPIInfo document={asyncDoc} />],
+  ])("%s keeps its background", (_, renderSection) => {
+    expect(rootOf(render(renderSection()).container)).not.toHaveClass("apiuikit-root--transparent");
+  });
+
+  it("leaves a provider's root alone, whatever is composed inside it", () => {
+    const { container } = render(
+      <OpenAPIProvider document={openDoc}>
+        <OpenAPIEndpoints />
+      </OpenAPIProvider>,
+    );
+
+    expect(rootOf(container)).not.toHaveClass("apiuikit-root--transparent");
   });
 });

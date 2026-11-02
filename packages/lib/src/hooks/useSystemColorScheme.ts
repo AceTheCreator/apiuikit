@@ -1,28 +1,31 @@
-import { useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
-function getInitialPrefersDark(): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
+const QUERY = "(prefers-color-scheme: dark)";
+
+const hasMatchMedia = () => typeof window !== "undefined" && typeof window.matchMedia === "function";
+
+const getServerSnapshot = () => false;
 
 /**
  * Tracks the OS `prefers-color-scheme` setting. No-ops entirely (no
  * `matchMedia` subscription) unless `enabled` — most instances never use
  * `mode: "system"`, so this avoids paying for a listener they don't need.
+ *
+ * Server rendering and hydration always see `false` (light), and the real
+ * value is applied right after hydration, so a dark-OS visitor never gets a
+ * hydration mismatch. A client-only render reads the OS value immediately.
  */
 export function useSystemColorScheme(enabled: boolean): boolean {
-  const [prefersDark, setPrefersDark] = useState(() => (enabled ? getInitialPrefersDark() : false));
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      if (!enabled || !hasMatchMedia()) return () => {};
+      const mql = window.matchMedia(QUERY);
+      mql.addEventListener("change", onChange);
+      return () => mql.removeEventListener("change", onChange);
+    },
+    [enabled],
+  );
+  const getSnapshot = () => enabled && hasMatchMedia() && window.matchMedia(QUERY).matches;
 
-  useEffect(() => {
-    if (!enabled || typeof window === "undefined" || typeof window.matchMedia !== "function") return;
-
-    const mql = window.matchMedia("(prefers-color-scheme: dark)");
-    setPrefersDark(mql.matches);
-
-    const handler = (e: MediaQueryListEvent) => setPrefersDark(e.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
-  }, [enabled]);
-
-  return prefersDark;
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }

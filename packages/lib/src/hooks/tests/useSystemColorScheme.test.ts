@@ -1,4 +1,6 @@
+import { createElement } from "react";
 import { act, renderHook } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useSystemColorScheme } from "../useSystemColorScheme";
 
@@ -59,5 +61,14 @@ describe("useSystemColorScheme", () => {
     expect(result.current).toBe(false);
     fireChange(true);
     expect(result.current).toBe(true);
+  });
+
+  it("renders light on the server even when the OS prefers dark", () => {
+    mockMatchMedia(true);
+    function Probe() {
+      return createElement("span", null, String(useSystemColorScheme(true)));
+    }
+
+    expect(renderToString(createElement(Probe))).toBe("<span>false</span>");
   });
 });

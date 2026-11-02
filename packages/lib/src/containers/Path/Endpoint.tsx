@@ -63,6 +63,8 @@ export default function Endpoint({
       <Section
         stickySideContent={false}
         layout={layout}
+        topSpacing={false}
+        bottomSpacing={false}
         content={
           <ItemCard
             title={<EndpointTitle method={method} path={path} parameters={parameters} />}

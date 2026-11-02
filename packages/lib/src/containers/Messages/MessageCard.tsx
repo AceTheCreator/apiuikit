@@ -64,7 +64,13 @@ export default function MessageCard({ messageKey, message, layout }: MessageCard
 
   return (
     <div className="flex justify-center w-full">
-      <Section content={content} stickySideContent={false} layout={layout} />
+      <Section
+        content={content}
+        stickySideContent={false}
+        layout={layout}
+        topSpacing={false}
+        bottomSpacing={false}
+      />
     </div>
   );
 }
