@@ -62,9 +62,9 @@ export default function Section({
 
   return (
     <div
-      className={`w-full ${topSpacing ? "mt-6" : ""} ${bottomSpacing ? "mb-6" : ""} ${
-        stacked ? "" : SECTION_COLUMNS_WIDTH
-      }`}
+      className={`w-full ${topSpacing ? "mt-6" : ""} ${
+        bottomSpacing ? "mb-6" : ""
+      } ${stacked ? "" : SECTION_COLUMNS_WIDTH}`}
     >
       {mobileLeadContent && (
         <div className="@lg:hidden mb-3">{mobileLeadContent}</div>
@@ -89,7 +89,9 @@ export default function Section({
         {stacked ? (
           hasSideContent && (
             <div
-              className={stickySideContent ? "@lg:sticky @lg:top-4" : undefined}
+              className={`order-first mt-6 ${
+                stickySideContent ? "@lg:sticky @lg:top-4" : ""
+              }`}
             >
               {sideContent}
             </div>
