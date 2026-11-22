@@ -1,5 +1,11 @@
 # apiuikit
 
+## 2.5.1
+
+### Patch Changes
+
+- 12f5c4a: Fix stacked sections to render side content above the main content.
+
 ## 2.5.0
 
 ### Minor Changes
