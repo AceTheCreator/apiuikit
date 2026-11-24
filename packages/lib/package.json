@@ -57,7 +57,7 @@
     "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
-    "build": "vite build && node scripts/verifyCssIsolation.mjs && vite build --config vite.markdown.config.ts && vite build --config vite.plugin.config.ts && node scripts/verifyPackageExports.mjs",
+    "build": "vite build && node scripts/fixDeclarationImports.mjs && node scripts/verifyCssIsolation.mjs && vite build --config vite.markdown.config.ts && vite build --config vite.plugin.config.ts && node scripts/verifyPackageExports.mjs && node scripts/verifyNodeNextTypes.mjs",
     "watch": "vite build --watch",
     "prepublishOnly": "cp ../../README.md ./README.md && npm run build",
     "typecheck": "node scripts/typecheck.mjs",

@@ -1,0 +1,13 @@
+{
+  // Typechecks the built dist/*.d.ts the way a Node ESM consumer sees them.
+  // Run by scripts/verifyNodeNextTypes.mjs after `npm run build`.
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": false,
+    "types": []
+  },
+  "files": ["index.ts"]
+}
